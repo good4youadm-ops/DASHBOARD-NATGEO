@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Financeiro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
+      --border: #e5e5ea; --border2: #d1d1d6;
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff; --purple: #af52de;
+      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93; --muted2: #aeaeb2;
+      --sidebar-w: 230px; --header-h: 56px;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+    }
+    html { font-size: 14px; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-w); background: rgba(255,255,255,.9); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; overflow-y: auto; }
+    .sidebar-logo { height: var(--header-h); display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .logo-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: .85rem; color: #fff; flex-shrink: 0; }
+    .logo-name { font-size: 1rem; font-weight: 700; letter-spacing: -.4px; }
+    .logo-name span { color: var(--accent); }
+    .sidebar-section { padding: 18px 20px 5px; font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted2); }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); margin: 1px 8px; cursor: pointer; color: var(--muted); font-size: .86rem; text-decoration: none; transition: all .15s; font-weight: 500; }
+    .nav-item i { width: 16px; text-align: center; font-size: .82rem; flex-shrink: 0; }
+    .nav-item:hover { background: var(--surface2); color: var(--text2); }
+    .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+    .nav-item.active i { color: var(--accent); }
+    .nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: .62rem; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .nav-badge.amber { background: var(--amber); }
+    .sidebar-footer { margin-top: auto; border-top: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: .78rem; color: #fff; flex-shrink: 0; }
+    .u-name { font-size: .82rem; font-weight: 600; }
+    .u-role { font-size: .72rem; color: var(--muted); }
+    .logout-btn { margin-left: auto; color: var(--muted2); cursor: pointer; font-size: .82rem; transition: color .15s; }
+    .logout-btn:hover { color: var(--red); }
+
+    /* LAYOUT */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* TOPBAR */
+    .topbar { height: var(--header-h); background: rgba(255,255,255,.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 10px; position: sticky; top: 0; z-index: 100; }
+    .page-title { font-size: .95rem; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
+    .spacer { flex: 1; }
+    .top-btn { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; cursor: pointer; font-size: .76rem; font-weight: 500; color: var(--text2); transition: all .15s; white-space: nowrap; font-family: inherit; }
+    .top-btn:hover { background: var(--surface); border-color: var(--border2); }
+    .top-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .top-btn i { font-size: .72rem; }
+    .upd-info { font-size: .72rem; color: var(--muted); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .upd-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; }
+
+    /* FILTROS GLOBAIS */
+    .filtros-bar { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; height: 46px; display: flex; align-items: center; gap: 8px; position: sticky; top: var(--header-h); z-index: 99; }
+    .filtro-lbl { font-size: .7rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .filtro-div { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+    .fsel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 26px 4px 9px; font-size: .75rem; font-family: inherit; color: var(--text); cursor: pointer; outline: none; transition: border-color .15s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aeaeb2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-color: var(--surface2); min-width: 110px; }
+    .fsel:focus { border-color: var(--accent); background-color: var(--surface); }
+    .period-bar { display: flex; align-items: center; gap: 1px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 2px; flex-shrink: 0; }
+    .pbtn { background: none; border: none; border-radius: 16px; padding: 3px 11px; font-size: .73rem; font-weight: 500; color: var(--muted); cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+    .pbtn.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+    /* KPI HEADER FIXO */
+    .kpi-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; position: sticky; top: calc(var(--header-h) + 46px); z-index: 98; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+    .kh-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; cursor: pointer; transition: all .15s; position: relative; }
+    .kh-card:hover { background: var(--surface); border-color: var(--border2); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .kh-card.ok   { border-left: 3px solid var(--accent3); }
+    .kh-card.warn { border-left: 3px solid var(--amber); }
+    .kh-card.crit { border-left: 3px solid var(--red); }
+    .kh-card.info { border-left: 3px solid var(--blue); }
+    .kh-lbl { font-size: .64rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+    .kh-val { font-size: 1.18rem; font-weight: 700; letter-spacing: -.5px; color: var(--text); line-height: 1; margin-bottom: 4px; }
+    .kh-delta { font-size: .66rem; font-weight: 600; display: flex; align-items: center; gap: 3px; }
+    .kh-delta.up   { color: var(--accent3); }
+    .kh-delta.down { color: var(--red); }
+    .kh-delta.neu  { color: var(--muted); }
+    .semaphore { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .semaphore.green  { background: var(--accent3); }
+    .semaphore.amber  { background: var(--amber); }
+    .semaphore.red    { background: var(--red); }
+    .semaphore.gray   { background: var(--muted2); }
+    .semaphore.blue   { background: var(--blue); }
+
+    /* BLOCO NAV */
+    .bloco-nav { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 2px; position: sticky; top: calc(var(--header-h) + 46px + 85px); z-index: 97; overflow-x: auto; }
+    .bntab { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 16px; font-size: .8rem; font-weight: 500; color: var(--muted); cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+    .bntab:hover { color: var(--text2); }
+    .bntab.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+    .bntab .badge { background: var(--red); color: #fff; font-size: .58rem; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+    .bntab .badge.amber { background: var(--amber); }
+    .bntab .fase2 { font-size: .6rem; color: var(--muted2); background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-weight: 500; }
+
+    /* CONTENT */
+    .content { padding: 20px 24px 60px; }
+    .bloco { display:none; }
+    .bloco.active { display:block; }
+
+    /* CARD */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .card-body { padding: 20px; }
+    .card-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+    .card-title { font-size: .88rem; font-weight: 700; letter-spacing: -.2px; color: var(--text); }
+    .card-sub { font-size: .71rem; color: var(--muted); margin-top: 2px; }
+
+    /* GRIDS */
+    .g6  { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; margin-bottom: 14px; }
+    .g4  { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 14px; }
+    .g3  { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 14px; }
+    .g2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .g21 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .g12 { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 14px; }
+    .g32 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; margin-bottom: 14px; }
+    .mb { margin-bottom: 14px; }
+
+    /* KPI CARD BLOCO */
+    .kpi-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px; box-shadow: var(--shadow); cursor: pointer; transition: all .2s; }
+    .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .kpi-label { font-size: .71rem; font-weight: 600; color: var(--muted); letter-spacing: -.1px; }
+    .kpi-icon { width: 30px; height: 30px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: .78rem; }
+    .kpi-icon.green  { background: var(--accent-bg);             color: var(--accent); }
+    .kpi-icon.red    { background: rgba(255,59,48,.08);           color: var(--red); }
+    .kpi-icon.amber  { background: rgba(255,159,10,.1);           color: var(--amber); }
+    .kpi-icon.blue   { background: rgba(0,122,255,.08);           color: var(--blue); }
+    .kpi-icon.purple { background: rgba(175,82,222,.08);          color: var(--purple); }
+    .kpi-value { font-size: 1.55rem; font-weight: 700; letter-spacing: -.6px; color: var(--text); margin-bottom: 5px; line-height: 1; }
+    .kpi-footer { display: flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--muted); flex-wrap: wrap; }
+    .delta { font-weight: 600; }
+    .delta.up   { color: var(--accent3); }
+    .delta.down { color: var(--red); }
+
+    /* PILLS */
+    .pill { display: inline-flex; align-items: center; font-size: .67rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: .1px; white-space: nowrap; }
+    .pill.green  { background: var(--accent-bg); color: var(--accent); }
+    .pill.amber  { background: rgba(255,159,10,.1); color: #b45309; }
+    .pill.red    { background: rgba(255,59,48,.08); color: var(--red); }
+    .pill.blue   { background: rgba(0,122,255,.08); color: var(--blue); }
+    .pill.gray   { background: var(--surface2); color: var(--muted); }
+    .pill.purple { background: rgba(175,82,222,.08); color: var(--purple); }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted2); padding: 0 14px 9px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 9px 14px; font-size: .8rem; color: var(--text2); vertical-align: middle; }
+    .td-strong { font-weight: 600; color: var(--text); }
+    .td-mono { font-family: 'SF Mono','Consolas',monospace; font-size: .73rem; color: var(--accent); font-weight: 500; }
+    .td-num { font-variant-numeric: tabular-nums; font-weight: 500; }
+
+    /* PROGRESS */
+    .prog-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .prog-lbl { font-size: .76rem; color: var(--text2); width: 140px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+    .prog-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 10px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 10px; background: var(--accent); }
+    .prog-fill.amber { background: var(--amber); }
+    .prog-fill.red   { background: var(--red); }
+    .prog-val { font-size: .75rem; font-weight: 600; color: var(--text); width: 60px; text-align: right; }
+
+    /* ALERTAS */
+    .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 6px; border: 1px solid; }
+    .alert-item.crit  { background: rgba(255,59,48,.04);  border-color: rgba(255,59,48,.2); }
+    .alert-item.high  { background: rgba(255,159,10,.04); border-color: rgba(255,159,10,.2); }
+    .alert-item.med   { background: rgba(0,122,255,.03);  border-color: rgba(0,122,255,.15); }
+    .alert-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .alert-dot.crit  { background: var(--red); }
+    .alert-dot.high  { background: var(--amber); }
+    .alert-dot.med   { background: var(--blue); }
+    .alert-code { font-size: .65rem; font-weight: 700; font-family: 'SF Mono','Consolas',monospace; color: var(--muted2); flex-shrink: 0; width: 55px; margin-top: 1px; }
+    .alert-txt strong { font-size: .79rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 1px; }
+    .alert-txt span   { font-size: .71rem; color: var(--muted); }
+    .alert-action { margin-left: auto; flex-shrink: 0; font-size: .68rem; font-weight: 600; cursor: pointer; }
+    .alert-action.crit { color: var(--red); }
+    .alert-action.high { color: #b45309; }
+    .alert-action.med  { color: var(--blue); }
+
+    /* AGING BUCKET */
+    .bucket-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .bucket-lbl { font-size: .73rem; color: var(--text2); width: 90px; flex-shrink: 0; font-weight: 500; }
+    .bucket-bar { flex: 1; height: 20px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; align-items: center; }
+    .bucket-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: .68rem; font-weight: 600; color: #fff; transition: width .4s ease; }
+    .bucket-fill.ok    { background: var(--accent3); }
+    .bucket-fill.mild  { background: var(--amber); }
+    .bucket-fill.warn  { background: #e06b00; }
+    .bucket-fill.crit  { background: var(--red); }
+    .bucket-val { font-size: .74rem; font-weight: 600; color: var(--text); width: 90px; text-align: right; }
+    .bucket-pct { font-size: .68rem; color: var(--muted); width: 34px; text-align: right; }
+
+    /* WATERFALL */
+    .wf-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .wf-row:last-child { border-bottom: none; }
+    .wf-lbl { font-size: .77rem; color: var(--text2); width: 180px; flex-shrink: 0; font-weight: 500; }
+    .wf-bar-wrap { flex: 1; height: 16px; position: relative; }
+    .wf-bar { height: 100%; border-radius: 3px; position: absolute; }
+    .wf-bar.pos  { background: var(--accent3); left: 0; }
+    .wf-bar.neg  { background: var(--red); left: 0; }
+    .wf-bar.base { background: var(--blue); left: 0; }
+    .wf-val { font-size: .76rem; font-weight: 600; width: 110px; text-align: right; }
+    .wf-val.pos { color: var(--accent3); }
+    .wf-val.neg { color: var(--red); }
+    .wf-val.neu { color: var(--text); }
+    .wf-sep { border-top: 2px solid var(--border); margin: 4px 0; }
+
+    /* CAIXA ACCOUNT CARDS */
+    .account-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .acc-bank { font-size: .68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .acc-name { font-size: .83rem; font-weight: 600; color: var(--text); }
+    .acc-bal  { font-size: 1.3rem; font-weight: 700; letter-spacing: -.5px; }
+    .acc-bal.pos { color: var(--accent); }
+    .acc-bal.neg { color: var(--red); }
+    .acc-tag  { font-size: .65rem; color: var(--muted); }
+
+    /* HEATMAP VENCIMENTOS */
+    .heatmap-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+    .hm-day-hdr { font-size: .63rem; font-weight: 600; color: var(--muted2); text-align: center; padding-bottom: 2px; }
+    .hm-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 600; cursor: default; transition: transform .1s; }
+    .hm-cell:hover { transform: scale(1.15); }
+    .hm-cell.empty { background: transparent; }
+    .hm-cell.l0 { background: var(--surface2); color: var(--muted2); }
+    .hm-cell.l1 { background: var(--accent-mid); color: var(--accent2); }
+    .hm-cell.l2 { background: #b7e4c7; color: var(--accent2); }
+    .hm-cell.l3 { background: #74c69d; color: var(--surface); }
+    .hm-cell.l4 { background: var(--accent2); color: var(--surface); }
+    .hm-cell.warn { background: rgba(255,159,10,.25); color: #b45309; }
+    .hm-cell.crit { background: rgba(255,59,48,.2);  color: var(--red); }
+    .hm-cell.today { box-shadow: 0 0 0 2px var(--accent); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; min-width: 240px; box-shadow: var(--shadow-md); display: none; align-items: center; gap: 10px; }
+    .toast.show { display: flex; animation: tIn .2s ease; }
+    @keyframes tIn { from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .toast .t-ic { font-size: .88rem; }
+    .toast.success .t-ic { color: var(--accent3); }
+    .toast strong { font-size: .8rem; font-weight: 600; display: block; }
+    .toast span   { font-size: .72rem; color: var(--muted); }
+
+    /* DRILL-DOWN BADGE */
+    .dd-badge { font-size: .62rem; color: var(--blue); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-weight: 500; }
+    .dd-badge:hover { text-decoration: underline; }
+
+    /* STAT INLINE */
+    .stat-inline { display: flex; align-items: baseline; gap: 5px; }
+    .si-val { font-size: 1.1rem; font-weight: 700; letter-spacing: -.4px; }
+    .si-sub { font-size: .69rem; color: var(--muted); }
+
+    /* PROJECAO TABLE */
+    .proj-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: .77rem; }
+    .proj-row:last-child { border-bottom: none; }
+    .proj-dt  { width: 80px; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+    .proj-desc{ flex: 1; color: var(--text2); }
+    .proj-val { width: 100px; text-align: right; font-weight: 600; }
+    .proj-val.pos { color: var(--accent3); }
+    .proj-val.neg { color: var(--red); }
+    .proj-saldo { width: 110px; text-align: right; font-weight: 700; color: var(--text); }
+
+    /* RESPONSIVE */
+    @media(max-width:1300px) { .g6 { grid-template-columns: repeat(3,1fr); } .kpi-header { grid-template-columns: repeat(3,1fr); } }
+    @media(max-width:1100px) { .g4 { grid-template-columns: repeat(2,1fr); } .g3 { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:900px)  { .g21,.g32,.g12,.g2 { grid-template-columns: 1fr; } }
+    @media(max-width:800px)  {
+      :root { --sidebar-w: 56px; }
+      .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display: none; }
+      .sidebar-logo { justify-content: center; padding: 0; }
+      .nav-item { justify-content: center; padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+    <div><div class="logo-name">Nat<span>Geo</span></div></div>
+  </div>
+
+  <div class="sidebar-section">Principal</div>
+  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard Comercial</span></a>
+  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span><span class="nav-badge amber">6</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-file-invoice-dollar"></i><span>Pedidos</span><span class="nav-badge">14</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-users"></i><span>Clientes</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-store"></i><span>Fornecedores</span></a>
+
+  <div class="sidebar-section">Financeiro</div>
+  <a class="nav-item active" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-sack-dollar"></i><span>Faturamento</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-receipt"></i><span>A Receber</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-credit-card"></i><span>A Pagar</span><span class="nav-badge">3</span></a>
+
+  <div class="sidebar-section">Relatórios</div>
+  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatística de Vendas</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-chart-pie"></i><span>DRE</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-map-location-dot"></i><span>Regiões</span></a>
+
+  <div class="sidebar-section">Operações</div>
+  <a class="nav-item" href="#"><i class="fa-solid fa-route"></i><span>Rotas</span></a>
+  <a class="nav-item" href="#"><i class="fa-solid fa-gear"></i><span>Configurações</span></a>
+
+  <div class="sidebar-footer">
+    <div class="avatar">CF</div>
+    <div><div class="u-name">Controller</div><div class="u-role">PERFIL_CFO</div></div>
+    <div class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="page-title"><i class="fa-solid fa-chart-column" style="color:var(--accent);margin-right:7px;font-size:.85rem"></i>Financeiro</div>
+    <div class="spacer"></div>
+    <div class="upd-info"><div class="upd-dot"></div>Atualizado hoje às 06:00 — ETL concluído</div>
+    <button class="top-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Exportar</button>
+    <button class="top-btn accent"><i class="fa-solid fa-bell"></i> 5 alertas</button>
+  </div>
+
+  <!-- FILTROS GLOBAIS -->
+  <div class="filtros-bar">
+    <span class="filtro-lbl"><i class="fa-solid fa-filter" style="font-size:.65rem;margin-right:3px"></i>Filtros:</span>
+    <div class="period-bar">
+      <button class="pbtn" onclick="setPeriod(this,'mtd')">MTD</button>
+      <button class="pbtn active" onclick="setPeriod(this,'mes')">Mês</button>
+      <button class="pbtn" onclick="setPeriod(this,'trim')">Trim.</button>
+      <button class="pbtn" onclick="setPeriod(this,'ano')">Ano</button>
+      <button class="pbtn" onclick="setPeriod(this,'custom')">Custom</button>
+    </div>
+    <div class="filtro-div"></div>
+    <select class="fsel" id="fCanal"><option value="">Todos os canais</option><option>Varejo</option><option>Atacado</option><option>E-commerce</option><option>Televendas</option></select>
+    <select class="fsel" id="fFilial"><option value="">Todas as filiais</option><option>Filial SP</option><option>Filial RJ</option><option>Filial MG</option></select>
+    <select class="fsel" id="fVendedor"><option value="">Todos os vendedores</option><option>Ana Lima</option><option>Carlos Melo</option><option>Fernanda Rios</option><option>João Costa</option></select>
+    <div class="filtro-div"></div>
+    <select class="fsel" id="fComparar"><option value="ant">vs. Mês anterior</option><option value="aa">vs. Mesmo mês AA</option><option value="meta">vs. Meta</option></select>
+  </div>
+
+  <!-- KPI HEADER FIXO -->
+  <div class="kpi-header" id="kpiHeader">
+    <div class="kh-card ok" onclick="goBloco('caixa')">
+      <div class="kh-lbl">Saldo Caixa Hoje <div class="semaphore green"></div></div>
+      <div class="kh-val">R$ 342K</div>
+      <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> R$ +28K / +8,9%</div>
+    </div>
+    <div class="kh-card ok" onclick="goBloco('recebiveis')">
+      <div class="kh-lbl">A Receber D+30 <div class="semaphore green"></div></div>
+      <div class="kh-val">R$ 1,24M</div>
+      <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 83K / +7,2%</div>
+    </div>
+    <div class="kh-card warn" onclick="goBloco('pagamentos')">
+      <div class="kh-lbl">A Pagar D+30 <div class="semaphore amber"></div></div>
+      <div class="kh-val">R$ 890K</div>
+      <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 64K / +7,8%</div>
+    </div>
+    <div class="kh-card ok" onclick="goBloco('receitas')">
+      <div class="kh-lbl">Faturamento Mês <div class="semaphore green"></div></div>
+      <div class="kh-val">R$ 2,81M</div>
+      <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 128K / +4,8% vs meta</div>
+    </div>
+    <div class="kh-card ok" onclick="goBloco('rentabilidade')">
+      <div class="kh-lbl">Margem Bruta % <div class="semaphore green"></div></div>
+      <div class="kh-val">27,4%</div>
+      <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +0,8pp vs anterior</div>
+    </div>
+    <div class="kh-card warn" onclick="goBloco('recebiveis')">
+      <div class="kh-lbl">Inadimplência % <div class="semaphore amber"></div></div>
+      <div class="kh-val">4,2%</div>
+      <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +0,4pp vs anterior</div>
+    </div>
+  </div>
+
+  <!-- BLOCO NAV -->
+  <div class="bloco-nav">
+    <button class="bntab active" data-bloco="visao-geral" onclick="switchBloco(this)"><i class="fa-solid fa-gauge-high"></i> Visão Geral</button>
+    <button class="bntab" data-bloco="receitas" onclick="switchBloco(this)"><i class="fa-solid fa-sack-dollar"></i> Receitas</button>
+    <button class="bntab" data-bloco="rentabilidade" onclick="switchBloco(this)"><i class="fa-solid fa-percent"></i> Rentabilidade</button>
+    <button class="bntab" data-bloco="caixa" onclick="switchBloco(this)"><i class="fa-solid fa-building-columns"></i> Caixa</button>
+    <button class="bntab" data-bloco="recebiveis" onclick="switchBloco(this)"><i class="fa-solid fa-file-invoice"></i> Recebíveis <span class="badge amber">3</span></button>
+    <button class="bntab" data-bloco="pagamentos" onclick="switchBloco(this)"><i class="fa-solid fa-credit-card"></i> Pagamentos <span class="badge">2</span></button>
+    <button class="bntab" data-bloco="despesas" onclick="switchBloco(this)"><i class="fa-solid fa-receipt"></i> Despesas <span class="fase2">Fase 2</span></button>
+    <button class="bntab" data-bloco="liquidez" onclick="switchBloco(this)"><i class="fa-solid fa-droplet"></i> Liquidez <span class="fase2">Fase 2</span></button>
+    <button class="bntab" data-bloco="projecoes" onclick="switchBloco(this)"><i class="fa-solid fa-chart-line"></i> Projeções <span class="fase2">Fase 2/3</span></button>
+  </div>
+
+  <!-- ===================== BLOCO: VISÃO GERAL ===================== -->
+  <div class="bloco active content" id="bloco-visao-geral">
+
+    <!-- KPIs Gerenciais -->
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Receita Líquida</span><div class="kpi-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+        <div class="kpi-value">R$ 2,19M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 94K</span><span>+4,5% vs anterior</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Margem Bruta R$</span><div class="kpi-icon green"><i class="fa-solid fa-chart-pie"></i></div></div>
+        <div class="kpi-value">R$ 600K</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 41K</span><span>27,4% da Rec. Líq.</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">EBITDA Gerencial*</span><div class="kpi-icon blue"><i class="fa-solid fa-scale-balanced"></i></div></div>
+        <div class="kpi-value">R$ 284K</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 18K</span><span>13,0% da Rec. Líq.</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Ciclo de Caixa</span><div class="kpi-icon amber"><i class="fa-solid fa-rotate"></i></div></div>
+        <div class="kpi-value">38 dias</div>
+        <div class="kpi-footer"><span class="delta down">▼ +3d vs anterior</span><span>PMR 42d · PMP 28d</span></div>
+      </div>
+    </div>
+
+    <!-- Gráfico 12m + Alertas -->
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title">Faturamento &amp; Margem — últimos 12 meses</div><div class="card-sub">Receita Bruta (barras) · Margem Bruta % (linha) · Meta mensal (tracejado)</div></div>
+          <span class="pill green">Fonte: AGG_FINANCEIRO_MENSAL</span>
+        </div>
+        <div style="height:220px;position:relative"><canvas id="chartFatMargem"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber);margin-right:5px"></i>Alertas Ativos</div><div class="card-sub">Job 05:30 — 5 alertas hoje</div></div>
+        </div>
+        <div id="alertasPanel"></div>
+      </div>
+    </div>
+
+    <!-- Waterfall + Comparativo -->
+    <div class="g2 mb">
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title">Resultado — Waterfall</div><div class="card-sub">Abril/2026 · Gerencial*</div></div>
+        </div>
+        <div id="waterfallVG"></div>
+        <div style="font-size:.66rem;color:var(--muted);margin-top:8px">* EBITDA gerencial pode divergir do contábil — fonte: DW analítico</div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title">Comparativo de Período</div><div class="card-sub">Abril/2026 vs Março/2026 vs Abril/2025</div></div>
+        </div>
+        <div style="height:200px;position:relative"><canvas id="chartComparativo"></canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco visao-geral -->
+
+  <!-- ===================== BLOCO: RECEITAS ===================== -->
+  <div class="bloco content" id="bloco-receitas">
+
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Fat. Bruto</span><div class="kpi-icon green"><i class="fa-solid fa-money-bill-wave"></i></div></div>
+        <div class="kpi-value">R$ 2,81M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 128K</span><span>+4,8% vs meta</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Receita Líquida</span><div class="kpi-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+        <div class="kpi-value">R$ 2,19M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +4,5%</span><span>após impostos e devol.</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Ticket Médio</span><div class="kpi-icon blue"><i class="fa-solid fa-tag"></i></div></div>
+        <div class="kpi-value">R$ 1.840</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 94</span><span>1.527 NFs emitidas</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Devoluções</span><div class="kpi-icon red"><i class="fa-solid fa-rotate-left"></i></div></div>
+        <div class="kpi-value">R$ 52K</div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 8K</span><span>1,9% do Fat. Bruto</span></div>
+      </div>
+    </div>
+
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title">Faturamento Diário vs Meta</div><div class="card-sub">Abril/2026 · acumulado + meta proporcional</div></div>
+          <span class="dd-badge"><i class="fa-solid fa-drill-down" style="font-size:.58rem"></i> Drill: canal → região</span>
+        </div>
+        <div style="height:190px;position:relative"><canvas id="chartFatDiario"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr">
+          <div><div class="card-title">Por Canal</div><div class="card-sub">Mix de faturamento</div></div>
+        </div>
+        <div style="height:190px;display:flex;align-items:center;justify-content:center"><canvas id="chartCanal"></canvas></div>
+      </div>
+    </div>
+
+    <div class="g2 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Top 10 Clientes</div><div class="card-sub">Maior faturamento no período</div></div><span class="pill blue">Abr/2026</span></div>
+        <div id="topClientesRec"></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Fat. por Região</div><div class="card-sub">Receita bruta por UF/região</div></div></div>
+        <div id="fatRegiao"></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco receitas -->
+
+  <!-- ===================== BLOCO: RENTABILIDADE ===================== -->
+  <div class="bloco content" id="bloco-rentabilidade">
+
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Margem Bruta %</span><div class="kpi-icon green"><i class="fa-solid fa-percent"></i></div></div>
+        <div class="kpi-value">27,4%</div>
+        <div class="kpi-footer"><span class="delta up">▲ +0,8pp</span><span>piso: 24% · meta: 29%</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">CMV Total</span><div class="kpi-icon amber"><i class="fa-solid fa-boxes-stacked"></i></div></div>
+        <div class="kpi-value">R$ 1,59M</div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 53K</span><span>72,6% da Rec. Líq.</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">EBITDA %</span><div class="kpi-icon blue"><i class="fa-solid fa-gauge-simple-high"></i></div></div>
+        <div class="kpi-value">13,0%</div>
+        <div class="kpi-footer"><span class="delta up">▲ +0,4pp</span><span>R$ 284K</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">SKUs abaixo do piso</span><div class="kpi-icon red"><i class="fa-solid fa-circle-exclamation"></i></div></div>
+        <div class="kpi-value">14</div>
+        <div class="kpi-footer"><span class="delta down">▲ +3 vs anterior</span><span>piso: 24% mg. bruta</span></div>
+      </div>
+    </div>
+
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Margem Bruta % — evolução 12m</div><div class="card-sub">Margem % (linha) vs piso configurado (24%)</div></div></div>
+        <div style="height:190px;position:relative"><canvas id="chartMargemEvolucao"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Margem por Canal</div><div class="card-sub">% e R$ — Abril/2026</div></div></div>
+        <div style="height:190px;position:relative"><canvas id="chartMargemCanal"></canvas></div>
+      </div>
+    </div>
+
+    <div class="g2 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Waterfall — CMV detalhado</div><div class="card-sub">Composição do custo · Abril/2026</div></div></div>
+        <div id="waterfallCMV"></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">SKUs abaixo do piso de margem</div><div class="card-sub">Ranking · margem bruta % &lt; 24%</div></div><span class="pill red">14 SKUs</span></div>
+        <div id="skusPiso"></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco rentabilidade -->
+
+  <!-- ===================== BLOCO: CAIXA ===================== -->
+  <div class="bloco content" id="bloco-caixa">
+
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Saldo Consolidado</span><div class="kpi-icon green"><i class="fa-solid fa-building-columns"></i></div></div>
+        <div class="kpi-value">R$ 342K</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 28K</span><span>3 contas · hoje</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Projeção D+30</span><div class="kpi-icon blue"><i class="fa-solid fa-calendar-check"></i></div></div>
+        <div class="kpi-value">R$ 218K</div>
+        <div class="kpi-footer"><span class="delta down">▼ –R$ 124K</span><span>pós pagamentos previstos</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">NCG</span><div class="kpi-icon amber"><i class="fa-solid fa-rotate"></i></div></div>
+        <div class="kpi-value">R$ 680K</div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 42K</span><span>Clientes+Est.−Fornec.</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Ciclo de Caixa</span><div class="kpi-icon amber"><i class="fa-solid fa-stopwatch"></i></div></div>
+        <div class="kpi-value">38 dias</div>
+        <div class="kpi-footer"><span class="delta down">▲ +3d</span><span>PMR 42d · PME 24d · PMP 28d</span></div>
+      </div>
+    </div>
+
+    <!-- Contas Bancárias -->
+    <div class="g3 mb">
+      <div class="account-card">
+        <div class="acc-bank">Banco do Brasil · CC</div>
+        <div class="acc-name">Conta Principal — SP</div>
+        <div class="acc-bal pos">R$ 198.440</div>
+        <div class="acc-tag">Ag. 0001-9 · C/C 12345-6 · compensado</div>
+      </div>
+      <div class="account-card">
+        <div class="acc-bank">Itaú · CC</div>
+        <div class="acc-name">Conta Operacional — RJ</div>
+        <div class="acc-bal pos">R$ 103.280</div>
+        <div class="acc-tag">Ag. 1234 · C/C 99887-0 · compensado</div>
+      </div>
+      <div class="account-card">
+        <div class="acc-bank">Bradesco · Aplicação</div>
+        <div class="acc-name">Fundo de Reserva</div>
+        <div class="acc-bal pos">R$ 40.590</div>
+        <div class="acc-tag">CDB liquidez diária · rendimento: 102% CDI</div>
+      </div>
+    </div>
+
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Projeção de Caixa — 30 / 60 / 90 dias</div><div class="card-sub">Saldo previsto diário · entradas projetadas e saídas comprometidas</div></div><span class="pill green">Modelo: rolling forecast</span></div>
+        <div style="height:200px;position:relative"><canvas id="chartProjecaoCaixa"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Próximos vencimentos críticos</div><div class="card-sub">Pagamentos em 7 dias · confirmação de caixa</div></div></div>
+        <div id="vencCriticos"></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco caixa -->
+
+  <!-- ===================== BLOCO: RECEBÍVEIS ===================== -->
+  <div class="bloco content" id="bloco-recebiveis">
+
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Total AR em Aberto</span><div class="kpi-icon green"><i class="fa-solid fa-file-invoice"></i></div></div>
+        <div class="kpi-value">R$ 1,86M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 94K</span><span>SNAPSHOT_AR hoje</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Vencido</span><div class="kpi-icon red"><i class="fa-solid fa-circle-exclamation"></i></div></div>
+        <div class="kpi-value">R$ 78K</div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 12K</span><span>4,2% do total AR</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">A Vencer D+30</span><div class="kpi-icon blue"><i class="fa-solid fa-calendar-days"></i></div></div>
+        <div class="kpi-value">R$ 1,24M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 83K</span><span>66,7% do total</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Inadimplência %</span><div class="kpi-icon amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div>
+        <div class="kpi-value">4,2%</div>
+        <div class="kpi-footer"><span class="delta down">▲ +0,4pp</span><span>threshold: 5% · atenção</span></div>
+      </div>
+    </div>
+
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Aging de Recebíveis — por bucket</div><div class="card-sub">SNAPSHOT_AR hoje · valores e % do total</div></div></div>
+        <div id="agingAR" style="margin-top:4px"></div>
+        <div style="height:160px;position:relative;margin-top:14px"><canvas id="chartAgingAR"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Top 10 Devedores</div><div class="card-sub">Por valor vencido em aberto</div></div><span class="pill red">Ação imediata</span></div>
+        <div id="topDevedores"></div>
+      </div>
+    </div>
+
+    <div class="g2 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Heatmap de Vencimentos</div><div class="card-sub">Valor a receber por dia — próximos 35 dias</div></div></div>
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;font-size:.66rem;color:var(--muted)">
+          <span>Volume:</span>
+          <span style="width:12px;height:12px;background:var(--surface2);border-radius:2px;border:1px solid var(--border);display:inline-block"></span>R$0
+          <span style="width:12px;height:12px;background:var(--accent-mid);border-radius:2px;display:inline-block"></span>&lt;50K
+          <span style="width:12px;height:12px;background:#74c69d;border-radius:2px;display:inline-block"></span>&lt;150K
+          <span style="width:12px;height:12px;background:var(--accent2);border-radius:2px;display:inline-block"></span>150K+
+          <span style="width:12px;height:12px;background:rgba(255,159,10,.25);border-radius:2px;display:inline-block"></span>Vencido
+        </div>
+        <div id="heatmapVenc"></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Curva de Recebimento</div><div class="card-sub">Realizado vs projetado — últimos 30 dias</div></div></div>
+        <div style="height:200px;position:relative"><canvas id="chartCurvaRec"></canvas></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco recebiveis -->
+
+  <!-- ===================== BLOCO: PAGAMENTOS ===================== -->
+  <div class="bloco content" id="bloco-pagamentos">
+
+    <div class="g4 mb">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Total AP em Aberto</span><div class="kpi-icon blue"><i class="fa-solid fa-file-invoice-dollar"></i></div></div>
+        <div class="kpi-value">R$ 1,12M</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 48K</span><span>SNAPSHOT_AP hoje</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Vence Hoje</span><div class="kpi-icon red"><i class="fa-solid fa-bell"></i></div></div>
+        <div class="kpi-value">R$ 34K</div>
+        <div class="kpi-footer"><span class="delta down">3 títulos</span><span>confirmar caixa disponível</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Vence D+3</span><div class="kpi-icon amber"><i class="fa-solid fa-calendar-week"></i></div></div>
+        <div class="kpi-value">R$ 89K</div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 12K</span><span>8 títulos pendentes</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">A Pagar D+30</span><div class="kpi-icon green"><i class="fa-solid fa-calendar-check"></i></div></div>
+        <div class="kpi-value">R$ 890K</div>
+        <div class="kpi-footer"><span class="delta up">▲ +R$ 64K</span><span>79,5% do total AP</span></div>
+      </div>
+    </div>
+
+    <div class="g21 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Calendário de Pagamentos — próximos 30 dias</div><div class="card-sub">Comprometimento diário de caixa</div></div></div>
+        <div style="height:190px;position:relative"><canvas id="chartCalPag"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Top 8 Fornecedores</div><div class="card-sub">Por valor a pagar em aberto</div></div></div>
+        <div id="topFornecedores"></div>
+      </div>
+    </div>
+
+    <div class="g2 mb">
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Aging AP — por bucket</div><div class="card-sub">SNAPSHOT_AP hoje</div></div></div>
+        <div id="agingAP" style="margin-top:4px"></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-hdr"><div><div class="card-title">Vencimentos críticos — Hoje e D+3</div><div class="card-sub">Títulos que requerem ação imediata</div></div><span class="pill red">ALT-002</span></div>
+        <div id="vencCriticosAP"></div>
+      </div>
+    </div>
+
+  </div><!-- /bloco pagamentos -->
+
+  <!-- ===================== BLOCOS FASE 2/3 ===================== -->
+  <div class="bloco content" id="bloco-despesas">
+    <div class="card card-body" style="text-align:center;padding:60px;color:var(--muted)">
+      <i class="fa-solid fa-hammer" style="font-size:2rem;margin-bottom:12px;display:block;color:var(--border2)"></i>
+      <strong style="display:block;margin-bottom:6px;color:var(--text2)">Bloco Despesas — Fase 2</strong>
+      <span style="font-size:.78rem">Disponível após implementação do orçamento e plano de contas gerencial (Sprint 5)</span>
+    </div>
+  </div>
+  <div class="bloco content" id="bloco-liquidez">
+    <div class="card card-body" style="text-align:center;padding:60px;color:var(--muted)">
+      <i class="fa-solid fa-hammer" style="font-size:2rem;margin-bottom:12px;display:block;color:var(--border2)"></i>
+      <strong style="display:block;margin-bottom:6px;color:var(--text2)">Bloco Liquidez — Fase 2</strong>
+      <span style="font-size:.78rem">Disponível na Sprint 5 com dados de dívida financeira e balanço gerencial</span>
+    </div>
+  </div>
+  <div class="bloco content" id="bloco-projecoes">
+    <div class="card card-body" style="text-align:center;padding:60px;color:var(--muted)">
+      <i class="fa-solid fa-hammer" style="font-size:2rem;margin-bottom:12px;display:block;color:var(--border2)"></i>
+      <strong style="display:block;margin-bottom:6px;color:var(--text2)">Bloco Projeções — Fase 2/3</strong>
+      <span style="font-size:.78rem">Forecast rolling + simulação de cenários + ponto de equilíbrio (Sprint 6)</span>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="toast success" id="toast">
+  <div class="t-ic"><i class="fa-solid fa-circle-check"></i></div>
+  <div><strong id="toastTitle"></strong><span id="toastMsg"></span></div>
+</div>
+
+<script>
+/* ====================================================
+   HELPERS
+==================================================== */
+const fmt = (v, d=0) => v.toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtBRL = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL', minimumFractionDigits:0, maximumFractionDigits:0});
+const fmtK   = v => v >= 1e6 ? 'R$ ' + fmt(v/1e6, 2) + 'M' : v >= 1e3 ? 'R$ ' + fmt(v/1e3, 0) + 'K' : fmtBRL(v);
+
+function showToast(title, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastMsg').textContent   = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ====================================================
+   NAVEGAÇÃO
+==================================================== */
+function switchBloco(btn) {
+  document.querySelectorAll('.bntab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bloco').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const id = 'bloco-' + btn.dataset.bloco;
+  const tab = document.getElementById(id);
+  tab.classList.add('active');
+  setTimeout(()=>{
+    tab.querySelectorAll('canvas').forEach(c=>{
+      const ch=Chart.getChart(c);
+      if(ch) ch.resize();
+    });
+  },20);
+}
+
+function goBloco(nome) {
+  const btn = document.querySelector(`[data-bloco="${nome}"]`);
+  if (btn) switchBloco(btn);
+}
+
+function setPeriod(btn, p) {
+  document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('Período atualizado', 'Filtro: ' + btn.textContent.trim());
+}
+
+/* ====================================================
+   CHART DEFAULTS
+==================================================== */
+Chart.defaults.font.family = "-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#8e8e93';
+const accent  = '#1a4731';
+const accent2 = '#2d6a4f';
+const accent3 = '#40916c';
+const red     = '#ff3b30';
+const amber   = '#ff9f0a';
+const blue    = '#007aff';
+const muted   = '#8e8e93';
+const border  = '#e5e5ea';
+
+const defaultOptions = (extraScales={}) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#fff', titleColor:'#1d1d1f', bodyColor:'#3a3a3c', borderColor: border, borderWidth: 1, padding: 10, cornerRadius: 8, titleFont:{weight:'700'} } },
+  scales: { x: { grid:{color:'transparent'}, ticks:{color:muted, maxTicksLimit:8} }, y: { grid:{color:'#f0f0f0'}, ticks:{color:muted, callback: v => fmtK(v)} }, ...extraScales }
+});
+
+/* ====================================================
+   MOCK DATA
+==================================================== */
+const meses = ['Mai','Jun','Jul','Ago','Set','Out','Nov','Dez','Jan','Fev','Mar','Abr'];
+const fatBruto12 = [2340,2180,2520,2640,2490,2720,2850,2610,2400,2560,2680,2810].map(v=>v*1000);
+const margem12   = [25.1,24.8,26.2,27.0,25.8,26.8,27.4,26.1,24.9,26.4,26.6,27.4];
+const meta12     = [2200,2200,2400,2600,2500,2600,2700,2600,2350,2500,2600,2680].map(v=>v*1000);
+
+/* ====================================================
+   BLOCO: VISÃO GERAL — GRÁFICO FAT + MARGEM 12M
+==================================================== */
+new Chart(document.getElementById('chartFatMargem'), {
+  data: {
+    labels: meses,
+    datasets: [
+      { type:'bar',  label:'Fat. Bruto',   data: fatBruto12, backgroundColor: 'rgba(64,145,108,.18)', borderColor: accent3, borderWidth: 1.5, borderRadius: 4, order: 2 },
+      { type:'line', label:'Meta',         data: meta12,     borderColor: 'rgba(0,122,255,.4)', borderDash:[5,4], borderWidth: 1.5, pointRadius:0, fill:false, order:1, tension:.4 },
+      { type:'line', label:'Margem Bruta %', data: margem12, borderColor: accent, borderWidth: 2.5, pointRadius:3, pointBackgroundColor: accent, fill:false, order:0, tension:.4, yAxisID:'y1' }
+    ]
+  },
+  options: { ...defaultOptions({ y1:{ position:'right', grid:{drawOnChartArea:false}, ticks:{color:accent, callback: v => v+'%'}, min:22, max:32 } }), plugins: { legend: { display: true, position:'top', labels:{ boxWidth:10, font:{size:10}, color:muted } }, tooltip: { backgroundColor: '#fff', titleColor:'#1d1d1f', bodyColor:'#3a3a3c', borderColor: border, borderWidth: 1, padding: 10, cornerRadius: 8 } }, responsive: true, maintainAspectRatio: false }
+});
+
+/* ====================================================
+   ALERTAS
+==================================================== */
+const alertas = [
+  { code:'ALT-003', sev:'crit', titulo:'Margem abaixo do piso — hoje', desc:'Margem bruta de 23,8% hoje — piso: 24%', acao:'Revisar precificação' },
+  { code:'ALT-004', sev:'high', titulo:'Inadimplência 4,2% — próximo ao limite', desc:'Threshold configurado: 5%. PMR crescendo 2m.', acao:'Acionar cobrança' },
+  { code:'ALT-009', sev:'high', titulo:'3 títulos AP vencem em 1–3 dias', desc:'Total: R$ 89K — confirmar disponibilidade', acao:'Ver caixa' },
+  { code:'ALT-011', sev:'med',  titulo:'Ciclo de Caixa +3d vs mês anterior', desc:'PMR subiu de 39d para 42d — investigar', acao:'Ver recebíveis' },
+  { code:'ALT-012', sev:'med',  titulo:'Distribuidora Boa Saúde: limite excedido', desc:'Saldo AR: R$ 84K · Limite: R$ 70K', acao:'Aprovar manual' },
+];
+document.getElementById('alertasPanel').innerHTML = alertas.map(a => `
+  <div class="alert-item ${a.sev}">
+    <div class="alert-dot ${a.sev}"></div>
+    <div class="alert-code">${a.code}</div>
+    <div class="alert-txt"><strong>${a.titulo}</strong><span>${a.desc}</span></div>
+    <div class="alert-action ${a.sev}" onclick="showToast('${a.code}','${a.acao}')">${a.acao} →</div>
+  </div>`).join('');
+
+/* ====================================================
+   WATERFALL VISÃO GERAL
+==================================================== */
+const wfVG = [
+  { lbl:'Receita Bruta',    val: 2810000, tipo:'base', pct:100 },
+  { lbl:'(−) Impostos/Dev', val: -620000, tipo:'neg',  pct:22 },
+  { lbl:'Receita Líquida',  val: 2190000, tipo:'base', pct:77.9 },
+  { lbl:'(−) CMV',          val:-1590000, tipo:'neg',  pct:56.6 },
+  { lbl:'Margem Bruta',     val:  600000, tipo:'pos',  pct:21.4 },
+  { lbl:'(−) Desp. Op.',    val: -316000, tipo:'neg',  pct:11.2 },
+  { lbl:'EBITDA*',          val:  284000, tipo:'pos',  pct:10.1 },
+];
+document.getElementById('waterfallVG').innerHTML = wfVG.map(r => {
+  const w = Math.min(Math.abs(r.pct)*0.9, 90);
+  return `<div class="wf-row">
+    <div class="wf-lbl">${r.lbl}</div>
+    <div class="wf-bar-wrap"><div class="wf-bar ${r.tipo}" style="width:${w}%"></div></div>
+    <div class="wf-val ${r.tipo==='neg'?'neg':r.val>0?'pos':'neu'}">${r.val<0?'('+fmtK(Math.abs(r.val))+')':fmtK(r.val)}</div>
+  </div>`;
+}).join('') + '<div class="wf-sep"></div>';
+
+/* ====================================================
+   CHART COMPARATIVO
+==================================================== */
+new Chart(document.getElementById('chartComparativo'), {
+  type: 'bar',
+  data: {
+    labels: ['Fat. Bruto', 'Rec. Líquida', 'Mg. Bruta', 'EBITDA'],
+    datasets: [
+      { label:'Abr/2026', data:[2810,2190,600,284], backgroundColor: accent3, borderRadius:4 },
+      { label:'Mar/2026', data:[2680,2096,559,266], backgroundColor: 'rgba(64,145,108,.3)', borderRadius:4 },
+      { label:'Abr/2025', data:[2420,1886,510,228], backgroundColor: 'rgba(0,0,0,.07)',     borderRadius:4 },
+    ]
+  },
+  options: { ...defaultOptions(), plugins: { legend: { display:true, position:'top', labels:{boxWidth:10, font:{size:10}, color:muted} }, tooltip: { backgroundColor:'#fff', titleColor:'#1d1d1f', bodyColor:'#3a3a3c', borderColor:border, borderWidth:1, padding:10, cornerRadius:8 } }, responsive:true, maintainAspectRatio:false, scales: { x:{grid:{color:'transparent'},ticks:{color:muted}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>v+'K'}} } }
+});
+
+/* ====================================================
+   BLOCO RECEITAS — FAT DIÁRIO
+==================================================== */
+const dias = Array.from({length:17}, (_,i) => i+1);
+const fatDiario = [88,95,71,102,118,84,96,108,90,115,98,105,112,88,99,107,94].map(v=>v*1000);
+const metaDiaria = Array(17).fill(2680000/30);
+new Chart(document.getElementById('chartFatDiario'), {
+  data: {
+    labels: dias.map(d=>`${d}/04`),
+    datasets: [
+      { type:'bar',  label:'Faturado', data:fatDiario, backgroundColor:'rgba(64,145,108,.18)', borderColor:accent3, borderWidth:1.5, borderRadius:3 },
+      { type:'line', label:'Meta diária', data:metaDiaria, borderColor:'rgba(0,122,255,.5)', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false, tension:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},color:muted}}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted,maxTicksLimit:8}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}} } }
+});
+
+/* CANAL DONUT */
+new Chart(document.getElementById('chartCanal'), {
+  type:'doughnut',
+  data: {
+    labels:['Varejo','Atacado','E-commerce','Televendas'],
+    datasets:[{ data:[38,32,18,12], backgroundColor:[accent,accent2,accent3,'rgba(64,145,108,.35)'], borderWidth:0, hoverOffset:6 }]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:9,font:{size:10},color:muted,padding:10}}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}%`}} } }
+});
+
+/* TOP CLIENTES RECEITAS */
+const clientesRec = [
+  {n:'Distribuidora Boa Saúde',   v:142000, pct:5.1},
+  {n:'Mercado Verde Ltda',        v:128000, pct:4.6},
+  {n:'Bio Empório SA',            v:115000, pct:4.1},
+  {n:'Orgânico Total Eireli',     v:98000,  pct:3.5},
+  {n:'Vida Natural Com.',         v:89000,  pct:3.2},
+  {n:'Empório do Campo',          v:82000,  pct:2.9},
+  {n:'NutriVerde Alimentos',      v:74000,  pct:2.6},
+  {n:'Super Orgânico MG',         v:68000,  pct:2.4},
+  {n:'Colheita Saudável',         v:61000,  pct:2.2},
+  {n:'Terra Viva Distrib.',       v:57000,  pct:2.0},
+];
+document.getElementById('topClientesRec').innerHTML = clientesRec.map((c,i)=>`
+  <div class="prog-row">
+    <div class="prog-lbl" style="width:160px"><span style="color:var(--muted2);font-size:.68rem;margin-right:6px">${String(i+1).padStart(2,'0')}</span>${c.n}</div>
+    <div class="prog-track"><div class="prog-fill" style="width:${c.pct*10}%"></div></div>
+    <div class="prog-val">${fmtK(c.v)}</div>
+  </div>`).join('');
+
+/* FAT POR REGIÃO */
+const regioes = [
+  {r:'São Paulo',   v:1140000, pct:40.6},
+  {r:'Rio de Janeiro',v:580000, pct:20.6},
+  {r:'Minas Gerais',v:420000,  pct:14.9},
+  {r:'Paraná',      v:280000,  pct:10.0},
+  {r:'Santa Catarina',v:210000,pct:7.5},
+  {r:'Outros',      v:180000,  pct:6.4},
+];
+document.getElementById('fatRegiao').innerHTML = regioes.map(r=>`
+  <div class="prog-row">
+    <div class="prog-lbl" style="width:130px">${r.r}</div>
+    <div class="prog-track"><div class="prog-fill" style="width:${r.pct*1.8}%"></div></div>
+    <div class="prog-val">${fmtK(r.v)}</div>
+    <div style="font-size:.68rem;color:var(--muted);width:36px;text-align:right">${r.pct}%</div>
+  </div>`).join('');
+
+/* ====================================================
+   BLOCO RENTABILIDADE
+==================================================== */
+new Chart(document.getElementById('chartMargemEvolucao'), {
+  type:'line',
+  data: {
+    labels: meses,
+    datasets: [
+      { label:'Margem Bruta %', data: margem12, borderColor:accent, borderWidth:2.5, pointRadius:3, pointBackgroundColor:accent, fill:true, backgroundColor:'rgba(26,71,49,.06)', tension:.4 },
+      { label:'Piso (24%)',     data: Array(12).fill(24), borderColor:red, borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false, tension:0 }
+    ]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},color:muted}}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted}}, y:{grid:{color:'#f0f0f0'},min:22,max:30,ticks:{color:muted,callback:v=>v+'%'}} } }
+});
+
+new Chart(document.getElementById('chartMargemCanal'), {
+  type:'bar',
+  data: {
+    labels:['Varejo','Atacado','E-commerce','Televendas'],
+    datasets:[
+      { label:'Margem %',    data:[28.4,24.8,31.2,26.1], backgroundColor:[accent,accent2,accent3,'rgba(64,145,108,.4)'], borderRadius:5 }
+    ]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`Margem: ${ctx.parsed.y}%`}} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted}}, y:{grid:{color:'#f0f0f0'},min:20,max:35,ticks:{color:muted,callback:v=>v+'%'}} } }
+});
+
+const wfCMV = [
+  {lbl:'CMV Mercadorias',    val:1420000, tipo:'base'},
+  {lbl:'Frete entrada',      val:  98000, tipo:'neg'},
+  {lbl:'Perdas / avarias',   val:  44000, tipo:'neg'},
+  {lbl:'Ajustes inventário', val:  28000, tipo:'neg'},
+  {lbl:'CMV Total',          val:1590000, tipo:'pos'},
+];
+document.getElementById('waterfallCMV').innerHTML = wfCMV.map(r=>{
+  const w = Math.min(r.val/1590000*85, 88);
+  return `<div class="wf-row">
+    <div class="wf-lbl">${r.lbl}</div>
+    <div class="wf-bar-wrap"><div class="wf-bar ${r.tipo}" style="width:${w}%"></div></div>
+    <div class="wf-val ${r.tipo==='neg'?'neg':'neu'}">${fmtK(r.val)}</div>
+  </div>`;
+}).join('');
+
+const skus = [
+  {s:'NGT-042', n:'Pasta de Amendoim 500g', mg:18.2, v:28000},
+  {s:'NGT-018', n:'Granola Premium 1kg',    mg:19.8, v:22000},
+  {s:'NGT-071', n:'Proteína Vegana 2kg',    mg:20.1, v:19500},
+  {s:'NGT-034', n:'Azeite Trufado 250ml',   mg:21.4, v:17800},
+  {s:'NGT-055', n:'Chá Detox Kit',          mg:22.0, v:14200},
+];
+document.getElementById('skusPiso').innerHTML = `<table><thead><tr><th style="padding-left:14px">SKU</th><th>Produto</th><th>Mg. %</th><th>Fat.</th></tr></thead><tbody>${
+  skus.map(r=>`<tr>
+    <td style="padding-left:14px"><span class="td-mono">${r.s}</span></td>
+    <td class="td-strong">${r.n}</td>
+    <td><span class="pill red">${r.mg}%</span></td>
+    <td class="td-num">${fmtK(r.v)}</td>
+  </tr>`).join('')
+}</tbody></table>`;
+
+/* ====================================================
+   BLOCO CAIXA — PROJEÇÃO 90D
+==================================================== */
+const d90 = Array.from({length:90},(_,i)=>i+1);
+const saldo90 = d90.map(d => {
+  const base = 342000;
+  const trend = -1200 * d + Math.sin(d/7)*15000 + Math.sin(d/14)*8000;
+  return Math.max(base + trend, 50000);
+});
+new Chart(document.getElementById('chartProjecaoCaixa'), {
+  type:'line',
+  data: {
+    labels: d90.filter(d=>d%5===0||d===1).map(d=>`D+${d}`),
+    datasets: [
+      { label:'Saldo previsto', data: d90.filter(d=>d%5===0||d===1).map(d=>saldo90[d-1]), borderColor:accent, borderWidth:2, pointRadius:0, fill:true, backgroundColor:'rgba(26,71,49,.07)', tension:.5 },
+      { label:'D+30', data: d90.filter(d=>d%5===0||d===1).map(()=>218000), borderColor:'rgba(0,122,255,.4)', borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false, tension:0 },
+      { label:'Mínimo segurança', data: d90.filter(d=>d%5===0||d===1).map(()=>80000), borderColor:'rgba(255,59,48,.4)', borderDash:[3,3], borderWidth:1, pointRadius:0, fill:false, tension:0 }
+    ]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},color:muted}}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted,maxTicksLimit:10}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}} } }
+});
+
+document.getElementById('vencCriticos').innerHTML = [
+  {dt:'17/04', desc:'Fornec. BioFresh — NF 0841',  val:28400, tipo:'crit'},
+  {dt:'17/04', desc:'Fornec. VeganProt — NF 0310', val: 5600, tipo:'crit'},
+  {dt:'19/04', desc:'Aluguel SP — Parcela 4/12',    val:18000, tipo:'high'},
+  {dt:'20/04', desc:'Fornec. NaturalBio — NF 0555', val:37200, tipo:'high'},
+  {dt:'22/04', desc:'Folha pagamento (parcial)',     val:95000, tipo:'med'},
+].map(v=>`<div class="proj-row">
+  <div class="proj-dt">${v.dt}</div>
+  <div class="proj-desc">${v.desc}</div>
+  <div class="proj-val neg">(${fmtK(v.val)})</div>
+  <span class="pill ${v.tipo==='crit'?'red':v.tipo==='high'?'amber':'gray'}" style="flex-shrink:0">${v.tipo==='crit'?'Hoje':'Breve'}</span>
+</div>`).join('');
+
+/* ====================================================
+   BLOCO RECEBÍVEIS — AGING AR
+==================================================== */
+const agingData = [
+  {bucket:'A vencer',   val:1160000, pct:62.4, cls:'ok'},
+  {bucket:'1–15 dias',  val: 180000, pct: 9.7, cls:'ok'},
+  {bucket:'16–30 dias', val: 100000, pct: 5.4, cls:'mild'},
+  {bucket:'31–60 dias', val:  48000, pct: 2.6, cls:'warn'},
+  {bucket:'61–90 dias', val:  22000, pct: 1.2, cls:'crit'},
+  {bucket:'90+ dias',   val:   8000, pct:  .4, cls:'crit'},
+];
+document.getElementById('agingAR').innerHTML = agingData.map(a=>`
+  <div class="bucket-row">
+    <div class="bucket-lbl">${a.bucket}</div>
+    <div class="bucket-bar"><div class="bucket-fill ${a.cls}" style="width:${a.pct*1.4}%">${a.pct>8?a.pct+'%':''}</div></div>
+    <div class="bucket-val">${fmtK(a.val)}</div>
+    <div class="bucket-pct">${a.pct}%</div>
+  </div>`).join('');
+
+new Chart(document.getElementById('chartAgingAR'), {
+  type:'bar',
+  data: {
+    labels: agingData.map(a=>a.bucket),
+    datasets:[{ data: agingData.map(a=>a.val), backgroundColor: agingData.map(a=>a.cls==='ok'?accent3:a.cls==='mild'?amber:red), borderRadius:4, borderSkipped:false }]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`${fmtK(ctx.parsed.y)}`}} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted,font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}} } }
+});
+
+const devedores = [
+  {n:'Empório Integral Ltda',   v:18400, dias:48},
+  {n:'Saúde Total Com.',        v:14200, dias:62},
+  {n:'Bio Gourmet Eireli',      v:11800, dias:35},
+  {n:'Verde Vida Distrib.',     v: 9600, dias:91},
+  {n:'Nutrição Pura SA',        v: 8200, dias:27},
+  {n:'Colheita Orgânica ME',    v: 6400, dias:73},
+  {n:'Bem Estar Alimentos',     v: 5100, dias:18},
+  {n:'Terra Fértil Com.',       v: 4800, dias:44},
+];
+document.getElementById('topDevedores').innerHTML = `<table><thead><tr><th style="padding-left:14px">Cliente</th><th>Valor Vencido</th><th>Dias</th><th>Status</th></tr></thead><tbody>${
+  devedores.map(d=>`<tr>
+    <td style="padding-left:14px" class="td-strong">${d.n}</td>
+    <td class="td-num" style="color:var(--red);font-weight:600">${fmtK(d.v)}</td>
+    <td class="td-num">${d.dias}d</td>
+    <td><span class="pill ${d.dias>60?'red':d.dias>30?'amber':'gray'}">${d.dias>90?'Crítico':d.dias>60?'Vencido':d.dias>30?'Atenção':'Recente'}</span></td>
+  </tr>`).join('')
+}</tbody></table>`;
+
+/* HEATMAP VENCIMENTOS */
+(function() {
+  const hoje = new Date(2026, 3, 17); // 17/04/2026
+  const cells = [];
+  // Preencher dias anteriores do início da semana
+  const dow = hoje.getDay(); // 0=dom
+  for(let i=0;i<dow;i++) cells.push({empty:true});
+  for(let d=0;d<35;d++) {
+    const dt = new Date(hoje); dt.setDate(hoje.getDate()+d);
+    const rand = Math.random();
+    const val  = d<3 ? 0 : d<7 ? Math.round((80+rand*120)*1000) : Math.round((rand*180)*1000);
+    const cls  = d<0 ? 'warn' : val===0 ? 'l0' : val<50000 ? 'l1' : val<100000 ? 'l2' : val<150000 ? 'l3' : 'l4';
+    cells.push({day:dt.getDate(), val, cls, today:d===0});
+  }
+  const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  document.getElementById('heatmapVenc').innerHTML =
+    `<div class="heatmap-grid">${days.map(d=>`<div class="hm-day-hdr">${d}</div>`).join('')}${
+      cells.map(c=>c.empty?`<div class="hm-cell empty"></div>`:`<div class="hm-cell ${c.cls}${c.today?' today':''}" title="${c.day}/04 — ${fmtK(c.val)}">${c.day}</div>`).join('')
+    }</div>`;
+})();
+
+new Chart(document.getElementById('chartCurvaRec'), {
+  type:'line',
+  data:{
+    labels:Array.from({length:30},(_,i)=>`${i+1}/03`),
+    datasets:[
+      {label:'Realizado', data:[38,52,44,68,82,58,72,90,64,78,88,72,94,108,84,96,112,88,100,118,94,106,122,98,110,128,104,116,132,108].map(v=>v*1000), borderColor:accent, borderWidth:2, pointRadius:0, fill:false, tension:.4},
+      {label:'Previsto',  data:[42,55,48,70,80,60,75,88,68,80,90,70,95,105,86,94,110,90,98,115,92,108,120,100,112,125,106,118,130,110].map(v=>v*1000), borderColor:'rgba(0,122,255,.5)', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false, tension:.4}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},color:muted}},tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8}},scales:{x:{grid:{color:'transparent'},ticks:{color:muted,maxTicksLimit:7}},y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}}}}
+});
+
+/* ====================================================
+   BLOCO PAGAMENTOS
+==================================================== */
+const diasPag = Array.from({length:30},(_,i)=>i+17);
+const pagDiario = diasPag.map(()=>Math.round((20+Math.random()*80)*1000));
+pagDiario[0] = 34000; pagDiario[1] = 18000; pagDiario[2] = 54000;
+new Chart(document.getElementById('chartCalPag'), {
+  type:'bar',
+  data:{
+    labels:diasPag.map(d=>`${d}/04`),
+    datasets:[{label:'Pagamentos previstos', data:pagDiario, backgroundColor: diasPag.map((_,i)=>i<3?'rgba(255,59,48,.5)':i<7?'rgba(255,159,10,.4)':'rgba(64,145,108,.25)'), borderRadius:3}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`Saída: ${fmtK(ctx.parsed.y)}`}}},scales:{x:{grid:{color:'transparent'},ticks:{color:muted,maxTicksLimit:8}},y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}}}}
+});
+
+const fornecedores = [
+  {n:'BioFresh Alimentos SA',     v:142000, prazo:'30d', cat:'Fornecedor'},
+  {n:'VeganProt Distrib.',        v:118000, prazo:'28d', cat:'Fornecedor'},
+  {n:'NaturalBio Insumos',        v: 96000, prazo:'35d', cat:'Fornecedor'},
+  {n:'EcoGreen Embalagens',       v: 74000, prazo:'21d', cat:'Fornecedor'},
+  {n:'LogiBio Transportes',       v: 68000, prazo:'15d', cat:'Serviço'},
+  {n:'Imóveis SP Gestão',         v: 54000, prazo:'Fixo', cat:'Aluguel'},
+  {n:'TechFarm Sistemas',         v: 38000, prazo:'Fixo', cat:'TI/SaaS'},
+  {n:'Energia SP Ltda',           v: 24000, prazo:'Mês',  cat:'Concessionária'},
+];
+document.getElementById('topFornecedores').innerHTML = fornecedores.map(f=>`
+  <div class="prog-row">
+    <div class="prog-lbl" style="width:160px">${f.n}</div>
+    <div class="prog-track"><div class="prog-fill" style="width:${f.v/1420}%"></div></div>
+    <div class="prog-val">${fmtK(f.v)}</div>
+  </div>`).join('');
+
+const agingAP = [
+  {bucket:'A vencer',   val:890000, pct:79.5, cls:'ok'},
+  {bucket:'1–15 dias',  val: 98000, pct: 8.7, cls:'mild'},
+  {bucket:'16–30 dias', val: 72000, pct: 6.4, cls:'warn'},
+  {bucket:'31–60 dias', val: 42000, pct: 3.7, cls:'crit'},
+  {bucket:'60+ dias',   val: 18000, pct: 1.6, cls:'crit'},
+];
+document.getElementById('agingAP').innerHTML = agingAP.map(a=>`
+  <div class="bucket-row">
+    <div class="bucket-lbl">${a.bucket}</div>
+    <div class="bucket-bar"><div class="bucket-fill ${a.cls}" style="width:${a.pct*1.1}%">${a.pct>8?a.pct+'%':''}</div></div>
+    <div class="bucket-val">${fmtK(a.val)}</div>
+    <div class="bucket-pct">${a.pct}%</div>
+  </div>`).join('');
+
+document.getElementById('vencCriticosAP').innerHTML = [
+  {dt:'17/04', f:'BioFresh — NF 0841',   v:28400, s:'Hoje', c:'red'},
+  {dt:'17/04', f:'VeganProt — NF 0310',  v: 5600, s:'Hoje', c:'red'},
+  {dt:'19/04', f:'Aluguel SP',           v:18000, s:'D+2',  c:'amber'},
+  {dt:'20/04', f:'NaturalBio — NF 0555', v:37200, s:'D+3',  c:'amber'},
+].map(v=>`<div class="proj-row">
+  <div class="proj-dt">${v.dt}</div>
+  <div class="proj-desc">${v.f}</div>
+  <div class="proj-val neg">(${fmtK(v.v)})</div>
+  <span class="pill ${v.c}" style="flex-shrink:0">${v.s}</span>
+</div>`).join('');
+
+/* ====================================================
+   EXPORT BUTTON
+==================================================== */
+document.querySelector('.top-btn:not(.accent)').addEventListener('click', ()=>{
+  showToast('Exportação iniciada','CSV gerado e registrado no AUDIT_LOG');
+});
+
+</script>
+</body>
+</html>
