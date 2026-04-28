@@ -309,6 +309,7 @@
     .t-close { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: .88rem; padding: 0 2px; transition: color .1s; }
     .t-close:hover { color: var(--text); }
   </style>
+  <script src="js/api.js"></script>
 </head>
 <body>
 
@@ -1600,6 +1601,12 @@ document.getElementById('mExport').addEventListener('click', () => {
 /* ===================== GRÁFICO / MAPA ===================== */
 document.getElementById('btnGraf').addEventListener('click', () => document.getElementById('grafSel').classList.toggle('on'));
 document.getElementById('btnMapa').addEventListener('click', () => toast('info','Visualização em mapa em desenvolvimento'));
+
+/* ─── API STATUS ─── */
+(async function() {
+  await DashboardAPI.health();
+  DashboardAPI.afterLoad();
+})();
 </script>
 </body>
 </html>

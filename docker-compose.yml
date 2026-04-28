@@ -1,0 +1,65 @@
+# docker-compose.yml — DESENVOLVIMENTO LOCAL
+# Usa tsx diretamente (sem build) e monta src/ para hot-reload.
+# Para simular produção, use: docker compose -f docker-compose.prod.yml up --build
+
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      target: deps          # Stage com devDeps: tsx disponível
+    container_name: dashboardnatgeo_api_dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app/src       # Hot-reload: alterações em src/ refletem imediatamente
+      - ./workers:/app/workers
+      - ./logs:/app/logs
+    command: ["npx", "tsx", "watch", "src/api/server.ts"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - dashboard_net
+
+  sync-worker:
+    build:
+      context: .
+      target: deps
+    container_name: dashboardnatgeo_sync_dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app/src
+      - ./workers:/app/workers
+      - ./logs:/app/logs
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          npx tsx workers/oracle-sync/index.ts all
+          echo "Sync concluído. Aguardando $${SYNC_INTERVAL_SECONDS:-1800}s..."
+          sleep $${SYNC_INTERVAL_SECONDS:-1800}
+        done
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - dashboard_net
+
+networks:
+  dashboard_net:
+    driver: bridge

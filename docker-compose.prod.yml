@@ -1,0 +1,66 @@
+# docker-compose.prod.yml — PRODUÇÃO / SIMULAÇÃO LOCAL DE PRODUÇÃO
+# Usa imagem compilada (stage production do Dockerfile).
+# Rodar com: docker compose -f docker-compose.prod.yml up --build
+# No Coolify: aponte para este arquivo.
+
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      target: production
+    container_name: dashboardnatgeo_api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - logs_data:/app/logs   # Volume persistente para logs
+    command: ["node", "dist/src/api/server.js"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - dashboard_net
+
+  sync-worker:
+    build:
+      context: .
+      target: production
+    container_name: dashboardnatgeo_sync
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - logs_data:/app/logs
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          node dist/workers/oracle-sync/index.js all
+          echo "Sync concluído. Aguardando $${SYNC_INTERVAL_SECONDS:-1800}s..."
+          sleep $${SYNC_INTERVAL_SECONDS:-1800}
+        done
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - dashboard_net
+
+networks:
+  dashboard_net:
+    driver: bridge
+
+volumes:
+  logs_data:
+    driver: local

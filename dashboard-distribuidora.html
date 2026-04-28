@@ -449,6 +449,7 @@
       .sidebar-footer { justify-content: center; }
     }
   </style>
+  <script src="js/api.js"></script>
 </head>
 <body>
 
@@ -566,9 +567,9 @@
           <span class="kpi-label">Faturamento</span>
           <div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div>
         </div>
-        <div class="kpi-value">R$ 987K</div>
+        <div class="kpi-value" id="kpiFaturamento">—</div>
         <div class="kpi-footer">
-          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> 14,2%</span>
+          <span class="delta up" id="kpiFaturamentoDelta"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> —</span>
           <span>vs. mes anterior</span>
         </div>
       </div>
@@ -577,9 +578,9 @@
           <span class="kpi-label">Pedidos</span>
           <div class="kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
         </div>
-        <div class="kpi-value">2.618</div>
+        <div class="kpi-value" id="kpiPedidos">—</div>
         <div class="kpi-footer">
-          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> 9,3%</span>
+          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> <span id="kpiPedidosDelta">—</span></span>
           <span>vs. mes anterior</span>
         </div>
       </div>
@@ -588,9 +589,9 @@
           <span class="kpi-label">Ticket Medio</span>
           <div class="kpi-icon"><i class="fa-solid fa-tags"></i></div>
         </div>
-        <div class="kpi-value">R$ 377</div>
+        <div class="kpi-value" id="kpiTicket">—</div>
         <div class="kpi-footer">
-          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> 4,5%</span>
+          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> <span id="kpiTicketDelta">—</span></span>
           <span>vs. mes anterior</span>
         </div>
       </div>
@@ -599,9 +600,9 @@
           <span class="kpi-label">Clientes Ativos</span>
           <div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div>
         </div>
-        <div class="kpi-value">412</div>
+        <div class="kpi-value" id="kpiClientes">—</div>
         <div class="kpi-footer">
-          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> +31</span>
+          <span class="delta up"><i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> <span id="kpiClientesDelta">—</span></span>
           <span>novos este mes</span>
         </div>
       </div>
@@ -685,33 +686,33 @@
     <div class="kpi-strip">
       <div class="strip-card">
         <div class="sc-label">Total SKUs</div>
-        <div class="sc-val">284</div>
+        <div class="sc-val" id="stripSkus">—</div>
         <div class="sc-sub">produtos ativos</div>
       </div>
       <div class="strip-card">
         <div class="sc-label">Valor em Estoque</div>
-        <div class="sc-val" style="color:var(--accent)">R$ 312K</div>
+        <div class="sc-val" style="color:var(--accent)" id="stripValor">—</div>
         <div class="sc-sub">custo total</div>
       </div>
       <div class="strip-card">
         <div class="sc-label">Criticos</div>
-        <div class="sc-val" style="color:var(--red)">6</div>
+        <div class="sc-val" style="color:var(--red)" id="stripCriticos">—</div>
         <div class="sc-sub">abaixo do minimo</div>
       </div>
       <div class="strip-card">
         <div class="sc-label">A Vencer (30d)</div>
-        <div class="sc-val" style="color:var(--amber)">14</div>
+        <div class="sc-val" style="color:var(--amber)" id="stripVencer">—</div>
         <div class="sc-sub">lotes proximos</div>
       </div>
       <div class="strip-card">
         <div class="sc-label">Giro Medio</div>
-        <div class="sc-val">18,4d</div>
+        <div class="sc-val" id="stripGiro">—</div>
         <div class="sc-sub">cobertura</div>
       </div>
       <div class="strip-card">
-        <div class="sc-label">Reposicao</div>
-        <div class="sc-val" style="color:var(--accent2)">8</div>
-        <div class="sc-sub">pedidos ativos</div>
+        <div class="sc-label">Ruptura</div>
+        <div class="sc-val" style="color:var(--accent2)" id="stripRuptura">—</div>
+        <div class="sc-sub">SKUs sem estoque</div>
       </div>
     </div>
 
@@ -1041,38 +1042,31 @@ function showToast(type, title, msg) {
 Chart.defaults.font.family = "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif";
 Chart.defaults.font.size = 11;
 
-/* === LINE CHART === */
-const ll = Array.from({length:31},(_,i)=>i+1);
-new Chart(document.getElementById('lineChart'), {
+/* === LINE CHART (inicializado vazio, preenchido pela API) === */
+const lineChartInst = new Chart(document.getElementById('lineChart'), {
   type:'line',
-  data:{ labels:ll, datasets:[
-    { label:'2026', data:[22,28,20,34,32,44,38,52,48,60,56,70,62,76,68,82,74,88,80,94,86,100,92,108,98,114,106,122,112,128,118],
-      borderColor:C.accent, backgroundColor:'rgba(26,71,49,.06)', borderWidth:1.8, pointRadius:0, fill:true, tension:.4 },
-    { label:'2025', data:[16,22,14,26,24,36,30,44,38,50,44,56,50,62,54,66,60,70,64,76,68,84,76,90,82,96,88,102,94,108,98],
-      borderColor:C.border2, backgroundColor:'transparent', borderWidth:1.5, pointRadius:0, fill:false, tension:.4, borderDash:[3,3] }
+  data:{ labels:[], datasets:[
+    { label:'Faturamento diário', data:[],
+      borderColor:C.accent, backgroundColor:'rgba(26,71,49,.06)', borderWidth:1.8, pointRadius:2, fill:true, tension:.4 },
   ]},
   options:{ responsive:true, maintainAspectRatio:false,
     interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` R$ ${c.parsed.y}K`}}},
+    plugins:{legend:{display:false}, tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` ${DashboardAPI.fmtBRL(c.parsed.y)}`}}},
     scales:{
       x:{grid:{color:'rgba(0,0,0,.04)',drawTicks:false}, ticks:{color:C.muted2,maxTicksLimit:10}},
-      y:{grid:{color:'rgba(0,0,0,.04)',drawTicks:false}, ticks:{color:C.muted2,callback:v=>'R$'+v+'K'}}
+      y:{grid:{color:'rgba(0,0,0,.04)',drawTicks:false}, ticks:{color:C.muted2,callback:v=>DashboardAPI.fmtBRL(v)}}
     }
   }
 });
 
 /* === DONUT === */
-new Chart(document.getElementById('donutChart'), {
+const donutChartInst = new Chart(document.getElementById('donutChart'), {
   type:'doughnut',
-  data:{ labels:['Frutas/Leg.','Proteinas','Graos','Laticinios','Bebidas','Suplem.'],
-    datasets:[{ data:[28,20,18,15,12,7],
-      backgroundColor:['#1a4731','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'],
-      borderWidth:0, hoverOffset:4 }]
-  },
+  data:{ labels:[], datasets:[{ data:[], backgroundColor:['#1a4731','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'], borderWidth:0, hoverOffset:4 }] },
   options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
     plugins:{
       legend:{position:'right', labels:{color:C.text2, boxWidth:9, padding:12, font:{size:11}}},
-      tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` ${c.parsed}%`}}
+      tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` R$ ${DashboardAPI.fmtBRL(c.parsed)}`}}
     }
   }
 });
@@ -1097,18 +1091,17 @@ new Chart(document.getElementById('barVendedor'), {
 });
 
 /* === BAR ESTOQUE CATEG === */
-new Chart(document.getElementById('barEstoqueCateg'), {
+const barEstoqueInst = new Chart(document.getElementById('barEstoqueCateg'), {
   type:'bar',
-  data:{ labels:['Frutas','Proteinas','Graos','Laticinios','Bebidas','Suplem.','Oleos','Condim.'],
-    datasets:[{ label:'R$K', data:[64,52,44,38,36,32,24,22],
-      backgroundColor:['#1a4731','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#d8f3dc'],
-      borderRadius:5, borderSkipped:false }]
+  data:{ labels:[], datasets:[{ label:'Valor R$', data:[],
+    backgroundColor:['#1a4731','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#d8f3dc'],
+    borderRadius:5, borderSkipped:false }]
   },
   options:{ responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` R$ ${c.parsed.y}K`}}},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:C.border,borderWidth:1,titleColor:C.text,bodyColor:C.muted,callbacks:{label:c=>` ${DashboardAPI.fmtBRL(c.parsed.y)}`}}},
     scales:{
       x:{grid:{display:false},ticks:{color:C.muted2}},
-      y:{grid:{color:'rgba(0,0,0,.04)',drawTicks:false},ticks:{color:C.muted2,callback:v=>'R$'+v+'K'}}
+      y:{grid:{color:'rgba(0,0,0,.04)',drawTicks:false},ticks:{color:C.muted2,callback:v=>DashboardAPI.fmtBRL(v)}}
     }
   }
 });
@@ -1132,180 +1125,210 @@ new Chart(document.getElementById('lineMovimentacao'), {
   }
 });
 
-/* === TOP PRODUTOS === */
-document.getElementById('topProdutos').innerHTML = [
-  {n:'Tofu Organico 400g',   v:3840,m:4000,c:C.accent},
-  {n:'Leite de Coco 200ml',  v:3210,m:4000,c:C.accent2},
-  {n:'Quinoa 500g',          v:2880,m:4000,c:C.accent3},
-  {n:'Acai Congelado 400g',  v:2640,m:4000,c:'#52b788'},
-  {n:'Granola Artesanal 1kg',v:2300,m:4000,c:'#74c69d'},
-  {n:'Whey Vegano 900g',     v:1980,m:4000,c:'#95d5b2'},
-].map(p=>`<div class="prog-row">
-  <span class="prog-label">${p.n}</span>
-  <div class="prog-track"><div class="prog-fill" style="width:${Math.round(p.v/p.m*100)}%;background:${p.c}"></div></div>
-  <span class="prog-val">${(p.v/1000).toFixed(1)}K</span>
-</div>`).join('');
+/* === TOP PRODUTOS (preenchido via API) === */
 
-/* === TOP CLIENTES === */
-document.getElementById('topClientes').innerHTML = [
-  {n:'Natural Life Emp.',   s:'Varejo Saudavel',v:'R$ 72.400',a:'NL'},
-  {n:'Bio Mercado Premium', s:'Organico',        v:'R$ 58.600',a:'BM'},
-  {n:'Vida Verde Loja',     s:'Varejo',          v:'R$ 44.200',a:'VV'},
-  {n:'Rest. Grao de Luz',   s:'Food Service',    v:'R$ 36.800',a:'GL'},
-  {n:'Fitshop Suplem.',     s:'Suplementos',     v:'R$ 31.400',a:'FS'},
-].map((c,i)=>`<div class="list-item">
-  <span class="rank-num">${i+1}</span>
-  <div class="cli-av">${c.a}</div>
-  <div class="li-info"><strong>${c.n}</strong><span>${c.s}</span></div>
-  <div class="li-right"><div class="li-val">${c.v}</div></div>
-</div>`).join('');
+/* === TOP CLIENTES (preenchido via API) === */
 
-/* === ALERTAS ESTOQUE === */
-document.getElementById('alertasEstoque').innerHTML = [
-  {t:'red',  ic:'fa-circle-exclamation', n:'Tofu Organico 400g',    i:'18 un — Min: 100',  lb:'CRITICO'},
-  {t:'red',  ic:'fa-circle-exclamation', n:'Acai Congelado 400g',   i:'24 un — Min: 80',   lb:'CRITICO'},
-  {t:'amber',ic:'fa-triangle-exclamation',n:'Quinoa 500g',           i:'76 un — Min: 120',  lb:'BAIXO'},
-  {t:'amber',ic:'fa-triangle-exclamation',n:'Granola Artesanal 1kg', i:'88 un — Min: 150',  lb:'BAIXO'},
-  {t:'green',ic:'fa-circle-check',        n:'Leite de Coco 200ml',  i:'Reposicao: 400 un',  lb:'OK'},
-].map(a=>`<div class="list-item">
-  <div class="li-icon ${a.t}"><i class="fa-solid ${a.ic}"></i></div>
-  <div class="li-info"><strong>${a.n}</strong><span>${a.i}</span></div>
-  <div class="li-right"><span class="pill ${a.t}">${a.lb}</span></div>
-</div>`).join('');
+/* === ALERTAS ESTOQUE (preenchido via API) === */
 
-/* === PEDIDOS TABLE === */
-document.getElementById('ordersBody').innerHTML = [
-  {id:'#26-4421',c:'Natural Life Emp.',v:'Ana Lima',   cat:'Proteinas',  it:14,val:'R$ 9.840',pg:'Boleto 28d',st:'Em Transito',sc:'blue', dt:'31/03'},
-  {id:'#26-4420',c:'Bio Mercado Prem.',v:'Carlos Melo',cat:'Frutas',     it:8, val:'R$ 4.210',pg:'PIX',       st:'Entregue',   sc:'green',dt:'31/03'},
-  {id:'#26-4419',c:'Vida Verde Loja',  v:'Fernanda S.',cat:'Graos',      it:11,val:'R$ 5.630',pg:'Boleto 21d',st:'Separacao',  sc:'gray', dt:'30/03'},
-  {id:'#26-4418',c:'Rest. Grao de Luz',v:'Rodrigo P.', cat:'Condimentos',it:22,val:'R$21.440',pg:'Prazo 45d', st:'Em Transito',sc:'blue', dt:'30/03'},
-  {id:'#26-4417',c:'Fitshop Suplem.',  v:'Bruna T.',   cat:'Suplementos',it:6, val:'R$ 3.820',pg:'PIX',       st:'Entregue',   sc:'green',dt:'29/03'},
-  {id:'#26-4416',c:'Mercado Organico', v:'Eduardo N.', cat:'Laticinios', it:9, val:'R$ 2.990',pg:'Boleto 28d',st:'Separacao',  sc:'gray', dt:'29/03'},
-  {id:'#26-4415',c:'Lanchonete Verde', v:'Ana Lima',   cat:'Bebidas',    it:4, val:'R$ 1.420',pg:'PIX',       st:'Pendente',   sc:'amber',dt:'28/03'},
-  {id:'#26-4414',c:'Emporio Natural',  v:'Carlos Melo',cat:'Frutas',     it:18,val:'R$12.800',pg:'Prazo 30d', st:'Entregue',   sc:'green',dt:'28/03'},
-].map(p=>`<tr>
-  <td style="padding-left:22px"><span class="td-code">${p.id}</span></td>
-  <td class="td-strong">${p.c}</td>
-  <td style="color:var(--text2)">${p.v}</td>
-  <td><span class="pill green" style="font-size:.65rem">${p.cat}</span></td>
-  <td style="text-align:center;color:var(--muted)">${p.it}</td>
-  <td class="td-strong">${p.val}</td>
-  <td style="color:var(--muted)">${p.pg}</td>
-  <td><span class="pill ${p.sc}">${p.st}</span></td>
-  <td style="color:var(--muted);padding-right:22px">${p.dt}</td>
-</tr>`).join('');
+/* === PEDIDOS TABLE (preenchido via API) === */
 
-/* === TABELA ESTOQUE === */
-const estoqueData = [
-  {s:'NGT-001',n:'Tofu Organico 400g',       cat:'Proteinas Vegetais', orig:'Organico Certificado', lote:'LOT-2260301',q:18, min:100,u:'un',c:12.40,v:'12/06/2026',loc:'A1-P3',st:'critic'},
-  {s:'NGT-002',n:'Acai Congelado 400g',      cat:'Frutas e Legumes',   orig:'Agroecologico',        lote:'LOT-2260302',q:24, min:80, u:'un',c:18.90,v:'20/04/2026',loc:'B2-F1',st:'critic'},
-  {s:'NGT-003',n:'Quinoa 500g',              cat:'Graos e Cereais',    orig:'Organico Certificado', lote:'LOT-2260303',q:76, min:120,u:'un',c:22.50,v:'30/08/2026',loc:'A2-P1',st:'low'},
-  {s:'NGT-004',n:'Leite de Coco 200ml',      cat:'Bebidas Naturais',   orig:'Agroecologico',        lote:'LOT-2260304',q:320,min:200,u:'un',c:4.80, v:'15/10/2026',loc:'C1-P2',st:'ok'},
-  {s:'NGT-005',n:'Granola Artesanal 1kg',    cat:'Graos e Cereais',    orig:'Convencional Natural', lote:'LOT-2260305',q:88, min:150,u:'un',c:28.00,v:'01/07/2026',loc:'A3-P1',st:'low'},
-  {s:'NGT-006',n:'Whey Vegano 900g',         cat:'Suplementos',        orig:'Importado',            lote:'LOT-2260306',q:214,min:60, u:'un',c:84.00,v:'20/12/2026',loc:'D1-P4',st:'ok'},
-  {s:'NGT-007',n:'Azeite Extra Virgem 500ml',cat:'Oleos e Gorduras',   orig:'Importado',            lote:'LOT-2260307',q:142,min:50, u:'un',c:32.00,v:'10/11/2027',loc:'C2-P3',st:'ok'},
-  {s:'NGT-008',n:'Leite de Castanha 1L',     cat:'Laticinios Naturais',orig:'Agroecologico',        lote:'LOT-2260308',q:42, min:80, u:'un',c:11.60,v:'08/04/2026',loc:'B1-F2',st:'low'},
-  {s:'NGT-009',n:'Proteina de Ervilha 1kg',  cat:'Suplementos',        orig:'Organico Certificado', lote:'LOT-2260309',q:88, min:40, u:'un',c:92.00,v:'15/09/2026',loc:'D2-P1',st:'ok'},
-  {s:'NGT-010',n:'Chia Organica 200g',       cat:'Graos e Cereais',    orig:'Organico Certificado', lote:'LOT-2260310',q:186,min:100,u:'un',c:8.40, v:'22/11/2026',loc:'A1-P4',st:'ok'},
-  {s:'NGT-011',n:'Iogurte Natural 170g',     cat:'Laticinios Naturais',orig:'Agroecologico',        lote:'LOT-2260311',q:64, min:80, u:'un',c:6.20, v:'14/04/2026',loc:'B3-F1',st:'low'},
-  {s:'NGT-012',n:'Kombucha 330ml',           cat:'Bebidas Naturais',   orig:'Convencional Natural', lote:'LOT-2260312',q:280,min:120,u:'un',c:9.80, v:'25/05/2026',loc:'C3-P1',st:'ok'},
-];
+/* === TABELA ESTOQUE (preenchida via API) === */
+let estoqueData = [];
 
-function vc(v) {
-  const d=v.split('/'); const dt=new Date(+d[2],+d[1]-1,+d[0]);
-  const df=(dt-new Date())/86400000;
-  return df<0?'val-exp':df<30?'val-near':'val-ok';
+function vcFromISO(iso) {
+  if (!iso) return 'val-ok';
+  const df = (new Date(iso) - new Date()) / 86400000;
+  return df < 0 ? 'val-exp' : df < 30 ? 'val-near' : 'val-ok';
 }
 function renderEstoque(data) {
-  document.getElementById('estoqueBody').innerHTML = data.map(r => {
-    const sc = r.st==='ok'?'green':r.st==='low'?'amber':'red';
-    const sl = r.st==='ok'?'Normal':r.st==='low'?'Baixo':'Critico';
-    const qc = r.st==='ok'?'qty-ok':r.st==='low'?'qty-low':'qty-critic';
-    const tot = (r.q*r.c).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    const cu  = r.c.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    const oc = r.orig.includes('Org')?'green':r.orig.includes('Agro')?'teal':r.orig.includes('Import')?'blue':'gray';
-    return `<tr>
-      <td style="padding-left:22px"><span class="td-code">${r.s}</span></td>
-      <td class="td-strong">${r.n}</td>
-      <td style="color:var(--text2)">${r.cat}</td>
-      <td><span class="pill ${oc}" style="font-size:.64rem">${r.orig}</span></td>
-      <td style="font-family:'SF Mono','Consolas',monospace;font-size:.74rem;color:var(--muted)">${r.lote}</td>
-      <td><span class="${qc}">${r.q} ${r.u}</span></td>
-      <td style="color:var(--muted2)">${r.min}</td>
-      <td style="color:var(--muted)">${cu}</td>
-      <td class="td-strong">${tot}</td>
-      <td><span class="${vc(r.v)}">${r.v}</span></td>
-      <td style="font-family:'SF Mono','Consolas',monospace;font-size:.74rem;color:var(--muted2)">${r.loc}</td>
-      <td><span class="pill ${sc}">${sl}</span></td>
-      <td style="padding-right:22px">
-        <div style="display:flex;gap:4px">
-          <div class="ic-btn" title="Editar"><i class="fa-solid fa-pen"></i></div>
-          <div class="ic-btn" title="Movimentar"><i class="fa-solid fa-right-left"></i></div>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  document.getElementById('estoqueBody').innerHTML = data.length === 0
+    ? '<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--muted)">Nenhum produto encontrado</td></tr>'
+    : data.map(r => {
+      const alert = r.stock_alert || (r.ruptura ? 'sem_estoque' : 'normal');
+      const sc = alert === 'normal' ? 'green' : alert === 'estoque_minimo' ? 'amber' : 'red';
+      const sl = alert === 'normal' ? 'Normal' : alert === 'estoque_minimo' ? 'Baixo' : 'Critico';
+      const qc = alert === 'normal' ? 'qty-ok' : alert === 'estoque_minimo' ? 'qty-low' : 'qty-critic';
+      const cu = Number(r.avg_cost || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      const tot = Number(r.total_cost || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      const vdStr = r.expiry_date ? DashboardAPI.fmtDate(r.expiry_date) : '—';
+      return `<tr>
+        <td style="padding-left:22px"><span class="td-code">${r.sku||'—'}</span></td>
+        <td class="td-strong">${r.product_name||'—'}</td>
+        <td style="color:var(--text2)">${r.category||'—'}</td>
+        <td><span class="pill green" style="font-size:.64rem">${r.warehouse||'—'}</span></td>
+        <td style="font-family:'SF Mono','Consolas',monospace;font-size:.74rem;color:var(--muted)">${r.lot_number||'—'}</td>
+        <td><span class="${qc}">${r.qty_available||0} un</span></td>
+        <td style="color:var(--muted2)">${r.min_stock||'—'}</td>
+        <td style="color:var(--muted)">${cu}</td>
+        <td class="td-strong">${tot}</td>
+        <td><span class="${vcFromISO(r.expiry_date)}">${vdStr}</span></td>
+        <td style="font-family:'SF Mono','Consolas',monospace;font-size:.74rem;color:var(--muted2)">${r.location||'—'}</td>
+        <td><span class="pill ${sc}">${sl}</span></td>
+        <td style="padding-right:22px">
+          <div style="display:flex;gap:4px">
+            <div class="ic-btn" title="Editar"><i class="fa-solid fa-pen"></i></div>
+            <div class="ic-btn" title="Movimentar"><i class="fa-solid fa-right-left"></i></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
 }
 renderEstoque(estoqueData);
 
 document.getElementById('stockSearch').addEventListener('input', function() {
   const q = this.value.toLowerCase();
-  renderEstoque(q ? estoqueData.filter(r => r.n.toLowerCase().includes(q)||r.s.toLowerCase().includes(q)||r.lote.toLowerCase().includes(q)) : estoqueData);
+  renderEstoque(q ? estoqueData.filter(r => (r.product_name||'').toLowerCase().includes(q)||(r.sku||'').toLowerCase().includes(q)||(r.lot_number||'').toLowerCase().includes(q)) : estoqueData);
 });
 document.getElementById('filterCateg').addEventListener('change', function() {
-  renderEstoque(this.value ? estoqueData.filter(r=>r.cat===this.value) : estoqueData);
+  renderEstoque(this.value ? estoqueData.filter(r=>r.category===this.value) : estoqueData);
 });
 document.getElementById('filterStatus').addEventListener('change', function() {
-  const m={'Normal':'ok','Estoque Baixo':'low','Critico':'critic'};
-  renderEstoque(m[this.value] ? estoqueData.filter(r=>r.st===m[this.value]) : estoqueData);
+  const m={'Normal':'normal','Estoque Baixo':'estoque_minimo','Critico':'sem_estoque'};
+  renderEstoque(m[this.value] ? estoqueData.filter(r=>(r.stock_alert||'normal')===m[this.value]) : estoqueData);
 });
 
-/* === MOVIMENTACOES === */
-document.getElementById('movimentacoes').innerHTML = [
-  {t:'entrada',ic:'fa-arrow-down', n:'Leite de Coco 200ml',    i:'Fornec. BioFresh — NF 00841',  q:'+400 un',dt:'31/03 09:42'},
-  {t:'saida',  ic:'fa-arrow-up',   n:'Quinoa 500g',             i:'Ped. #26-4420 — Bio Mercado',  q:'-28 un', dt:'31/03 08:15'},
-  {t:'saida',  ic:'fa-arrow-up',   n:'Tofu Organico 400g',      i:'Ped. #26-4419 — Vida Verde',   q:'-12 un', dt:'30/03 17:30'},
-  {t:'entrada',ic:'fa-arrow-down', n:'Whey Vegano 900g',        i:'Fornec. VeganProt — NF 00310', q:'+80 un', dt:'30/03 14:00'},
-  {t:'ajuste', ic:'fa-pen',        n:'Acai Congelado 400g',     i:'Ajuste inventario',             q:'-6 un',  dt:'30/03 11:20'},
-  {t:'saida',  ic:'fa-arrow-up',   n:'Granola Artesanal 1kg',   i:'Ped. #26-4418 — Grao de Luz',  q:'-22 un', dt:'29/03 16:48'},
-  {t:'entrada',ic:'fa-arrow-down', n:'Chia Organica 200g',      i:'Fornec. NaturalBio — NF 00555',q:'+200 un',dt:'29/03 10:05'},
-].map(m=>`<div class="mov-item">
-  <div class="mov-ic ${m.t}"><i class="fa-solid ${m.ic}"></i></div>
-  <div class="mov-info"><strong>${m.n}</strong><span>${m.i}</span></div>
-  <div style="text-align:right;flex-shrink:0">
-    <div class="mov-qty ${m.t==='entrada'?'pos':'neg'}">${m.q}</div>
-    <div style="font-size:.7rem;color:var(--muted)">${m.dt}</div>
-  </div>
-</div>`).join('');
+/* === MOVIMENTACOES (placeholder — não há view de movimentos na API ainda) === */
+document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;color:var(--muted);font-size:.82rem;text-align:center"><i class="fa-solid fa-rotate" style="margin-right:6px"></i>Movimentações serão exibidas após sync com Oracle</div>`;
 
-/* === ALERTAS VALIDADE === */
-document.getElementById('alertasValidade').innerHTML = [
-  {n:'Leite de Castanha 1L',  l:'LOT-2260308',v:'08/04/2026',d:7, t:'red'},
-  {n:'Acai Congelado 400g',   l:'LOT-2260302',v:'20/04/2026',d:19,t:'red'},
-  {n:'Iogurte Natural 170g',  l:'LOT-2260311',v:'14/04/2026',d:13,t:'red'},
-  {n:'Quinoa 500g',           l:'LOT-2260315',v:'05/05/2026',d:34,t:'amber'},
-  {n:'Kombucha 330ml',        l:'LOT-2260312',v:'25/05/2026',d:54,t:'amber'},
-  {n:'Tofu Organico 400g',    l:'LOT-2260319',v:'12/06/2026',d:72,t:'amber'},
-].map(a=>`<div class="list-item">
-  <div class="li-icon ${a.t}"><i class="fa-regular fa-calendar-xmark"></i></div>
-  <div class="li-info"><strong>${a.n}</strong><span>${a.l} — ${a.v}</span></div>
-  <div class="li-right"><span class="pill ${a.t}">${a.d}d</span></div>
-</div>`).join('');
+/* === ALERTAS VALIDADE (preenchido via API) === */
+/* === TICKER (preenchido via API) === */
 
-/* === TICKER === */
-document.getElementById('ticker').innerHTML = [
-  {n:'Fat. Hoje',v:'R$ 38.440',c:'+6,1%',u:true},
-  {n:'Pedidos',  v:'84',       c:'+8',   u:true},
-  {n:'Criticos', v:'2 itens',  c:'',     u:null},
-  {n:'A Vencer', v:'14 lotes', c:'',     u:null},
-  {n:'Ticket',   v:'R$ 377',   c:'+4,5%',u:true},
-  {n:'NPS',      v:'82',       c:'+4pt', u:true},
-  {n:'Clientes', v:'412',      c:'+31',  u:true},
-].map(t=>`<div class="t-item">
-  <span class="t-name">${t.n}:</span>
-  <span class="t-val">${t.v}</span>
-  ${t.c?`<span class="${t.u?'t-up':'t-down'}">${t.u?'↑':'↓'} ${t.c}</span>`:''}
-</div>`).join('');
+/* ═══════════════════════════════════════════════════════
+   INIT ASYNC — carrega todos os dados da API (ou mock)
+═══════════════════════════════════════════════════════ */
+(async function initDashboard() {
+  const [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring] = await Promise.all([
+    DashboardAPI.sales.summary(3),
+    DashboardAPI.sales.byDay(),
+    DashboardAPI.sales.products(6),
+    DashboardAPI.sales.customers(5),
+    DashboardAPI.inventory.summary(),
+    DashboardAPI.inventory.products(),
+    DashboardAPI.inventory.expiring(30),
+  ]);
+
+  const cur  = salesArr[0] || {};
+  const prev = salesArr[1] || {};
+  const fmtPct = (a, b) => b ? ((a - b) / b * 100).toFixed(1) + '%' : '—';
+
+  // ── KPI Cards ──────────────────────────────────────────
+  document.getElementById('kpiFaturamento').textContent   = DashboardAPI.fmtBRL(cur.gross_revenue);
+  document.getElementById('kpiFaturamentoDelta').innerHTML = `<i class="fa-solid fa-arrow-up" style="font-size:.65rem"></i> ${fmtPct(cur.gross_revenue, prev.gross_revenue)}`;
+  document.getElementById('kpiPedidos').textContent       = DashboardAPI.fmt(cur.total_orders);
+  document.getElementById('kpiPedidosDelta').textContent  = fmtPct(cur.total_orders, prev.total_orders);
+  document.getElementById('kpiTicket').textContent        = DashboardAPI.fmtBRL(cur.avg_ticket);
+  document.getElementById('kpiTicketDelta').textContent   = fmtPct(cur.avg_ticket, prev.avg_ticket);
+  document.getElementById('kpiClientes').textContent      = DashboardAPI.fmt(cur.unique_customers);
+  document.getElementById('kpiClientesDelta').textContent = fmtPct(cur.unique_customers, prev.unique_customers);
+
+  // ── Strip Cards (Estoque) ──────────────────────────────
+  const inv = Array.isArray(invSumArr) ? (invSumArr[0] || invSumArr) : invSumArr;
+  document.getElementById('stripSkus').textContent     = DashboardAPI.fmt(inv.sku_count);
+  document.getElementById('stripValor').textContent    = DashboardAPI.fmtBRL(inv.total_inventory_value);
+  document.getElementById('stripCriticos').textContent = DashboardAPI.fmt(inv.ruptura_count);
+  document.getElementById('stripVencer').textContent   = expiring.length;
+  document.getElementById('stripGiro').textContent     = (inv.avg_coverage_days || 0).toFixed(1) + 'd';
+  document.getElementById('stripRuptura').textContent  = DashboardAPI.fmt(inv.ruptura_count);
+
+  // ── Line Chart — Faturamento diário ───────────────────
+  lineChartInst.data.labels   = byDay.map(d => DashboardAPI.fmtDate(d.order_date));
+  lineChartInst.data.datasets[0].data = byDay.map(d => d.revenue || 0);
+  lineChartInst.update();
+
+  // ── Donut — Categorias por faturamento ────────────────
+  const catMap = {};
+  topProds.forEach(p => { catMap[p.category||'Outros'] = (catMap[p.category||'Outros']||0) + (p.total_revenue||0); });
+  donutChartInst.data.labels = Object.keys(catMap);
+  donutChartInst.data.datasets[0].data = Object.values(catMap);
+  donutChartInst.update();
+
+  // ── Bar Estoque por Categoria ──────────────────────────
+  const catEst = {};
+  stockProds.forEach(p => { catEst[p.category||'Outros'] = (catEst[p.category||'Outros']||0) + (p.total_cost||0); });
+  const estCats = Object.keys(catEst).slice(0, 8);
+  barEstoqueInst.data.labels = estCats;
+  barEstoqueInst.data.datasets[0].data = estCats.map(c => catEst[c]);
+  barEstoqueInst.update();
+
+  // ── Top Produtos ───────────────────────────────────────
+  const maxRev = topProds[0]?.total_revenue || 1;
+  const colors = [C.accent, C.accent2, C.accent3, '#52b788', '#74c69d', '#95d5b2'];
+  document.getElementById('topProdutos').innerHTML = topProds.slice(0, 6).map((p, i) => `
+    <div class="prog-row">
+      <span class="prog-label">${p.product_name||p.sku||'—'}</span>
+      <div class="prog-track"><div class="prog-fill" style="width:${Math.round((p.total_revenue||0)/maxRev*100)}%;background:${colors[i]||C.accent}"></div></div>
+      <span class="prog-val">${DashboardAPI.fmtBRL(p.total_revenue)}</span>
+    </div>`).join('');
+
+  // ── Top Clientes ───────────────────────────────────────
+  document.getElementById('topClientes').innerHTML = topClis.slice(0, 5).map((c, i) => {
+    const av = (c.customer_name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    return `<div class="list-item">
+      <span class="rank-num">${i+1}</span>
+      <div class="cli-av">${av}</div>
+      <div class="li-info"><strong>${c.customer_name||'—'}</strong><span>${c.segment||'—'}</span></div>
+      <div class="li-right"><div class="li-val">${DashboardAPI.fmtBRL(c.total_revenue)}</div></div>
+    </div>`;
+  }).join('');
+
+  // ── Alertas Estoque ────────────────────────────────────
+  const alerts = stockProds.filter(p => p.stock_alert !== 'normal').slice(0, 6);
+  document.getElementById('alertasEstoque').innerHTML = alerts.length === 0
+    ? '<div style="padding:16px;color:var(--muted);font-size:.82rem;text-align:center">Sem alertas críticos</div>'
+    : alerts.map(a => {
+        const isCrit = a.stock_alert === 'sem_estoque' || a.ruptura;
+        return `<div class="list-item">
+          <div class="li-icon ${isCrit?'red':'amber'}"><i class="fa-solid ${isCrit?'fa-circle-exclamation':'fa-triangle-exclamation'}"></i></div>
+          <div class="li-info"><strong>${a.product_name||a.sku}</strong><span>${a.qty_available||0} un — Min: ${a.min_stock||'?'}</span></div>
+          <div class="li-right"><span class="pill ${isCrit?'red':'amber'}">${isCrit?'CRITICO':'BAIXO'}</span></div>
+        </div>`;
+      }).join('');
+
+  // ── Pedidos Table (top clientes como proxy de pedidos recentes) ────────
+  document.getElementById('ordersBody').innerHTML = topClis.slice(0, 6).map((c, i) => `<tr>
+    <td style="padding-left:22px"><span class="td-code">#26-${4420-i}</span></td>
+    <td class="td-strong">${c.customer_name||'—'}</td>
+    <td style="color:var(--text2)">—</td>
+    <td><span class="pill green" style="font-size:.65rem">${c.segment||'Geral'}</span></td>
+    <td style="text-align:center;color:var(--muted)">${c.total_orders||'—'}</td>
+    <td class="td-strong">${DashboardAPI.fmtBRL(c.total_revenue)}</td>
+    <td style="color:var(--muted)">—</td>
+    <td><span class="pill green">Entregue</span></td>
+    <td style="color:var(--muted);padding-right:22px">${DashboardAPI.fmtDate(c.last_order_date)}</td>
+  </tr>`).join('');
+
+  // ── Tabela Estoque ─────────────────────────────────────
+  estoqueData = stockProds;
+  renderEstoque(estoqueData);
+
+  // ── Alertas Validade ───────────────────────────────────
+  document.getElementById('alertasValidade').innerHTML = expiring.slice(0, 6).map(a => {
+    const cls = a.expiry_alert === 'critico' ? 'red' : a.expiry_alert === 'urgente' ? 'red' : 'amber';
+    return `<div class="list-item">
+      <div class="li-icon ${cls}"><i class="fa-regular fa-calendar-xmark"></i></div>
+      <div class="li-info"><strong>${a.product_name||a.sku}</strong><span>${a.lot_number||'—'} — ${DashboardAPI.fmtDate(a.expiry_date)}</span></div>
+      <div class="li-right"><span class="pill ${cls}">${a.days_to_expiry}d</span></div>
+    </div>`;
+  }).join('') || '<div style="padding:16px;color:var(--muted);font-size:.82rem;text-align:center">Nenhum lote próximo ao vencimento</div>';
+
+  // ── Ticker ─────────────────────────────────────────────
+  document.getElementById('ticker').innerHTML = [
+    {n:'Fat. Mês',  v:DashboardAPI.fmtBRL(cur.gross_revenue),  c:fmtPct(cur.gross_revenue,prev.gross_revenue), u:true},
+    {n:'Pedidos',   v:DashboardAPI.fmt(cur.total_orders),       c:fmtPct(cur.total_orders,prev.total_orders),   u:true},
+    {n:'Críticos',  v:`${inv.ruptura_count||0} itens`,          c:'', u:null},
+    {n:'A Vencer',  v:`${expiring.length} lotes`,               c:'', u:null},
+    {n:'Ticket',    v:DashboardAPI.fmtBRL(cur.avg_ticket),      c:fmtPct(cur.avg_ticket,prev.avg_ticket),       u:true},
+    {n:'Clientes',  v:DashboardAPI.fmt(cur.unique_customers),   c:fmtPct(cur.unique_customers,prev.unique_customers), u:true},
+    {n:'SKUs',      v:DashboardAPI.fmt(inv.sku_count),          c:'', u:null},
+  ].map(t=>`<div class="t-item">
+    <span class="t-name">${t.n}:</span>
+    <span class="t-val">${t.v}</span>
+    ${t.c?`<span class="${t.u?'t-up':'t-down'}">${t.u?'↑':'↓'} ${t.c}</span>`:''}
+  </div>`).join('');
+
+  DashboardAPI.afterLoad();
+})();
 
 /* === BOTOES === */
 document.getElementById('btnNovoItem').addEventListener('click', () => showToast('success','Em breve','Formulario de cadastro em desenvolvimento.'));

@@ -252,6 +252,7 @@
     @media(max-width:900px)  { .g21,.g32,.g2 { grid-template-columns:1fr; } }
     @media(max-width:800px)  { :root { --sidebar-w:56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display:none; } .sidebar-logo { justify-content:center; padding:0; } .nav-item { justify-content:center; padding:8px; } }
   </style>
+  <script src="js/api.js"></script>
 </head>
 <body>
 
@@ -319,27 +320,27 @@
   <div class="kpi-header">
     <div class="kh-card ok" onclick="goTab('visao-geral')" title="Capital disponível para venda a custo médio">
       <div class="kh-lbl">Saldo Disponível <div class="semaphore green"></div></div>
-      <div class="kh-val">R$ 308K</div>
+      <div class="kh-val" id="khSaldoDisp">R$ 308K</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +R$14K vs ontem</div>
     </div>
     <div class="kh-card crit" onclick="goTab('disponibilidade')" title="% de SKUs ativos com saldo disponível = 0">
       <div class="kh-lbl">Ruptura <div class="semaphore red"></div></div>
-      <div class="kh-val">3,2%</div>
+      <div class="kh-val" id="khRuptura">3,2%</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +0,8pp vs ontem</div>
     </div>
     <div class="kh-card warn" onclick="goTab('giro-cobertura')" title="Dias de estoque disponível pela demanda média 30d">
       <div class="kh-lbl">Cobertura Média <div class="semaphore amber"></div></div>
-      <div class="kh-val">22 dias</div>
+      <div class="kh-val" id="khCobertura">22 dias</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-down" style="font-size:.52rem"></i> –3d vs semana</div>
     </div>
     <div class="kh-card info" onclick="goTab('visao-geral')" title="Valor total do estoque físico a custo (todos os status)">
       <div class="kh-lbl">Capital Empatado <div class="semaphore blue"></div></div>
-      <div class="kh-val">R$ 412K</div>
+      <div class="kh-val" id="khCapital">R$ 412K</div>
       <div class="kh-delta neu">+R$8K vs mês ant.</div>
     </div>
     <div class="kh-card risk" onclick="goTab('validade-lotes')" title="SKUs com ao menos 1 lote vencendo em 30 dias">
       <div class="kh-lbl">Validade Crítica <div class="semaphore orange"></div></div>
-      <div class="kh-val">8 itens</div>
+      <div class="kh-val" id="khValidadeCrit">8 itens</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +2 vs ontem</div>
     </div>
     <div class="kh-card ok" onclick="goTab('acuracidade')" title="% de posições conferidas sem divergência no ciclo atual">
@@ -853,25 +854,6 @@ const tipOpts={backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',b
 /* ── MOCK DATA ── */
 const meses12=['Mai','Jun','Jul','Ago','Set','Out','Nov','Dez','Jan','Fev','Mar','Abr'];
 
-/* ── ALERTAS ── */
-const alertasEst=[
-  {code:'EST-001',sev:'crit',t:'Ruptura confirmada — 9 SKUs',d:'Inclui 3 curva A · 6 pedidos bloqueados',a:'Ver ruptura'},
-  {code:'EST-002',sev:'crit',t:'Ruptura evitável — 3 cx disponíveis',d:'Fracionado zerado mas cx fechada existe',a:'Abrir caixa'},
-  {code:'EST-006',sev:'crit',t:'2 lotes vencidos com saldo',d:'R$ 3.840 — bloqueio e descarte urgente',a:'Registrar descarte'},
-  {code:'EST-003',sev:'high',t:'12 SKUs no ponto de pedido',d:'Necessidade de compra: R$ 62K',a:'Ver compras'},
-  {code:'EST-005',sev:'high',t:'8 lotes vencendo em 30 dias',d:'R$ 18.640 — acionar comercial',a:'Ver lotes'},
-  {code:'EST-013',sev:'warn',t:'2 OCs atrasadas',d:'BioFresh +4d · VeganProt +2d',a:'Contatar fornecedor'},
-  {code:'EST-007',sev:'warn',t:'18 SKUs em excesso de estoque',d:'R$ 52K acima do máximo configurado',a:'Ver excessos'},
-  {code:'EST-011',sev:'med', t:'FEFO compliance 94,2%',d:'Abaixo da meta (98%) no turno manhã',a:'Ver separações'},
-  {code:'EST-017',sev:'med', t:'3 divergências pendentes de aprovação',d:'Inventário cíclico 14/04',a:'Aprovar ajuste'},
-];
-document.getElementById('alertasEstPanel').innerHTML=alertasEst.map(a=>`
-  <div class="alert-item ${a.sev}">
-    <div class="alert-dot ${a.sev}"></div>
-    <div class="alert-code">${a.code}</div>
-    <div class="alert-txt"><strong>${a.t}</strong><span>${a.d}</span></div>
-    <div class="alert-action ${a.sev}" onclick="showToast('warning','${a.code}','${a.a}')">${a.a} →</div>
-  </div>`).join('');
 
 /* ── GRÁFICO: CAPITAL POR STATUS ── */
 new Chart(document.getElementById('chartCapitalStatus'),{
@@ -894,25 +876,6 @@ new Chart(document.getElementById('chartABC'),{
   options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:9,font:{size:10},color:C.muted,padding:8}},tooltip:{...tipOpts,callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}% do capital`}}}}
 });
 
-/* ── TOP CAPITAL ── */
-const topCapData=[
-  {s:'NGT-006',n:'Whey Vegano 900g',v:38400,pct:9.3},
-  {s:'NGT-007',n:'Azeite Extra Virgem 500ml',v:28800,pct:7.0},
-  {s:'NGT-001',n:'Tofu Orgânico 400g',v:22400,pct:5.4},
-  {s:'NGT-009',n:'Proteína de Ervilha 1kg',v:19200,pct:4.7},
-  {s:'NGT-005',n:'Granola Artesanal 1kg',v:16800,pct:4.1},
-  {s:'NGT-003',n:'Açaí Congelado 400g',v:14400,pct:3.5},
-  {s:'NGT-012',n:'Kombucha 330ml',v:12600,pct:3.1},
-  {s:'NGT-010',n:'Chia Orgânica 200g',v:11200,pct:2.7},
-  {s:'NGT-002',n:'Quinoa 500g',v:9800, pct:2.4},
-  {s:'NGT-004',n:'Leite de Coco 200ml',v:8400, pct:2.0},
-];
-document.getElementById('topCapital').innerHTML=topCapData.map((r,i)=>`
-  <div class="prog-row">
-    <div class="prog-lbl" style="width:155px"><span style="color:var(--muted2);font-size:.66rem;margin-right:5px">${String(i+1).padStart(2,'0')}</span>${r.n}</div>
-    <div class="prog-track"><div class="prog-fill" style="width:${r.pct*8}%"></div></div>
-    <div class="prog-val">${fmtK(r.v)}</div>
-  </div>`).join('');
 
 /* ── RUPTURA EVOLUÇÃO ── */
 const rupt30=[1.2,1.8,2.1,1.6,1.4,2.8,3.2,2.4,1.8,1.6,2.0,2.6,3.1,2.8,2.2,1.9,1.7,2.3,2.8,3.4,2.9,2.1,1.8,2.4,3.0,3.6,3.2,2.6,2.1,3.2];
@@ -925,45 +888,7 @@ new Chart(document.getElementById('chartRupturaEvolucao'),{
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:9,font:{size:10},color:C.muted}},tooltip:{...tipOpts}},scales:{x:{grid:{color:'transparent'},ticks:{color:C.muted,maxTicksLimit:8}},y:{grid:{color:'#f0f0f0'},min:0,max:5,ticks:{color:C.muted,callback:v=>v+'%'}}}}
 });
 
-/* ── RUPTURA POR CATEGORIA ── */
-const ruptCat=[
-  {cat:'Suplementos',pct:8.3,cls:'red'},{cat:'Laticínios',pct:5.0,cls:'red'},
-  {cat:'Bebidas',pct:3.6,cls:'warn'},{cat:'Cereais',pct:2.1,cls:'mild'},
-  {cat:'Óleos',pct:1.2,cls:'ok'},{cat:'Outros',pct:0.8,cls:'ok'},
-];
-document.getElementById('rupturaCategoria').innerHTML=ruptCat.map(r=>`
-  <div class="bucket-row">
-    <div class="bucket-lbl">${r.cat}</div>
-    <div class="bucket-bar"><div class="bucket-fill ${r.cls}" style="width:${r.pct*10}%">${r.pct>3?r.pct+'%':''}</div></div>
-    <div class="bucket-val" style="color:${r.cls==='red'?C.red:r.cls==='warn'?C.orange:C.muted}">${r.pct}%</div>
-  </div>`).join('');
 
-/* ── TABELA RUPTURA ── */
-const ruptData=[
-  {s:'NGT-005',n:'Granola Artesanal 1kg',curva:'A',cmd:8.8,dias:2,ped:3,cx:true,status:'evitável'},
-  {s:'NGT-011',n:'Iogurte Natural 170g', curva:'A',cmd:12.4,dias:1,ped:2,cx:false,status:'ruptura'},
-  {s:'NGT-008',n:'Leite de Castanha 1L', curva:'A',cmd:6.2,dias:3,ped:1,cx:true, status:'evitável'},
-  {s:'NGT-015',n:'Pasta de Amendoim 500g',curva:'B',cmd:4.1,dias:1,ped:0,cx:false,status:'ruptura'},
-  {s:'NGT-022',n:'Açaí Premium 400g',    curva:'A',cmd:9.8,dias:2,ped:2,cx:true, status:'evitável'},
-  {s:'NGT-031',n:'Chia Negra 200g',      curva:'B',cmd:3.2,dias:4,ped:0,cx:false,status:'ruptura'},
-  {s:'NGT-044',n:'Whey Vegano 2kg',      curva:'B',cmd:2.8,dias:1,ped:1,cx:false,status:'ruptura'},
-  {s:'NGT-052',n:'Kombucha Gengibre',    curva:'C',cmd:1.4,dias:5,ped:0,cx:false,status:'ruptura'},
-  {s:'NGT-063',n:'Cacau Nibs 200g',      curva:'C',cmd:1.1,dias:2,ped:0,cx:false,status:'ruptura'},
-];
-document.getElementById('tblRuptura').innerHTML=ruptData.map(r=>`<tr>
-  <td style="padding-left:14px"><span class="td-mono">${r.s}</span></td>
-  <td class="td-strong">${r.n}</td>
-  <td><span class="pill ${r.curva==='A'?'red':r.curva==='B'?'amber':'gray'}">${r.curva}</span></td>
-  <td class="td-num">${r.cmd} un/d</td>
-  <td class="td-num" style="color:${r.dias>2?C.red:C.orange}">${r.dias}d</td>
-  <td class="td-num">${r.ped>0?`<span style="color:${C.red};font-weight:600">${r.ped}</span>`:'—'}</td>
-  <td>${r.cx?'<span class="pill orange">CX disp.</span>':'<span style="color:var(--muted2)">—</span>'}</td>
-  <td><span class="sbadge ${r.status==='evitável'?'crit':'rupt'}">${r.status}</span></td>
-  <td style="padding-right:14px"><div class="btn-row">
-    ${r.cx?`<div class="ic-btn" title="Abrir caixa" onclick="showToast('success','Caixa aberta','Lote separado para área de fracionamento')"><i class="fa-solid fa-box-open"></i></div>`:''}
-    <div class="ic-btn" title="Criar OC urgente" onclick="showToast('warning','OC criada','Sugestão de compra gerada para '+' ${r.n}')"><i class="fa-solid fa-cart-flatbed"></i></div>
-  </div></td>
-</tr>`).join('');
 
 /* ── SCATTER GIRO × COBERTURA ── */
 const scatterData=Array.from({length:60},(_,i)=>({
@@ -1041,29 +966,6 @@ new Chart(document.getElementById('chartTimeline'),{
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:9,font:{size:10},color:C.muted}},tooltip:{...tipOpts}},scales:{x:{grid:{color:'transparent'},stacked:true,ticks:{color:C.muted}},y:{grid:{color:'#f0f0f0'},stacked:true,ticks:{color:C.muted,callback:v=>fmtK(v)}}}}
 });
 
-/* ── TABELA LOTES ── */
-const lotesData=[
-  {s:'NGT-002',n:'Quinoa 500g',           lote:'LOT-2260315',val:'02/04/2026',dias:-15,saldo:42, valor:1680, fefo:'ok'},
-  {s:'NGT-003',n:'Açaí Congelado 400g',   lote:'LOT-2260302',val:'20/04/2026',dias:3,  saldo:88, valor:2640, fefo:'ok'},
-  {s:'NGT-008',n:'Leite de Castanha 1L',  lote:'LOT-2260308',val:'08/04/2026',dias:-9, saldo:36, valor:1260, fefo:'ok'},
-  {s:'NGT-005',n:'Granola Artesanal 1kg', lote:'LOT-2260305',val:'22/04/2026',dias:5,  saldo:62, valor:3100, fefo:'warn'},
-  {s:'NGT-011',n:'Iogurte Natural 170g',  lote:'LOT-2260311',val:'14/04/2026',dias:-3, saldo:44, valor:880,  fefo:'ok'},
-  {s:'NGT-001',n:'Tofu Orgânico 400g',    lote:'LOT-2260319',val:'25/04/2026',dias:8,  saldo:120,valor:3360, fefo:'ok'},
-];
-document.getElementById('tblLotes').innerHTML=lotesData.map(r=>`<tr>
-  <td style="padding-left:14px"><span class="td-mono">${r.s}</span></td>
-  <td class="td-strong">${r.n}</td>
-  <td style="font-size:.72rem;color:var(--muted)">${r.lote}</td>
-  <td class="td-num">${r.val}</td>
-  <td><span class="sbadge ${r.dias<0?'rupt':r.dias<=7?'crit':'low'}">${r.dias<0?'Vencido há '+Math.abs(r.dias)+'d':r.dias+'d'}</span></td>
-  <td class="td-num">${r.saldo} un</td>
-  <td class="td-num" style="color:${r.dias<0?C.red:r.dias<=7?C.orange:C.muted}">${fmtK(r.valor)}</td>
-  <td>${r.fefo==='ok'?'<span class="pill green">OK</span>':'<span class="pill red">Violado</span>'}</td>
-  <td style="padding-right:14px"><div class="btn-row">
-    ${r.dias<0?`<div class="ic-btn" title="Registrar descarte" onclick="showToast('warning','Descarte','OS de descarte gerada')"><i class="fa-solid fa-trash-can"></i></div>`:`<div class="ic-btn" title="Acionar promoção" onclick="showToast('success','Promoção','Produto enviado para ação comercial')"><i class="fa-solid fa-tag"></i></div>`}
-    <div class="ic-btn" title="Bloquear lote" onclick="showToast('warning','Lote bloqueado','Lote ${r.lote} bloqueado para venda')"><i class="fa-solid fa-lock"></i></div>
-  </div></td>
-</tr>`).join('');
 
 /* ── COMPRAS: TABELA ── */
 const comprasData=[
@@ -1223,6 +1125,170 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
     <div class="prog-track" style="height:7px"><div class="prog-fill ${r.pct>=70?'ok':r.pct>=40?'amber':'red'}" style="width:${r.pct}%"></div></div>
     <div class="prog-val" style="width:70px;font-size:.73rem">${r.saldo}/${r.unCx} un</div>
   </div>`).join('');
+
+/* ── INIT ESTOQUE (API) ── */
+(async function initEstoque() {
+  const [summaryArr, products, expiring] = await Promise.all([
+    DashboardAPI.inventory.summary(),
+    DashboardAPI.inventory.products(),
+    DashboardAPI.inventory.expiring(90),
+  ]);
+
+  const summary = Array.isArray(summaryArr) ? (summaryArr[0] || {}) : (summaryArr || {});
+  const fK = DashboardAPI.fmtBRL;
+  const el = id => document.getElementById(id);
+
+  // ── KPI HEADER ──
+  const totalCost  = products.reduce((s, p) => s + (p.total_cost || 0), 0);
+  const availCost  = products.reduce((s, p) => s + (p.qty_available || 0) * (p.avg_cost || 0), 0);
+  const ruptProds  = products.filter(p => p.stock_alert === 'sem_estoque');
+  const ruptPct    = products.length > 0 ? (ruptProds.length / products.length * 100).toFixed(1) : '0';
+  const critExpiry = expiring.filter(l => (l.days_to_expiry ?? 0) <= 30);
+  const avgCov     = summary.avg_coverage_days
+    ? Math.round(summary.avg_coverage_days)
+    : (products.length > 0 ? Math.round(products.reduce((s, p) => s + (p.coverage_days || 0), 0) / products.length) : 0);
+
+  if (el('khSaldoDisp'))   el('khSaldoDisp').textContent   = fK(availCost);
+  if (el('khRuptura'))     el('khRuptura').textContent     = ruptPct + '%';
+  if (el('khCobertura'))   el('khCobertura').textContent   = avgCov + ' dias';
+  if (el('khCapital'))     el('khCapital').textContent     = fK(totalCost);
+  if (el('khValidadeCrit')) el('khValidadeCrit').textContent = critExpiry.length + ' itens';
+
+  // ── ALERTAS ──
+  const alertas = [];
+  if (ruptProds.length > 0) {
+    const nA = ruptProds.filter(p => p.abc_curve === 'A').length;
+    alertas.push({ code: 'EST-001', sev: 'crit', tab: 'disponibilidade',
+      t: `Ruptura confirmada — ${ruptProds.length} SKUs`,
+      d: `${nA > 0 ? nA + ' curva A · ' : ''}produtos sem saldo disponível`, a: 'Ver ruptura' });
+  }
+  const vencidos = expiring.filter(l => (l.days_to_expiry ?? 1) <= 0);
+  if (vencidos.length > 0) {
+    alertas.push({ code: 'EST-006', sev: 'crit', tab: 'validade-lotes',
+      t: `${vencidos.length} lote${vencidos.length > 1 ? 's' : ''} vencido${vencidos.length > 1 ? 's' : ''} com saldo`,
+      d: fK(vencidos.reduce((s, l) => s + (l.total_cost || 0), 0)) + ' — bloqueio e descarte urgente', a: 'Registrar descarte' });
+  }
+  const ppProds = products.filter(p => p.stock_alert === 'ponto_pedido' || p.stock_alert === 'estoque_minimo');
+  if (ppProds.length > 0) {
+    alertas.push({ code: 'EST-003', sev: 'high', tab: 'compras-reposicao',
+      t: `${ppProds.length} SKUs no ponto de pedido`,
+      d: 'Reposição urgente necessária', a: 'Ver compras' });
+  }
+  const d30 = expiring.filter(l => { const d = l.days_to_expiry ?? 0; return d > 0 && d <= 30; });
+  if (d30.length > 0) {
+    alertas.push({ code: 'EST-005', sev: 'high', tab: 'validade-lotes',
+      t: `${d30.length} lote${d30.length > 1 ? 's' : ''} vencendo em 30 dias`,
+      d: fK(d30.reduce((s, l) => s + (l.total_cost || 0), 0)) + ' — acionar comercial', a: 'Ver lotes' });
+  }
+  if (alertas.length === 0) {
+    alertas.push({ code: 'EST-OK', sev: 'med', tab: 'visao-geral',
+      t: 'Estoque sem alertas críticos', d: 'Todos os indicadores dentro do esperado', a: 'Ver visão geral' });
+  }
+  const ap = el('alertasEstPanel');
+  if (ap) ap.innerHTML = alertas.map(a =>
+    `<div class="alert-item ${a.sev}">
+      <div class="alert-dot ${a.sev}"></div>
+      <div class="alert-code">${a.code}</div>
+      <div class="alert-txt"><strong>${a.t}</strong><span>${a.d}</span></div>
+      <div class="alert-action ${a.sev}" onclick="goTab('${a.tab}')">${a.a} →</div>
+    </div>`).join('');
+
+  // ── ABC DONUT (atualiza com dados reais) ──
+  if (products.length > 0) {
+    const abcG = { A: 0, B: 0, C: 0, D: 0 };
+    products.forEach(p => { const c = p.abc_curve || 'D'; abcG[c] = (abcG[c] || 0) + (p.total_cost || 0); });
+    const abcT = Object.values(abcG).reduce((s, v) => s + v, 0);
+    if (abcT > 0) {
+      const ch = Chart.getChart(document.getElementById('chartABC'));
+      if (ch) { ch.data.datasets[0].data = ['A','B','C','D'].map(c => Math.round(abcG[c] / abcT * 100)); ch.update(); }
+    }
+  }
+
+  // ── TOP CAPITAL ──
+  const topCap = [...products].sort((a, b) => (b.total_cost || 0) - (a.total_cost || 0)).slice(0, 10);
+  const maxV = topCap[0]?.total_cost || 1;
+  const tcEl = el('topCapital');
+  if (tcEl) tcEl.innerHTML = topCap.length > 0
+    ? topCap.map((r, i) => `
+      <div class="prog-row">
+        <div class="prog-lbl" style="width:155px"><span style="color:var(--muted2);font-size:.66rem;margin-right:5px">${String(i+1).padStart(2,'0')}</span>${r.product_name}</div>
+        <div class="prog-track"><div class="prog-fill" style="width:${Math.round(r.total_cost/maxV*90)}%"></div></div>
+        <div class="prog-val">${fK(r.total_cost||0)}</div>
+      </div>`).join('')
+    : '<div class="empty-state"><i class="fa-solid fa-boxes-stacked"></i><strong>Sem dados</strong></div>';
+
+  // ── TABELA RUPTURA ──
+  const tblR = el('tblRuptura');
+  if (tblR) tblR.innerHTML = ruptProds.length > 0
+    ? ruptProds.slice(0, 12).map(r => `<tr>
+        <td style="padding-left:14px"><span class="td-mono">${r.sku||'—'}</span></td>
+        <td class="td-strong">${r.product_name}</td>
+        <td><span class="pill ${r.abc_curve==='A'?'red':r.abc_curve==='B'?'amber':'gray'}">${r.abc_curve||'—'}</span></td>
+        <td class="td-num" style="color:var(--muted)">—</td>
+        <td class="td-num" style="color:var(--red)">—</td>
+        <td class="td-num">—</td>
+        <td>—</td>
+        <td><span class="sbadge rupt">ruptura</span></td>
+        <td style="padding-right:14px"><div class="btn-row">
+          <div class="ic-btn" title="Criar OC urgente" onclick="showToast('warning','OC criada','Compra urgente gerada')"><i class="fa-solid fa-cart-flatbed"></i></div>
+        </div></td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Sem rupturas registradas</td></tr>';
+
+  // ── RUPTURA POR CATEGORIA ──
+  const catM = {};
+  products.forEach(p => {
+    const c = p.category || 'Outros';
+    if (!catM[c]) catM[c] = { total: 0, rupt: 0 };
+    catM[c].total++;
+    if (p.stock_alert === 'sem_estoque') catM[c].rupt++;
+  });
+  const catRupt = Object.entries(catM)
+    .map(([cat, d]) => ({ cat, pct: d.total > 0 ? +(d.rupt / d.total * 100).toFixed(1) : 0 }))
+    .sort((a, b) => b.pct - a.pct).slice(0, 6);
+  const rcEl = el('rupturaCategoria');
+  if (rcEl) rcEl.innerHTML = catRupt.length > 0
+    ? catRupt.map(r => {
+        const cls = r.pct >= 5 ? 'crit' : r.pct >= 2 ? 'warn' : r.pct > 0 ? 'mild' : 'ok';
+        const col = r.pct >= 5 ? 'var(--red)' : r.pct >= 2 ? 'var(--orange)' : 'var(--muted)';
+        return `<div class="bucket-row">
+          <div class="bucket-lbl">${r.cat}</div>
+          <div class="bucket-bar"><div class="bucket-fill ${cls}" style="width:${Math.min(r.pct*10,90)}%">${r.pct>2?r.pct+'%':''}</div></div>
+          <div class="bucket-val" style="color:${col}">${r.pct}%</div>
+        </div>`;
+      }).join('')
+    : '<div style="padding:12px;color:var(--muted);font-size:.78rem">Sem dados de categoria</div>';
+
+  // ── TABELA LOTES (validade) ──
+  const lotsOrd = [...expiring].sort((a, b) => (a.days_to_expiry ?? 999) - (b.days_to_expiry ?? 999)).slice(0, 15);
+  const tblL = el('tblLotes');
+  if (tblL) tblL.innerHTML = lotsOrd.length > 0
+    ? lotsOrd.map(r => {
+        const dias = r.days_to_expiry ?? 0;
+        const badgeCls = dias < 0 ? 'rupt' : dias <= 7 ? 'crit' : 'low';
+        const badgeTxt = dias < 0 ? 'Vencido há ' + Math.abs(dias) + 'd' : dias + 'd';
+        const valCol = dias < 0 ? 'var(--red)' : dias <= 7 ? 'var(--orange)' : 'var(--muted)';
+        return `<tr>
+          <td style="padding-left:14px"><span class="td-mono">${r.sku||'—'}</span></td>
+          <td class="td-strong">${r.product_name}</td>
+          <td style="font-size:.72rem;color:var(--muted)">${r.lot_number}</td>
+          <td class="td-num">${DashboardAPI.fmtDate(r.expiry_date)}</td>
+          <td><span class="sbadge ${badgeCls}">${badgeTxt}</span></td>
+          <td class="td-num">${r.qty_current||0} un</td>
+          <td class="td-num" style="color:${valCol}">${fK(r.total_cost||0)}</td>
+          <td>${dias>0?'<span class="pill green">OK</span>':'<span class="pill red">Violado</span>'}</td>
+          <td style="padding-right:14px"><div class="btn-row">
+            ${dias<0
+              ? `<div class="ic-btn" title="Registrar descarte" onclick="showToast('warning','Descarte','OS de descarte gerada')"><i class="fa-solid fa-trash-can"></i></div>`
+              : `<div class="ic-btn" title="Acionar promoção" onclick="showToast('success','Promoção','Enviado para ação comercial')"><i class="fa-solid fa-tag"></i></div>`}
+            <div class="ic-btn" title="Bloquear lote" onclick="showToast('warning','Bloqueado','Lote bloqueado para venda')"><i class="fa-solid fa-lock"></i></div>
+          </div></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Nenhum lote a vencer em 90 dias</td></tr>';
+
+  DashboardAPI.afterLoad();
+})();
 
 /* ── EXPORT BTN ── */
 document.querySelector('.top-btn:not(.accent):not(.red)').addEventListener('click',()=>showToast('success','Exportado','Relatório exportado — log de auditoria registrado'));

@@ -276,6 +276,7 @@
       .nav-item { justify-content: center; padding: 8px; }
     }
   </style>
+  <script src="js/api.js"></script>
 </head>
 <body>
 
@@ -399,24 +400,24 @@
     <!-- KPIs Gerenciais -->
     <div class="g4 mb">
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-label">Receita Líquida</span><div class="kpi-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
-        <div class="kpi-value">R$ 2,19M</div>
-        <div class="kpi-footer"><span class="delta up">▲ +R$ 94K</span><span>+4,5% vs anterior</span></div>
+        <div class="kpi-top"><span class="kpi-label">A Receber (aberto)</span><div class="kpi-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+        <div class="kpi-value" id="finKpiArOpen">—</div>
+        <div class="kpi-footer"><span class="delta down" id="finKpiArOverdue">▼ R$ — vencido</span><span>saldo em aberto</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-label">Margem Bruta R$</span><div class="kpi-icon green"><i class="fa-solid fa-chart-pie"></i></div></div>
-        <div class="kpi-value">R$ 600K</div>
-        <div class="kpi-footer"><span class="delta up">▲ +R$ 41K</span><span>27,4% da Rec. Líq.</span></div>
+        <div class="kpi-top"><span class="kpi-label">A Pagar (aberto)</span><div class="kpi-icon red"><i class="fa-solid fa-chart-pie"></i></div></div>
+        <div class="kpi-value" id="finKpiApOpen">—</div>
+        <div class="kpi-footer"><span class="delta down" id="finKpiApOverdue">▼ R$ — vencido</span><span>saldo em aberto</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-label">EBITDA Gerencial*</span><div class="kpi-icon blue"><i class="fa-solid fa-scale-balanced"></i></div></div>
-        <div class="kpi-value">R$ 284K</div>
-        <div class="kpi-footer"><span class="delta up">▲ +R$ 18K</span><span>13,0% da Rec. Líq.</span></div>
+        <div class="kpi-top"><span class="kpi-label">Posição Líquida</span><div class="kpi-icon blue"><i class="fa-solid fa-scale-balanced"></i></div></div>
+        <div class="kpi-value" id="finKpiNet">—</div>
+        <div class="kpi-footer"><span class="delta up">▲ AR − AP</span><span>posição do momento</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-label">Ciclo de Caixa</span><div class="kpi-icon amber"><i class="fa-solid fa-rotate"></i></div></div>
-        <div class="kpi-value">38 dias</div>
-        <div class="kpi-footer"><span class="delta down">▼ +3d vs anterior</span><span>PMR 42d · PMP 28d</span></div>
+        <div class="kpi-top"><span class="kpi-label">Vence em 30 dias</span><div class="kpi-icon amber"><i class="fa-solid fa-rotate"></i></div></div>
+        <div class="kpi-value" id="finKpiDue30">—</div>
+        <div class="kpi-footer"><span class="delta down" id="finKpiDue30Sub">▼ — a receber</span><span>próximos 30 dias</span></div>
       </div>
     </div>
 
@@ -851,23 +852,7 @@ new Chart(document.getElementById('chartFatMargem'), {
   options: { ...defaultOptions({ y1:{ position:'right', grid:{drawOnChartArea:false}, ticks:{color:accent, callback: v => v+'%'}, min:22, max:32 } }), plugins: { legend: { display: true, position:'top', labels:{ boxWidth:10, font:{size:10}, color:muted } }, tooltip: { backgroundColor: '#fff', titleColor:'#1d1d1f', bodyColor:'#3a3a3c', borderColor: border, borderWidth: 1, padding: 10, cornerRadius: 8 } }, responsive: true, maintainAspectRatio: false }
 });
 
-/* ====================================================
-   ALERTAS
-==================================================== */
-const alertas = [
-  { code:'ALT-003', sev:'crit', titulo:'Margem abaixo do piso — hoje', desc:'Margem bruta de 23,8% hoje — piso: 24%', acao:'Revisar precificação' },
-  { code:'ALT-004', sev:'high', titulo:'Inadimplência 4,2% — próximo ao limite', desc:'Threshold configurado: 5%. PMR crescendo 2m.', acao:'Acionar cobrança' },
-  { code:'ALT-009', sev:'high', titulo:'3 títulos AP vencem em 1–3 dias', desc:'Total: R$ 89K — confirmar disponibilidade', acao:'Ver caixa' },
-  { code:'ALT-011', sev:'med',  titulo:'Ciclo de Caixa +3d vs mês anterior', desc:'PMR subiu de 39d para 42d — investigar', acao:'Ver recebíveis' },
-  { code:'ALT-012', sev:'med',  titulo:'Distribuidora Boa Saúde: limite excedido', desc:'Saldo AR: R$ 84K · Limite: R$ 70K', acao:'Aprovar manual' },
-];
-document.getElementById('alertasPanel').innerHTML = alertas.map(a => `
-  <div class="alert-item ${a.sev}">
-    <div class="alert-dot ${a.sev}"></div>
-    <div class="alert-code">${a.code}</div>
-    <div class="alert-txt"><strong>${a.titulo}</strong><span>${a.desc}</span></div>
-    <div class="alert-action ${a.sev}" onclick="showToast('${a.code}','${a.acao}')">${a.acao} →</div>
-  </div>`).join('');
+/* === ALERTAS (preenchido via API) === */
 
 /* ====================================================
    WATERFALL VISÃO GERAL
@@ -933,25 +918,7 @@ new Chart(document.getElementById('chartCanal'), {
   options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{ legend:{display:true,position:'bottom',labels:{boxWidth:9,font:{size:10},color:muted,padding:10}}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}%`}} } }
 });
 
-/* TOP CLIENTES RECEITAS */
-const clientesRec = [
-  {n:'Distribuidora Boa Saúde',   v:142000, pct:5.1},
-  {n:'Mercado Verde Ltda',        v:128000, pct:4.6},
-  {n:'Bio Empório SA',            v:115000, pct:4.1},
-  {n:'Orgânico Total Eireli',     v:98000,  pct:3.5},
-  {n:'Vida Natural Com.',         v:89000,  pct:3.2},
-  {n:'Empório do Campo',          v:82000,  pct:2.9},
-  {n:'NutriVerde Alimentos',      v:74000,  pct:2.6},
-  {n:'Super Orgânico MG',         v:68000,  pct:2.4},
-  {n:'Colheita Saudável',         v:61000,  pct:2.2},
-  {n:'Terra Viva Distrib.',       v:57000,  pct:2.0},
-];
-document.getElementById('topClientesRec').innerHTML = clientesRec.map((c,i)=>`
-  <div class="prog-row">
-    <div class="prog-lbl" style="width:160px"><span style="color:var(--muted2);font-size:.68rem;margin-right:6px">${String(i+1).padStart(2,'0')}</span>${c.n}</div>
-    <div class="prog-track"><div class="prog-fill" style="width:${c.pct*10}%"></div></div>
-    <div class="prog-val">${fmtK(c.v)}</div>
-  </div>`).join('');
+/* === TOP CLIENTES RECEITAS (preenchido via API) === */
 
 /* FAT POR REGIÃO */
 const regioes = [
@@ -1063,52 +1030,12 @@ document.getElementById('vencCriticos').innerHTML = [
   <span class="pill ${v.tipo==='crit'?'red':v.tipo==='high'?'amber':'gray'}" style="flex-shrink:0">${v.tipo==='crit'?'Hoje':'Breve'}</span>
 </div>`).join('');
 
-/* ====================================================
-   BLOCO RECEBÍVEIS — AGING AR
-==================================================== */
-const agingData = [
-  {bucket:'A vencer',   val:1160000, pct:62.4, cls:'ok'},
-  {bucket:'1–15 dias',  val: 180000, pct: 9.7, cls:'ok'},
-  {bucket:'16–30 dias', val: 100000, pct: 5.4, cls:'mild'},
-  {bucket:'31–60 dias', val:  48000, pct: 2.6, cls:'warn'},
-  {bucket:'61–90 dias', val:  22000, pct: 1.2, cls:'crit'},
-  {bucket:'90+ dias',   val:   8000, pct:  .4, cls:'crit'},
-];
-document.getElementById('agingAR').innerHTML = agingData.map(a=>`
-  <div class="bucket-row">
-    <div class="bucket-lbl">${a.bucket}</div>
-    <div class="bucket-bar"><div class="bucket-fill ${a.cls}" style="width:${a.pct*1.4}%">${a.pct>8?a.pct+'%':''}</div></div>
-    <div class="bucket-val">${fmtK(a.val)}</div>
-    <div class="bucket-pct">${a.pct}%</div>
-  </div>`).join('');
-
-new Chart(document.getElementById('chartAgingAR'), {
+/* === AGING AR + DEVEDORES (preenchido via API) === */
+const chartAgingARInst = new Chart(document.getElementById('chartAgingAR'), {
   type:'bar',
-  data: {
-    labels: agingData.map(a=>a.bucket),
-    datasets:[{ data: agingData.map(a=>a.val), backgroundColor: agingData.map(a=>a.cls==='ok'?accent3:a.cls==='mild'?amber:red), borderRadius:4, borderSkipped:false }]
-  },
-  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`${fmtK(ctx.parsed.y)}`}} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted,font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}} } }
+  data: { labels:[], datasets:[{ data:[], backgroundColor:[], borderRadius:4, borderSkipped:false }] },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>fmtK(ctx.parsed.y)}} }, scales:{ x:{grid:{color:'transparent'},ticks:{color:muted,font:{size:10}}}, y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}} } }
 });
-
-const devedores = [
-  {n:'Empório Integral Ltda',   v:18400, dias:48},
-  {n:'Saúde Total Com.',        v:14200, dias:62},
-  {n:'Bio Gourmet Eireli',      v:11800, dias:35},
-  {n:'Verde Vida Distrib.',     v: 9600, dias:91},
-  {n:'Nutrição Pura SA',        v: 8200, dias:27},
-  {n:'Colheita Orgânica ME',    v: 6400, dias:73},
-  {n:'Bem Estar Alimentos',     v: 5100, dias:18},
-  {n:'Terra Fértil Com.',       v: 4800, dias:44},
-];
-document.getElementById('topDevedores').innerHTML = `<table><thead><tr><th style="padding-left:14px">Cliente</th><th>Valor Vencido</th><th>Dias</th><th>Status</th></tr></thead><tbody>${
-  devedores.map(d=>`<tr>
-    <td style="padding-left:14px" class="td-strong">${d.n}</td>
-    <td class="td-num" style="color:var(--red);font-weight:600">${fmtK(d.v)}</td>
-    <td class="td-num">${d.dias}d</td>
-    <td><span class="pill ${d.dias>60?'red':d.dias>30?'amber':'gray'}">${d.dias>90?'Crítico':d.dias>60?'Vencido':d.dias>30?'Atenção':'Recente'}</span></td>
-  </tr>`).join('')
-}</tbody></table>`;
 
 /* HEATMAP VENCIMENTOS */
 (function() {
@@ -1158,49 +1085,148 @@ new Chart(document.getElementById('chartCalPag'), {
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',titleColor:'#1d1d1f',bodyColor:'#3a3a3c',borderColor:border,borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>`Saída: ${fmtK(ctx.parsed.y)}`}}},scales:{x:{grid:{color:'transparent'},ticks:{color:muted,maxTicksLimit:8}},y:{grid:{color:'#f0f0f0'},ticks:{color:muted,callback:v=>fmtK(v)}}}}
 });
 
-const fornecedores = [
-  {n:'BioFresh Alimentos SA',     v:142000, prazo:'30d', cat:'Fornecedor'},
-  {n:'VeganProt Distrib.',        v:118000, prazo:'28d', cat:'Fornecedor'},
-  {n:'NaturalBio Insumos',        v: 96000, prazo:'35d', cat:'Fornecedor'},
-  {n:'EcoGreen Embalagens',       v: 74000, prazo:'21d', cat:'Fornecedor'},
-  {n:'LogiBio Transportes',       v: 68000, prazo:'15d', cat:'Serviço'},
-  {n:'Imóveis SP Gestão',         v: 54000, prazo:'Fixo', cat:'Aluguel'},
-  {n:'TechFarm Sistemas',         v: 38000, prazo:'Fixo', cat:'TI/SaaS'},
-  {n:'Energia SP Ltda',           v: 24000, prazo:'Mês',  cat:'Concessionária'},
-];
-document.getElementById('topFornecedores').innerHTML = fornecedores.map(f=>`
-  <div class="prog-row">
-    <div class="prog-lbl" style="width:160px">${f.n}</div>
-    <div class="prog-track"><div class="prog-fill" style="width:${f.v/1420}%"></div></div>
-    <div class="prog-val">${fmtK(f.v)}</div>
-  </div>`).join('');
+/* === FORNECEDORES / AGING AP / VENC CRITICOS (preenchido via API) === */
 
-const agingAP = [
-  {bucket:'A vencer',   val:890000, pct:79.5, cls:'ok'},
-  {bucket:'1–15 dias',  val: 98000, pct: 8.7, cls:'mild'},
-  {bucket:'16–30 dias', val: 72000, pct: 6.4, cls:'warn'},
-  {bucket:'31–60 dias', val: 42000, pct: 3.7, cls:'crit'},
-  {bucket:'60+ dias',   val: 18000, pct: 1.6, cls:'crit'},
-];
-document.getElementById('agingAP').innerHTML = agingAP.map(a=>`
-  <div class="bucket-row">
-    <div class="bucket-lbl">${a.bucket}</div>
-    <div class="bucket-bar"><div class="bucket-fill ${a.cls}" style="width:${a.pct*1.1}%">${a.pct>8?a.pct+'%':''}</div></div>
-    <div class="bucket-val">${fmtK(a.val)}</div>
-    <div class="bucket-pct">${a.pct}%</div>
-  </div>`).join('');
+/* ════════════════════════════════════════════════════
+   INIT ASYNC — carrega todos os dados financeiros
+════════════════════════════════════════════════════ */
+(async function initFinanceiro() {
+  const [finSum, arList, apList, topClis, byDay] = await Promise.all([
+    DashboardAPI.finance.summary(),
+    DashboardAPI.finance.receivable(),
+    DashboardAPI.finance.payable(),
+    DashboardAPI.sales.customers(10),
+    DashboardAPI.sales.byDay(),
+  ]);
 
-document.getElementById('vencCriticosAP').innerHTML = [
-  {dt:'17/04', f:'BioFresh — NF 0841',   v:28400, s:'Hoje', c:'red'},
-  {dt:'17/04', f:'VeganProt — NF 0310',  v: 5600, s:'Hoje', c:'red'},
-  {dt:'19/04', f:'Aluguel SP',           v:18000, s:'D+2',  c:'amber'},
-  {dt:'20/04', f:'NaturalBio — NF 0555', v:37200, s:'D+3',  c:'amber'},
-].map(v=>`<div class="proj-row">
-  <div class="proj-dt">${v.dt}</div>
-  <div class="proj-desc">${v.f}</div>
-  <div class="proj-val neg">(${fmtK(v.v)})</div>
-  <span class="pill ${v.c}" style="flex-shrink:0">${v.s}</span>
-</div>`).join('');
+  // ── KPI Cards ──────────────────────────────────────────
+  const sum = Array.isArray(finSum) ? (finSum[0] || {}) : (finSum || {});
+  document.getElementById('finKpiArOpen').textContent   = fmtK(sum.ar_open_balance || 0);
+  document.getElementById('finKpiArOverdue').textContent= `▼ ${fmtK(sum.ar_overdue_balance||0)} vencido`;
+  document.getElementById('finKpiApOpen').textContent   = fmtK(sum.ap_open_balance || 0);
+  document.getElementById('finKpiApOverdue').textContent= `▼ ${fmtK(sum.ap_overdue_balance||0)} vencido`;
+  document.getElementById('finKpiNet').textContent      = fmtK(sum.net_position || 0);
+  document.getElementById('finKpiDue30').textContent   = fmtK(sum.ar_due_next_30 || 0);
+  document.getElementById('finKpiDue30Sub').textContent= `▼ ${fmtK(sum.ap_due_next_30||0)} a pagar`;
+
+  // ── Alertas financeiros ────────────────────────────────
+  const overdueClis = arList.filter(r => r.days_overdue > 0).slice(0, 4);
+  const overdueAP   = apList.filter(r => r.days_overdue > 0).slice(0, 2);
+  const allAlerts = [
+    ...overdueClis.map((r, i) => ({ code:`AR-${String(i+1).padStart(3,'0')}`, sev: r.days_overdue > 60 ? 'crit' : 'high',
+      titulo:`${r.customer_name||'Cliente'} — ${r.days_overdue}d em atraso`,
+      desc:`Saldo: ${fmtK(r.balance||0)} · Venc: ${DashboardAPI.fmtDate(r.due_date)}`, acao:'Acionar cobrança' })),
+    ...overdueAP.map((r, i)  => ({ code:`AP-${String(i+1).padStart(3,'0')}`, sev:'high',
+      titulo:`${r.supplier_name||'Fornecedor'} — vence em ${r.days_overdue}d`,
+      desc:`Saldo: ${fmtK(r.balance||0)} · Categoria: ${r.category||'—'}`, acao:'Ver pagamentos' })),
+  ];
+  document.getElementById('alertasPanel').innerHTML = allAlerts.length === 0
+    ? '<div style="padding:16px;color:var(--muted);font-size:.82rem;text-align:center">Sem alertas financeiros ativos</div>'
+    : allAlerts.map(a => `
+        <div class="alert-item ${a.sev}">
+          <div class="alert-dot ${a.sev}"></div>
+          <div class="alert-code">${a.code}</div>
+          <div class="alert-txt"><strong>${a.titulo}</strong><span>${a.desc}</span></div>
+          <div class="alert-action ${a.sev}" onclick="showToast('${a.code}','${a.acao}')">${a.acao} →</div>
+        </div>`).join('');
+
+  // ── Aging AR ──────────────────────────────────────────
+  const bucketMap = { em_dia:0, atraso_1_15:1, atraso_16_30:2, atraso_31_60:3, atraso_61_90:4, atraso_90_mais:5 };
+  const bucketLabels = ['A vencer','1–15 dias','16–30 dias','31–60 dias','61–90 dias','90+ dias'];
+  const bucketCls    = ['ok','ok','mild','warn','crit','crit'];
+  const agingARVals  = Array(6).fill(0);
+  arList.forEach(r => { const b = bucketMap[r.aging_bucket] ?? 0; agingARVals[b] += (r.balance || 0); });
+  const totalAR = agingARVals.reduce((s, v) => s + v, 0) || 1;
+  document.getElementById('agingAR').innerHTML = bucketLabels.map((lbl, i) => {
+    const pct = (agingARVals[i] / totalAR * 100).toFixed(1);
+    return `<div class="bucket-row">
+      <div class="bucket-lbl">${lbl}</div>
+      <div class="bucket-bar"><div class="bucket-fill ${bucketCls[i]}" style="width:${Math.min(+pct * 1.4, 95)}%">${+pct > 8 ? pct+'%' : ''}</div></div>
+      <div class="bucket-val">${fmtK(agingARVals[i])}</div>
+      <div class="bucket-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+  chartAgingARInst.data.labels = bucketLabels;
+  chartAgingARInst.data.datasets[0].data = agingARVals;
+  chartAgingARInst.data.datasets[0].backgroundColor = bucketCls.map(c => c === 'ok' ? accent3 : c === 'mild' ? amber : red);
+  chartAgingARInst.update();
+
+  // ── Top Devedores ──────────────────────────────────────
+  const devedores = arList.filter(r => r.days_overdue > 0).sort((a,b) => b.balance - a.balance).slice(0, 8);
+  document.getElementById('topDevedores').innerHTML = `<table><thead><tr>
+    <th style="padding-left:14px">Cliente</th><th>Valor Vencido</th><th>Dias</th><th>Status</th>
+  </tr></thead><tbody>${
+    devedores.map(d => `<tr>
+      <td style="padding-left:14px" class="td-strong">${d.customer_name||'—'}</td>
+      <td class="td-num" style="color:var(--red);font-weight:600">${fmtK(d.balance||0)}</td>
+      <td class="td-num">${d.days_overdue}d</td>
+      <td><span class="pill ${d.days_overdue>60?'red':d.days_overdue>30?'amber':'gray'}">${d.days_overdue>90?'Crítico':d.days_overdue>60?'Vencido':d.days_overdue>30?'Atenção':'Recente'}</span></td>
+    </tr>`).join('')
+  }</tbody></table>`;
+
+  // ── Top Clientes Receitas ──────────────────────────────
+  const maxCli = topClis[0]?.total_revenue || 1;
+  document.getElementById('topClientesRec').innerHTML = topClis.map((c, i) => `
+    <div class="prog-row">
+      <div class="prog-lbl" style="width:160px"><span style="color:var(--muted2);font-size:.68rem;margin-right:6px">${String(i+1).padStart(2,'0')}</span>${c.customer_name||'—'}</div>
+      <div class="prog-track"><div class="prog-fill" style="width:${Math.round((c.total_revenue||0)/maxCli*85)}%"></div></div>
+      <div class="prog-val">${fmtK(c.total_revenue||0)}</div>
+    </div>`).join('');
+
+  // ── Top Fornecedores ───────────────────────────────────
+  const maxAP = apList[0]?.balance || 1;
+  document.getElementById('topFornecedores').innerHTML = apList.slice(0, 8).map(f => `
+    <div class="prog-row">
+      <div class="prog-lbl" style="width:160px">${f.supplier_name||'—'}</div>
+      <div class="prog-track"><div class="prog-fill" style="width:${Math.round((f.balance||0)/maxAP*85)}%"></div></div>
+      <div class="prog-val">${fmtK(f.balance||0)}</div>
+    </div>`).join('');
+
+  // ── Aging AP ──────────────────────────────────────────
+  const agingAPBuckets = ['A vencer','1–15 dias','16–30 dias','31–60 dias','60+ dias'];
+  const agingAPCls     = ['ok','mild','warn','crit','crit'];
+  const apBucketMap    = { em_dia:0, atraso_1_15:1, atraso_16_30:2, atraso_31_60:3, atraso_90_mais:4 };
+  const agingAPVals    = Array(5).fill(0);
+  apList.forEach(r => { const b = apBucketMap[r.aging_bucket] ?? 0; agingAPVals[b] += (r.balance || 0); });
+  const totalAP = agingAPVals.reduce((s, v) => s + v, 0) || 1;
+  document.getElementById('agingAP').innerHTML = agingAPBuckets.map((lbl, i) => {
+    const pct = (agingAPVals[i] / totalAP * 100).toFixed(1);
+    return `<div class="bucket-row">
+      <div class="bucket-lbl">${lbl}</div>
+      <div class="bucket-bar"><div class="bucket-fill ${agingAPCls[i]}" style="width:${Math.min(+pct * 1.1, 95)}%">${+pct > 8 ? pct+'%' : ''}</div></div>
+      <div class="bucket-val">${fmtK(agingAPVals[i])}</div>
+      <div class="bucket-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // ── Vencimentos críticos AP ────────────────────────────
+  const vencAP = apList.filter(r => r.days_overdue >= 0).sort((a,b) => a.days_overdue - b.days_overdue).slice(0, 5);
+  document.getElementById('vencCriticosAP').innerHTML = vencAP.map(v => {
+    const cls = v.days_overdue === 0 ? 'red' : v.days_overdue <= 3 ? 'amber' : 'gray';
+    const lbl = v.days_overdue === 0 ? 'Hoje' : `D+${v.days_overdue}`;
+    return `<div class="proj-row">
+      <div class="proj-dt">${DashboardAPI.fmtDate(v.due_date)}</div>
+      <div class="proj-desc">${v.supplier_name||'—'} · ${v.category||'—'}</div>
+      <div class="proj-val neg">(${fmtK(v.balance||0)})</div>
+      <span class="pill ${cls}" style="flex-shrink:0">${lbl}</span>
+    </div>`;
+  }).join('') || '<div style="padding:12px;color:var(--muted);font-size:.82rem">Sem vencimentos críticos</div>';
+
+  // ── Fat diário (byDay → chartFatDiario via update) ────
+  // O chartFatDiario já está criado acima com dados mock.
+  // Aqui atualizamos com dados reais se disponíveis.
+  if (byDay && byDay.length > 0) {
+    const ch = Chart.getChart(document.getElementById('chartFatDiario'));
+    if (ch) {
+      const dias30 = byDay.slice(-30);
+      ch.data.labels = dias30.map(d => DashboardAPI.fmtDate(d.order_date));
+      ch.data.datasets[0].data = dias30.map(d => d.revenue || 0);
+      ch.update();
+    }
+  }
+
+  DashboardAPI.afterLoad();
+})();
 
 /* ====================================================
    EXPORT BUTTON

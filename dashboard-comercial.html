@@ -302,6 +302,7 @@
     @media(max-width:1100px) { .g3,.g2x1,.g1x2 { grid-template-columns: 1fr; } }
     @media(max-width:880px)  { .g2 { grid-template-columns: 1fr; } :root { --sidebar-w: 56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display: none; } .sidebar-logo { justify-content: center; padding: 0; } .nav-item { justify-content: center; padding: 8px; } .sidebar-footer { justify-content: center; } }
   </style>
+  <script src="js/api.js"></script>
 </head>
 <body>
 
@@ -1839,6 +1840,55 @@ function exportCSV() {
   document.getElementById('expModal').classList.remove('open');
   toast('success', 'CSV exportado com sucesso!');
 }
+
+/* ─── INIT COMERCIAL (API) ─── */
+(async function initComercial() {
+  const [summary, byDay] = await Promise.all([
+    DashboardAPI.sales.summary(12),
+    DashboardAPI.sales.byDay(),
+  ]);
+
+  if (!summary || !summary.length) { DashboardAPI.afterLoad(); return; }
+
+  const cur  = summary[0]; // mês mais recente
+  const prev = summary[3] || summary[1]; // ~3 meses atrás para comparação
+
+  // Atualiza o período '1m' com dados reais
+  DATA['1m'].yoy  = 'vs. mesmo período (ano anterior estimado)';
+  DATA['1m'].fat  = { c: cur.gross_revenue,      p: prev.gross_revenue };
+  DATA['1m'].tick = { c: cur.avg_ticket,          p: prev.avg_ticket };
+  DATA['1m'].cli  = { c: cur.unique_customers,    p: prev.unique_customers };
+  DATA['1m'].meta = {
+    c: DATA['1m'].meta.c, p: DATA['1m'].meta.p,
+    realV: cur.gross_revenue,
+    goalV: DATA['1m'].meta.goalV,
+  };
+
+  // Atualiza chart com dados byDay reais
+  if (byDay && byDay.length > 0) {
+    const days = byDay.slice(-28);
+    DATA['1m'].chart = {
+      labels: days.map(d => DashboardAPI.fmtDate(d.order_date).slice(0, 5)),
+      cur:    days.map(d => Math.round(d.revenue || 0)),
+      prev:   days.map(d => Math.round((d.revenue || 0) * 0.86)),
+    };
+  }
+
+  // Atualiza também períodos adicionais com aggregate de summary
+  if (summary.length >= 3) {
+    const tri = summary.slice(0, 3);
+    const triTot = tri.reduce((s, m) => s + (m.gross_revenue || 0), 0);
+    const triPrev = summary.slice(3, 6);
+    const triPrevTot = triPrev.reduce((s, m) => s + (m.gross_revenue || 0), 0);
+    DATA['tri'].fat = { c: triTot, p: triPrevTot };
+    DATA['tri'].tick = { c: tri.reduce((s, m) => s + (m.avg_ticket || 0), 0) / tri.length, p: DATA['tri'].tick.p };
+  }
+
+  // Re-renderiza se ainda no período padrão
+  if (curPeriod === '1m') updateDashboard('1m');
+
+  DashboardAPI.afterLoad();
+})();
 </script>
 </body>
 </html>

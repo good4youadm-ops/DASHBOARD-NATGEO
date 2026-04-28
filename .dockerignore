@@ -1,0 +1,28 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+logs
+*.log
+.git
+.gitignore
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Oracle Instant Client local (baixado pelo Dockerfile)
+instantclient*/
+
+# Arquivos HTML dos dashboards (servidos separadamente, não precisam ir na imagem)
+*.html
+js/
+docs/

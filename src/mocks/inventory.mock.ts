@@ -1,0 +1,58 @@
+const TENANT = '00000000-0000-0000-0000-000000000001';
+
+export const mockInventorySummary = {
+  tenant_id: TENANT,
+  warehouse: 'CD_PRINCIPAL',
+  sku_count: 842,
+  total_qty_available: 145320,
+  total_qty_reserved: 12450,
+  total_qty_blocked: 3200,
+  total_inventory_value: 1_850_000,
+  ruptura_count: 23,
+  sku_a_count: 120,
+  sku_b_count: 280,
+  sku_c_count: 442,
+  avg_coverage_days: 18.4,
+};
+
+export const mockStockByProduct = Array.from({ length: 30 }, (_, i) => ({
+  tenant_id: TENANT,
+  product_id: `prod-${i + 1}`,
+  sku: `PRD${String(i + 1).padStart(5, '0')}`,
+  product_name: `Produto ${i + 1}`,
+  category: ['Laticínios', 'Frios', 'Bebidas', 'Padaria'][i % 4],
+  brand: ['MarcaA', 'MarcaB', 'MarcaC'][i % 3],
+  abc_curve: i < 6 ? 'A' : i < 15 ? 'B' : 'C',
+  min_stock: 100,
+  max_stock: 2000,
+  reorder_point: 200,
+  warehouse: 'CD_PRINCIPAL',
+  qty_available: Math.floor(50 + Math.random() * 1000),
+  qty_reserved: Math.floor(10 + Math.random() * 200),
+  qty_blocked: Math.floor(Math.random() * 50),
+  qty_in_transit: Math.floor(Math.random() * 100),
+  qty_physical: Math.floor(70 + Math.random() * 1200),
+  avg_cost: 8 + Math.random() * 25,
+  total_cost: Math.floor(5000 + Math.random() * 50000),
+  coverage_days: Math.floor(5 + Math.random() * 45),
+  ruptura: Math.random() < 0.08,
+  position_date: new Date().toISOString().slice(0, 10),
+  stock_alert: ['normal', 'normal', 'normal', 'ponto_pedido', 'estoque_minimo'][Math.floor(Math.random() * 5)],
+}));
+
+export const mockExpiringLots = Array.from({ length: 15 }, (_, i) => ({
+  tenant_id: TENANT,
+  product_id: `prod-${i + 1}`,
+  sku: `PRD${String(i + 1).padStart(5, '0')}`,
+  product_name: `Produto Perecível ${i + 1}`,
+  category: 'Laticínios',
+  lot_number: `LOT${String(20240100 + i)}`,
+  warehouse: 'CD_PRINCIPAL',
+  expiry_date: new Date(Date.now() + (i + 1) * 5 * 86400000).toISOString().slice(0, 10),
+  days_to_expiry: (i + 1) * 5,
+  qty_current: Math.floor(10 + Math.random() * 200),
+  unit_cost: 5 + Math.random() * 20,
+  total_cost: Math.floor(500 + Math.random() * 5000),
+  status: 'available',
+  expiry_alert: i < 2 ? 'critico' : i < 6 ? 'urgente' : 'atencao',
+}));

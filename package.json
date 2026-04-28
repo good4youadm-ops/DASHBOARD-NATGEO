@@ -1,0 +1,56 @@
+{
+  "name": "natgeo-saas",
+  "version": "1.0.0",
+  "description": "NatGeo Distribuidora — SaaS de gestão com sincronização Oracle",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/api/server.ts",
+    "build": "tsc --project tsconfig.build.json",
+    "start": "node dist/src/api/server.js",
+    "start:worker": "node dist/workers/oracle-sync/index.js all",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src workers --ext .ts",
+
+    "sync:oracle": "tsx workers/oracle-sync/index.ts all",
+    "sync:oracle:full": "tsx workers/oracle-sync/index.ts all --full",
+    "sync:oracle:dry": "tsx workers/oracle-sync/index.ts all --dry-run",
+    "sync:oracle:customers": "tsx workers/oracle-sync/index.ts customers",
+    "sync:oracle:products": "tsx workers/oracle-sync/index.ts products",
+    "sync:oracle:sales": "tsx workers/oracle-sync/index.ts sales",
+    "sync:oracle:inventory": "tsx workers/oracle-sync/index.ts inventory",
+    "sync:oracle:finance": "tsx workers/oracle-sync/index.ts finance",
+
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+
+    "docker:dev": "docker compose -f docker-compose.yml up --build",
+    "docker:prod": "docker compose -f docker-compose.prod.yml up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "express": "^4.19.2",
+    "oracledb": "^6.5.1",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8",
+    "winston": "^3.13.0",
+    "date-fns": "^3.6.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "@types/cors": "^2.8.17",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.5.0",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2"
+  }
+}
