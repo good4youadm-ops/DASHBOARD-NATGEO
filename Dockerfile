@@ -35,6 +35,8 @@ RUN mkdir -p logs
 COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY *.html ./
+COPY js/ ./js/
 
 EXPOSE 3001
 

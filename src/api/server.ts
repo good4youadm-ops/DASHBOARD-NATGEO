@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
 import { createLogger, format, transports } from 'winston';
 import { supabaseAdmin } from '../lib/supabase/admin';
 import * as salesRepo from '../repositories/sales';
@@ -49,7 +50,11 @@ const logger = createLogger({
 // ── App ───────────────────────────────────────────────────────────────────────
 const app = express();
 
-app.use(helmet());
+// Arquivos estáticos — HTML dos dashboards e js/
+const publicDir = path.resolve('.');
+app.use(express.static(publicDir, { index: 'dashboard-comercial.html' }));
+
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true }));
 app.use(express.json());
 

@@ -7,7 +7,9 @@
   'use strict';
 
   // ── Configuração ────────────────────────────────────────────────────────────
-  const BASE = global.__API_URL__ || 'http://localhost:3001';
+  // Em produção (servido pelo Express) usa URL relativa — mesmo origin.
+  // Localmente (file://) usa localhost:3001 para dev, mas mocks cobrem o caso.
+  const BASE = global.__API_URL__ || (location.protocol === 'file:' ? 'http://localhost:3001' : '');
   const TIMEOUT_MS = 6000;
 
   // Em produção (fora do localhost) mocks são proibidos.
