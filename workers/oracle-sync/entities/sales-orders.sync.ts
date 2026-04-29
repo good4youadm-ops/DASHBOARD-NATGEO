@@ -62,8 +62,14 @@ export async function syncSalesOrders(fullSync = false): Promise<void> {
     logger.info(`[${ENTITY}] Pedidos upsert concluído`, result);
   }
 
-  // Sync itens dos pedidos encontrados
-  const sourceIds = orderRows.map((r) => `'${(r as Record<string, unknown>)['SOURCE_ID']}'`).join(',');
+  // Sync itens dos pedidos encontrados — bind variables nomeados para evitar SQL injection
+  const itemBinds: Record<string, unknown> = {};
+  const placeholders = orderRows.map((r, i) => {
+    const key = `id${i}`;
+    itemBinds[key] = (r as Record<string, unknown>)['SOURCE_ID'];
+    return `:${key}`;
+  }).join(',');
+
   const sqlItems = `
     SELECT
       i.ITEM_ID             AS SOURCE_ID,
@@ -81,10 +87,10 @@ export async function syncSalesOrders(fullSync = false): Promise<void> {
       i.VL_TOTAL            AS TOTAL_AMOUNT,
       i.STATUS              AS STATUS
     FROM PEDIDOS_VENDA_ITENS i
-    WHERE i.PEDIDO_ID IN (${sourceIds})
+    WHERE i.PEDIDO_ID IN (${placeholders})
   `;
 
-  const itemRows = await queryOracle(sqlItems);
+  const itemRows = await queryOracle(sqlItems, itemBinds);
   if (itemRows.length > 0) {
     const mappedItems = itemRows.map((r) => mapSalesOrderItem(r, tenantId, sourceName));
     if (!config.sync.dryRun) {
