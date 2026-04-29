@@ -14,19 +14,17 @@ services:
     restart: unless-stopped
     ports:
       - "3001:3001"
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
     volumes:
-      - logs_data:/app/logs   # Volume persistente para logs
+      - logs_data:/app/logs
     command: ["node", "dist/src/api/server.js"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 30s
     networks:
       - dashboard_net
 
@@ -36,8 +34,6 @@ services:
       target: production
     container_name: dashboardnatgeo_sync
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
     volumes:
