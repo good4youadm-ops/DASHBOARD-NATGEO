@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -126,6 +126,37 @@ app.get('/health/deep', async (_req, res) => {
     timestamp: new Date().toISOString(),
     checks,
   });
+});
+
+// ── Config pública (URL e anon key — seguros para expor ao browser) ──────────
+app.get('/api/config', (_req, res) => {
+  res.json({
+    supabaseUrl:     process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  });
+});
+
+// ── Middleware de autenticação JWT ────────────────────────────────────────────
+async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Token de autenticação necessário' });
+    return;
+  }
+  const token = auth.slice(7);
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
+    res.status(401).json({ error: 'Token inválido ou expirado' });
+    return;
+  }
+  (req as Request & { user: typeof user }).user = user;
+  next();
+}
+
+// Protege todas as rotas /api/* exceto /api/config
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  if (req.path === '/config') return next();
+  requireAuth(req, res, next);
 });
 
 // ── Helper de erro ────────────────────────────────────────────────────────────

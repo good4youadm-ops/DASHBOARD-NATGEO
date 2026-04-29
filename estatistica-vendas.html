@@ -310,6 +310,7 @@
     .t-close:hover { color: var(--text); }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -1604,6 +1605,8 @@ document.getElementById('btnMapa').addEventListener('click', () => toast('info',
 
 /* ─── API STATUS ─── */
 (async function() {
+  const session = await NatGeoAuth.requireAuth();
+  if (!session) return;
   await DashboardAPI.health();
   DashboardAPI.afterLoad();
 })();

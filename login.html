@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Entrar</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --bg: #f5f5f7; --surface: #ffffff;
+      --border: #e5e5ea; --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93;
+      --red: #ff3b30; --radius: 14px;
+      --shadow-md: 0 8px 40px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+    }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-wrap {
+      width: 100%; max-width: 420px; padding: 24px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 12px;
+      justify-content: center; margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--accent); display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 1.2rem;
+    }
+    .logo-name { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .logo-name span { color: var(--accent3); }
+
+    .card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow-md); padding: 36px 32px;
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .subtitle { font-size: .85rem; color: var(--muted); margin-bottom: 28px; }
+
+    .field { margin-bottom: 18px; }
+    label { display: block; font-size: .78rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+    .input-wrap { position: relative; }
+    input[type="email"], input[type="password"] {
+      width: 100%; padding: 10px 14px; padding-right: 40px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: .9rem; color: var(--text); background: var(--bg);
+      transition: border-color .15s; outline: none;
+    }
+    input:focus { border-color: var(--accent3); background: #fff; }
+    .input-icon {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: .85rem; pointer-events: none;
+    }
+    .toggle-pw { pointer-events: all; cursor: pointer; }
+
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: var(--accent); color: #fff; font-size: .95rem;
+      font-weight: 600; cursor: pointer; transition: background .15s, opacity .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn:hover { background: var(--accent2); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .error-msg {
+      display: none; margin-top: 14px; padding: 10px 14px;
+      border-radius: 8px; background: #fff1f0; border: 1px solid #ffccc7;
+      color: var(--red); font-size: .82rem; align-items: center; gap: 8px;
+    }
+    .error-msg.show { display: flex; }
+
+    .footer-note {
+      text-align: center; margin-top: 20px; font-size: .75rem; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo">
+    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+    <div class="logo-name">Nat<span>Geo</span></div>
+  </div>
+
+  <div class="card">
+    <h1>Bem-vindo de volta</h1>
+    <p class="subtitle">Acesse o painel de gestão da distribuidora</p>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <div class="input-wrap">
+          <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" required />
+          <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+          <span class="input-icon toggle-pw" id="togglePw">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        <span id="btnText">Entrar</span>
+      </button>
+
+      <div class="error-msg" id="errorMsg">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="errorText">E-mail ou senha inválidos.</span>
+      </div>
+    </form>
+  </div>
+
+  <p class="footer-note">NatGeo Distribuidora &copy; 2025</p>
+</div>
+
+<script>
+(async function () {
+  'use strict';
+
+  // Se já tem sessão válida, redireciona direto
+  var stored = localStorage.getItem('natgeo_auth');
+  if (stored) {
+    try {
+      var s = JSON.parse(stored);
+      if (s && s.access_token && s.expires_at && (Date.now() / 1000) < s.expires_at - 60) {
+        window.location.replace('dashboard-distribuidora.html');
+        return;
+      }
+    } catch (e) {}
+  }
+
+  // Carrega config pública (URL e anon key do Supabase) do servidor
+  var cfg = null;
+  try {
+    cfg = await fetch('/api/config').then(function (r) { return r.json(); });
+  } catch (e) {
+    showError('Não foi possível conectar ao servidor. Tente novamente.');
+    return;
+  }
+
+  // Inicializa cliente Supabase
+  var supabaseUrl = cfg.supabaseUrl;
+  var supabaseAnonKey = cfg.supabaseAnonKey;
+
+  // Toggle senha
+  document.getElementById('togglePw').addEventListener('click', function () {
+    var inp = document.getElementById('password');
+    var ico = document.getElementById('eyeIcon');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      ico.className = 'fa-solid fa-eye-slash';
+    } else {
+      inp.type = 'password';
+      ico.className = 'fa-solid fa-eye';
+    }
+  });
+
+  // Login
+  document.getElementById('loginForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideError();
+    setLoading(true);
+
+    var email    = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      showError('Preencha e-mail e senha.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      var resp = await fetch(supabaseUrl + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({ email: email, password: password }),
+      });
+
+      var data = await resp.json();
+
+      if (!resp.ok || !data.access_token) {
+        var msg = data.error_description || data.msg || 'E-mail ou senha inválidos.';
+        showError(msg);
+        setLoading(false);
+        return;
+      }
+
+      // Salva sessão
+      var session = {
+        access_token:  data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at:    Math.floor(Date.now() / 1000) + (data.expires_in || 3600),
+        user:          data.user,
+      };
+      localStorage.setItem('natgeo_auth', JSON.stringify(session));
+
+      window.location.replace('dashboard-distribuidora.html');
+
+    } catch (err) {
+      showError('Erro de conexão. Verifique sua internet e tente novamente.');
+      setLoading(false);
+    }
+  });
+
+  function setLoading(on) {
+    var btn  = document.getElementById('submitBtn');
+    var text = document.getElementById('btnText');
+    btn.disabled = on;
+    text.textContent = on ? 'Entrando…' : 'Entrar';
+  }
+  function showError(msg) {
+    var el = document.getElementById('errorMsg');
+    document.getElementById('errorText').textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('errorMsg').classList.remove('show');
+  }
+}());
+</script>
+</body>
+</html>

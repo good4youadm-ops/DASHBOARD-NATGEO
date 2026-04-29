@@ -43,9 +43,18 @@
   async function apiFetch(path) {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const headers = {};
+    if (global.__authToken) headers['Authorization'] = 'Bearer ' + global.__authToken;
     try {
-      const res = await fetch(BASE + path, { signal: ctrl.signal });
+      const res = await fetch(BASE + path, { signal: ctrl.signal, headers });
       clearTimeout(tid);
+      if (res.status === 401) {
+        // Token expirado ou inválido — força logout
+        localStorage.removeItem('natgeo_auth');
+        global.__authToken = null;
+        window.location.replace('login.html');
+        throw new Error('Sessão expirada');
+      }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return await res.json();
     } catch (e) {

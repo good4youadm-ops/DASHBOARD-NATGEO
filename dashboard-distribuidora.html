@@ -450,6 +450,7 @@
     }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -1198,6 +1199,8 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
    INIT ASYNC — carrega todos os dados da API (ou mock)
 ═══════════════════════════════════════════════════════ */
 (async function initDashboard() {
+  const session = await NatGeoAuth.requireAuth();
+  if (!session) return;
   const [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring] = await Promise.all([
     DashboardAPI.sales.summary(3),
     DashboardAPI.sales.byDay(),

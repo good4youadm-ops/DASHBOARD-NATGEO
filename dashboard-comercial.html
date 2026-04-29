@@ -303,6 +303,7 @@
     @media(max-width:880px)  { .g2 { grid-template-columns: 1fr; } :root { --sidebar-w: 56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display: none; } .sidebar-logo { justify-content: center; padding: 0; } .nav-item { justify-content: center; padding: 8px; } .sidebar-footer { justify-content: center; } }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -1843,6 +1844,8 @@ function exportCSV() {
 
 /* ─── INIT COMERCIAL (API) ─── */
 (async function initComercial() {
+  const session = await NatGeoAuth.requireAuth();
+  if (!session) return;
   const [summary, byDay] = await Promise.all([
     DashboardAPI.sales.summary(12),
     DashboardAPI.sales.byDay(),

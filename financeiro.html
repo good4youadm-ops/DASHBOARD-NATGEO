@@ -277,6 +277,7 @@
     }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -1091,6 +1092,8 @@ new Chart(document.getElementById('chartCalPag'), {
    INIT ASYNC — carrega todos os dados financeiros
 ════════════════════════════════════════════════════ */
 (async function initFinanceiro() {
+  const session = await NatGeoAuth.requireAuth();
+  if (!session) return;
   const [finSum, arList, apList, topClis, byDay] = await Promise.all([
     DashboardAPI.finance.summary(),
     DashboardAPI.finance.receivable(),
