@@ -10,11 +10,16 @@ function required(key: string): string {
   return val;
 }
 
+export const oracleConfigured =
+  !!process.env.ORACLE_USER &&
+  !!process.env.ORACLE_PASSWORD &&
+  !!process.env.ORACLE_CONNECT_STRING;
+
 export const config = {
   oracle: {
-    user: required('ORACLE_USER'),
-    password: required('ORACLE_PASSWORD'),
-    connectString: required('ORACLE_CONNECT_STRING'),
+    user: process.env.ORACLE_USER ?? '',
+    password: process.env.ORACLE_PASSWORD ?? '',
+    connectString: process.env.ORACLE_CONNECT_STRING ?? '',
     poolMin: parseInt(process.env.ORACLE_POOL_MIN ?? '2'),
     poolMax: parseInt(process.env.ORACLE_POOL_MAX ?? '10'),
     poolIncrement: parseInt(process.env.ORACLE_POOL_INCREMENT ?? '1'),

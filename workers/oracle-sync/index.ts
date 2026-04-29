@@ -1,25 +1,30 @@
-import { initOraclePool, closeOraclePool } from './oracle/client';
+import { oracleConfigured } from './config';
 import { logger } from './utils/logger';
-import { syncCustomers } from './entities/customers.sync';
-import { syncProducts } from './entities/products.sync';
-import { syncSalesOrders } from './entities/sales-orders.sync';
-import { syncInventory } from './entities/inventory.sync';
-import { syncFinance } from './entities/finance.sync';
-
-type Entity = 'customers' | 'products' | 'sales' | 'inventory' | 'finance' | 'all';
-
-const VALID_ENTITIES: Entity[] = ['customers', 'products', 'sales', 'inventory', 'finance', 'all'];
 
 async function main() {
-  const args = process.argv.slice(2);
+  if (!oracleConfigured) {
+    logger.warn('Oracle não configurado (ORACLE_USER/PASSWORD/CONNECT_STRING ausentes). Worker em modo de espera.');
+    // Mantém o processo vivo sem crash loop — será ativado quando as vars forem configuradas
+    setInterval(() => {
+      logger.info('Sync-worker aguardando configuração Oracle...');
+    }, 1_800_000);
+    return;
+  }
 
-  // Primeiro arg posicional (não começa com '--') é a entidade
+  const { initOraclePool, closeOraclePool } = await import('./oracle/client');
+  const { syncCustomers }   = await import('./entities/customers.sync');
+  const { syncProducts }    = await import('./entities/products.sync');
+  const { syncSalesOrders } = await import('./entities/sales-orders.sync');
+  const { syncInventory }   = await import('./entities/inventory.sync');
+  const { syncFinance }     = await import('./entities/finance.sync');
+
+  type Entity = 'customers' | 'products' | 'sales' | 'inventory' | 'finance' | 'all';
+  const VALID_ENTITIES: Entity[] = ['customers', 'products', 'sales', 'inventory', 'finance', 'all'];
+
+  const args = process.argv.slice(2);
   const entityArg = args.find(a => !a.startsWith('--'));
   const entity: Entity = (VALID_ENTITIES.includes(entityArg as Entity) ? entityArg : 'all') as Entity;
-
   const fullSync = args.includes('--full');
-
-  // --dry-run pode vir como flag CLI além de DRY_RUN=true no env
   if (args.includes('--dry-run')) process.env.DRY_RUN = 'true';
 
   logger.info('Oracle Sync Worker iniciado', { entity, fullSync, dryRun: process.env.DRY_RUN === 'true' });
