@@ -4,6 +4,9 @@
 FROM node:20-slim AS deps
 
 WORKDIR /app
+# Força development para que npm ci instale devDependencies (tsc, tipos, etc.)
+# independente do build-arg NODE_ENV que o Coolify injeta
+ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm ci
 
