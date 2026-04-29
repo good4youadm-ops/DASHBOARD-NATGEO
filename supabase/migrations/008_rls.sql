@@ -32,7 +32,7 @@ CREATE OR REPLACE FUNCTION get_user_tenant_id()
 RETURNS UUID
 LANGUAGE sql STABLE SECURITY DEFINER
 AS $$
-  SELECT tenant_id FROM user_profiles WHERE user_id = auth.uid() LIMIT 1;
+  SELECT tenant_id FROM user_profiles WHERE id = auth.uid() LIMIT 1;
 $$;
 
 -- =============================================================================

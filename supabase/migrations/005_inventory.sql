@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS stock_positions (
   -- Valores
   avg_cost            NUMERIC(15,4) NOT NULL DEFAULT 0,
   total_cost          NUMERIC(15,2) GENERATED ALWAYS AS
-                        (qty_physical * avg_cost) STORED,
+                        ((qty_available + qty_reserved + qty_blocked) * avg_cost) STORED,
 
   -- Posição calculada
   coverage_days       NUMERIC(8,1),   -- cobertura em dias (preenchida pela sync)
@@ -80,8 +80,7 @@ CREATE TABLE IF NOT EXISTS stock_lots (
   location            TEXT,
   manufacture_date    DATE,
   expiry_date         DATE,
-  days_to_expiry      INTEGER GENERATED ALWAYS AS
-                        (expiry_date::date - CURRENT_DATE) STORED,
+  days_to_expiry      INTEGER,                -- calculado pela view/sync; CURRENT_DATE não é imutável
   status              TEXT NOT NULL DEFAULT 'available'
                         CHECK (status IN ('available','blocked','expired','consumed','open_box')),
   is_open_box         BOOLEAN NOT NULL DEFAULT false,

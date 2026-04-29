@@ -159,16 +159,16 @@ SELECT
   sl.lot_number,
   sl.warehouse,
   sl.expiry_date,
-  sl.days_to_expiry,
+  (sl.expiry_date::date - CURRENT_DATE) AS days_to_expiry,
   sl.qty_current,
   sl.unit_cost,
   sl.total_cost,
   sl.status,
   CASE
-    WHEN sl.days_to_expiry < 0     THEN 'vencido'
-    WHEN sl.days_to_expiry <= 7    THEN 'critico'
-    WHEN sl.days_to_expiry <= 30   THEN 'urgente'
-    WHEN sl.days_to_expiry <= 90   THEN 'atencao'
+    WHEN (sl.expiry_date::date - CURRENT_DATE) < 0   THEN 'vencido'
+    WHEN (sl.expiry_date::date - CURRENT_DATE) <= 7  THEN 'critico'
+    WHEN (sl.expiry_date::date - CURRENT_DATE) <= 30 THEN 'urgente'
+    WHEN (sl.expiry_date::date - CURRENT_DATE) <= 90 THEN 'atencao'
     ELSE 'ok'
   END                               AS expiry_alert
 FROM stock_lots sl
@@ -176,8 +176,8 @@ LEFT JOIN products p ON p.id = sl.product_id
 WHERE sl.status IN ('available', 'open_box')
   AND sl.qty_current > 0
   AND sl.expiry_date IS NOT NULL
-  AND sl.days_to_expiry <= 90
-ORDER BY sl.days_to_expiry ASC;
+  AND (sl.expiry_date::date - CURRENT_DATE) <= 90
+ORDER BY (sl.expiry_date::date - CURRENT_DATE) ASC;
 
 -- =============================================================================
 -- VIEW: vw_dashboard_finance_summary
@@ -188,11 +188,11 @@ WITH ar AS (
   SELECT
     tenant_id,
     COUNT(*) FILTER (WHERE status IN ('open','overdue','partial','negotiating')) AS open_count,
-    SUM(balance) FILTER (WHERE status IN ('open','overdue','partial','negotiating')) AS open_balance,
-    SUM(balance) FILTER (WHERE status = 'overdue' OR (status = 'open' AND due_date < CURRENT_DATE)) AS overdue_balance,
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE status IN ('open','overdue','partial','negotiating')) AS open_balance,
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE status = 'overdue' OR (status = 'open' AND due_date < CURRENT_DATE)) AS overdue_balance,
     SUM(paid_amount) FILTER (WHERE payment_date >= DATE_TRUNC('month', CURRENT_DATE)) AS received_this_month,
     COUNT(*) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_count,
-    SUM(balance) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_balance
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_balance
   FROM accounts_receivable
   GROUP BY tenant_id
 ),
@@ -200,11 +200,11 @@ ap AS (
   SELECT
     tenant_id,
     COUNT(*) FILTER (WHERE status IN ('open','overdue','partial')) AS open_count,
-    SUM(balance) FILTER (WHERE status IN ('open','overdue','partial')) AS open_balance,
-    SUM(balance) FILTER (WHERE status = 'overdue' OR (status = 'open' AND due_date < CURRENT_DATE)) AS overdue_balance,
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE status IN ('open','overdue','partial')) AS open_balance,
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE status = 'overdue' OR (status = 'open' AND due_date < CURRENT_DATE)) AS overdue_balance,
     SUM(paid_amount) FILTER (WHERE payment_date >= DATE_TRUNC('month', CURRENT_DATE)) AS paid_this_month,
     COUNT(*) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_count,
-    SUM(balance) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_balance
+    SUM(face_value - paid_amount + interest_amount - discount_amount) FILTER (WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30) AS due_next_30_days_balance
   FROM accounts_payable
   GROUP BY tenant_id
 )
@@ -238,21 +238,21 @@ SELECT
   ar.invoice_id,
   ar.issue_date,
   ar.due_date,
-  ar.days_overdue,
+  CASE WHEN ar.payment_date IS NULL THEN GREATEST(0, CURRENT_DATE - ar.due_date) ELSE 0 END AS days_overdue,
   ar.status,
   ar.face_value,
   ar.paid_amount,
   ar.interest_amount,
   ar.discount_amount,
-  ar.balance,
+  ar.face_value - ar.paid_amount + ar.interest_amount - ar.discount_amount AS balance,
   ar.payment_method,
   CASE
-    WHEN ar.days_overdue = 0       THEN 'em_dia'
-    WHEN ar.days_overdue <= 15     THEN 'atraso_1_15'
-    WHEN ar.days_overdue <= 30     THEN 'atraso_16_30'
-    WHEN ar.days_overdue <= 60     THEN 'atraso_31_60'
-    WHEN ar.days_overdue <= 90     THEN 'atraso_61_90'
-    ELSE                                'atraso_90_mais'
+    WHEN ar.payment_date IS NOT NULL OR ar.due_date >= CURRENT_DATE THEN 'em_dia'
+    WHEN (CURRENT_DATE - ar.due_date) <= 15   THEN 'atraso_1_15'
+    WHEN (CURRENT_DATE - ar.due_date) <= 30   THEN 'atraso_16_30'
+    WHEN (CURRENT_DATE - ar.due_date) <= 60   THEN 'atraso_31_60'
+    WHEN (CURRENT_DATE - ar.due_date) <= 90   THEN 'atraso_61_90'
+    ELSE                                           'atraso_90_mais'
   END                               AS aging_bucket
 FROM accounts_receivable ar
 LEFT JOIN customers c ON c.id = ar.customer_id
@@ -275,21 +275,21 @@ SELECT
   ap.cost_center,
   ap.issue_date,
   ap.due_date,
-  ap.days_overdue,
+  CASE WHEN ap.payment_date IS NULL THEN GREATEST(0, CURRENT_DATE - ap.due_date) ELSE 0 END AS days_overdue,
   ap.status,
   ap.face_value,
   ap.paid_amount,
   ap.interest_amount,
   ap.discount_amount,
-  ap.balance,
+  ap.face_value - ap.paid_amount + ap.interest_amount - ap.discount_amount AS balance,
   ap.payment_method,
   CASE
-    WHEN ap.days_overdue = 0       THEN 'em_dia'
-    WHEN ap.days_overdue <= 15     THEN 'atraso_1_15'
-    WHEN ap.days_overdue <= 30     THEN 'atraso_16_30'
-    WHEN ap.days_overdue <= 60     THEN 'atraso_31_60'
-    WHEN ap.days_overdue <= 90     THEN 'atraso_61_90'
-    ELSE                                'atraso_90_mais'
+    WHEN ap.payment_date IS NOT NULL OR ap.due_date >= CURRENT_DATE THEN 'em_dia'
+    WHEN (CURRENT_DATE - ap.due_date) <= 15   THEN 'atraso_1_15'
+    WHEN (CURRENT_DATE - ap.due_date) <= 30   THEN 'atraso_16_30'
+    WHEN (CURRENT_DATE - ap.due_date) <= 60   THEN 'atraso_31_60'
+    WHEN (CURRENT_DATE - ap.due_date) <= 90   THEN 'atraso_61_90'
+    ELSE                                           'atraso_90_mais'
   END                               AS aging_bucket
 FROM accounts_payable ap
 WHERE ap.status IN ('open','overdue','partial')

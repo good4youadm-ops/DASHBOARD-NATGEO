@@ -23,10 +23,7 @@ CREATE TABLE IF NOT EXISTS accounts_receivable (
   issue_date          DATE NOT NULL,
   due_date            DATE NOT NULL,
   payment_date        DATE,
-  days_overdue        INTEGER GENERATED ALWAYS AS
-                        (CASE WHEN payment_date IS NULL
-                         THEN GREATEST(0, CURRENT_DATE - due_date)
-                         ELSE 0 END) STORED,
+  days_overdue        INTEGER,               -- calculado pela view; CURRENT_DATE não é imutável
 
   status              TEXT NOT NULL DEFAULT 'open'
                         CHECK (status IN ('open','paid','partial','overdue','written_off','negotiating')),
@@ -87,10 +84,7 @@ CREATE TABLE IF NOT EXISTS accounts_payable (
   issue_date          DATE NOT NULL,
   due_date            DATE NOT NULL,
   payment_date        DATE,
-  days_overdue        INTEGER GENERATED ALWAYS AS
-                        (CASE WHEN payment_date IS NULL
-                         THEN GREATEST(0, CURRENT_DATE - due_date)
-                         ELSE 0 END) STORED,
+  days_overdue        INTEGER,               -- calculado pela view; CURRENT_DATE não é imutável
 
   status              TEXT NOT NULL DEFAULT 'open'
                         CHECK (status IN ('open','paid','partial','overdue','cancelled')),
