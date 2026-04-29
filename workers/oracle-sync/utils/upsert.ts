@@ -1,6 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from './logger';
 
+const CHUNK_SIZE = 500;
+
 interface UpsertResult {
   inserted: number;
   updated: number;
@@ -17,20 +19,23 @@ export async function batchUpsert<T extends Record<string, unknown>>(
   const result: UpsertResult = { inserted: 0, updated: 0, failed: 0, errors: [] };
   if (rows.length === 0) return result;
 
-  const { error } = await client
-    .from(table)
-    .upsert(rows, { onConflict: conflictColumns, ignoreDuplicates: false });
+  // Divide em chunks para evitar timeout e limite de payload do Supabase
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    const chunk = rows.slice(i, i + CHUNK_SIZE);
+    const { error } = await client
+      .from(table)
+      .upsert(chunk, { onConflict: conflictColumns, ignoreDuplicates: false });
 
-  if (error) {
-    logger.error(`Erro no upsert em ${table}`, { error: error.message });
-    result.failed = rows.length;
-    result.errors = rows.map((r) => ({
-      source_id: String(r.source_id ?? ''),
-      error: error.message,
-    }));
-  } else {
-    // Supabase não distingue insert vs update no upsert — contamos tudo como updated
-    result.updated = rows.length;
+    if (error) {
+      logger.error(`Erro no upsert em ${table} (chunk ${i / CHUNK_SIZE + 1})`, { error: error.message });
+      result.failed += chunk.length;
+      result.errors.push(...chunk.map((r) => ({
+        source_id: String(r.source_id ?? ''),
+        error: error.message,
+      })));
+    } else {
+      result.updated += chunk.length;
+    }
   }
 
   return result;

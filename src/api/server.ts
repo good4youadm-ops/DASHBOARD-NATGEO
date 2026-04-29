@@ -1,8 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import { z, ZodError } from 'zod';
 import { createLogger, format, transports } from 'winston';
 import { supabaseAdmin } from '../lib/supabase/admin';
 import * as salesRepo from '../repositories/sales';
@@ -57,6 +59,16 @@ app.use(express.static(publicDir, { index: 'dashboard-comercial.html' }));
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true }));
 app.use(express.json());
+
+// Rate limiting — 120 req/min por IP nas rotas de API
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em 1 minuto.' },
+});
+app.use('/api', apiLimiter);
 
 // Log de cada requisição (sem expor body — pode conter dados sensíveis)
 app.use((req, _res, next) => {
@@ -159,8 +171,38 @@ app.use('/api', (req: Request, res: Response, next: NextFunction) => {
   requireAuth(req, res, next);
 });
 
+// ── Schemas de validação (Zod) ────────────────────────────────────────────────
+const qMonths    = z.object({ months:    z.coerce.number().int().min(1).max(36).default(12) });
+const qLimit20   = z.object({ limit:     z.coerce.number().int().min(1).max(100).default(20) });
+const qLimit50   = z.object({ limit:     z.coerce.number().int().min(1).max(200).default(50) });
+const qDaysAhead = z.object({ daysAhead: z.coerce.number().int().min(1).max(365).default(90) });
+const qInventory = z.object({
+  warehouse: z.string().max(100).optional(),
+  abcCurve:  z.enum(['A','B','C','D']).optional(),
+  alertOnly: z.enum(['true','false']).transform(v => v === 'true').optional(),
+});
+const qAR = z.object({
+  bucket:     z.string().max(50).optional(),
+  customerId: z.string().uuid().optional(),
+});
+const qAP = z.object({
+  bucket:   z.string().max(50).optional(),
+  category: z.string().max(100).optional(),
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseQuery<T>(schema: z.ZodType<T, any, any>, query: unknown, res: Response): T | null {
+  const result = schema.safeParse(query);
+  if (!result.success) {
+    res.status(400).json({ error: 'Parâmetros inválidos', details: result.error.flatten() });
+    return null;
+  }
+  return result.data;
+}
+
 // ── Helper de erro ────────────────────────────────────────────────────────────
 function errMsg(e: unknown): string {
+  if (e instanceof ZodError) return 'Parâmetros inválidos';
   // Em produção não expõe detalhes internos ao cliente; erro fica nos logs
   if (NODE_ENV === 'production') return 'Erro interno do servidor';
   return e instanceof Error ? e.message : String(e);
@@ -168,9 +210,10 @@ function errMsg(e: unknown): string {
 
 // ── Dashboard — Vendas ────────────────────────────────────────────────────────
 app.get('/api/dashboard/sales/summary', async (req, res) => {
+  const q = parseQuery(qMonths, req.query, res);
+  if (!q) return;
   try {
-    const months = parseInt(String(req.query.months ?? '12'));
-    const data = await salesRepo.getDashboardSalesSummary(supabaseAdmin, { tenantId: TENANT_ID, months });
+    const data = await salesRepo.getDashboardSalesSummary(supabaseAdmin, { tenantId: TENANT_ID, months: q.months });
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/sales/summary', { error: e });
@@ -189,9 +232,10 @@ app.get('/api/dashboard/sales/by-day', async (_req, res) => {
 });
 
 app.get('/api/dashboard/sales/customers', async (req, res) => {
+  const q = parseQuery(qLimit20, req.query, res);
+  if (!q) return;
   try {
-    const limit = parseInt(String(req.query.limit ?? '20'));
-    const data = await salesRepo.getTopCustomers(supabaseAdmin, TENANT_ID, limit);
+    const data = await salesRepo.getTopCustomers(supabaseAdmin, TENANT_ID, q.limit);
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/sales/customers', { error: e });
@@ -200,9 +244,10 @@ app.get('/api/dashboard/sales/customers', async (req, res) => {
 });
 
 app.get('/api/dashboard/sales/products', async (req, res) => {
+  const q = parseQuery(qLimit20, req.query, res);
+  if (!q) return;
   try {
-    const limit = parseInt(String(req.query.limit ?? '20'));
-    const data = await salesRepo.getTopProducts(supabaseAdmin, TENANT_ID, limit);
+    const data = await salesRepo.getTopProducts(supabaseAdmin, TENANT_ID, q.limit);
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/sales/products', { error: e });
@@ -222,12 +267,13 @@ app.get('/api/dashboard/inventory/summary', async (_req, res) => {
 });
 
 app.get('/api/dashboard/inventory/products', async (req, res) => {
+  const q = parseQuery(qInventory, req.query, res);
+  if (!q) return;
   try {
-    const { warehouse, abcCurve, alertOnly } = req.query as Record<string, string>;
     const data = await inventoryRepo.getStockByProduct(supabaseAdmin, TENANT_ID, {
-      warehouse,
-      abcCurve,
-      alertOnly: alertOnly === 'true',
+      warehouse:  q.warehouse,
+      abcCurve:   q.abcCurve,
+      alertOnly:  q.alertOnly ?? false,
     });
     res.json(data);
   } catch (e) {
@@ -237,9 +283,10 @@ app.get('/api/dashboard/inventory/products', async (req, res) => {
 });
 
 app.get('/api/dashboard/inventory/expiring', async (req, res) => {
+  const q = parseQuery(qDaysAhead, req.query, res);
+  if (!q) return;
   try {
-    const daysAhead = parseInt(String(req.query.daysAhead ?? '90'));
-    const data = await inventoryRepo.getExpiringLots(supabaseAdmin, TENANT_ID, daysAhead);
+    const data = await inventoryRepo.getExpiringLots(supabaseAdmin, TENANT_ID, q.daysAhead);
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/inventory/expiring', { error: e });
@@ -259,9 +306,10 @@ app.get('/api/dashboard/finance/summary', async (_req, res) => {
 });
 
 app.get('/api/dashboard/finance/receivable', async (req, res) => {
+  const q = parseQuery(qAR, req.query, res);
+  if (!q) return;
   try {
-    const { bucket, customerId } = req.query as Record<string, string>;
-    const data = await financeRepo.getAccountsReceivableOpen(supabaseAdmin, TENANT_ID, { bucket, customerId });
+    const data = await financeRepo.getAccountsReceivableOpen(supabaseAdmin, TENANT_ID, { bucket: q.bucket, customerId: q.customerId });
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/finance/receivable', { error: e });
@@ -270,9 +318,10 @@ app.get('/api/dashboard/finance/receivable', async (req, res) => {
 });
 
 app.get('/api/dashboard/finance/payable', async (req, res) => {
+  const q = parseQuery(qAP, req.query, res);
+  if (!q) return;
   try {
-    const { bucket, category } = req.query as Record<string, string>;
-    const data = await financeRepo.getAccountsPayableOpen(supabaseAdmin, TENANT_ID, { bucket, category });
+    const data = await financeRepo.getAccountsPayableOpen(supabaseAdmin, TENANT_ID, { bucket: q.bucket, category: q.category });
     res.json(data);
   } catch (e) {
     logger.error('GET /api/dashboard/finance/payable', { error: e });
@@ -292,9 +341,10 @@ app.get('/api/sync/status', async (_req, res) => {
 });
 
 app.get('/api/sync/errors', async (req, res) => {
+  const q = parseQuery(qLimit50, req.query, res);
+  if (!q) return;
   try {
-    const limit = parseInt(String(req.query.limit ?? '50'));
-    const data = await syncRepo.getRecentErrors(supabaseAdmin, TENANT_ID, limit);
+    const data = await syncRepo.getRecentErrors(supabaseAdmin, TENANT_ID, q.limit);
     res.json(data);
   } catch (e) {
     logger.error('GET /api/sync/errors', { error: e });

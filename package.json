@@ -13,7 +13,6 @@
     "start:worker": "node dist/workers/oracle-sync/index.js all",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src workers --ext .ts",
-
     "sync:oracle": "tsx workers/oracle-sync/index.ts all",
     "sync:oracle:full": "tsx workers/oracle-sync/index.ts all --full",
     "sync:oracle:dry": "tsx workers/oracle-sync/index.ts all --dry-run",
@@ -22,11 +21,9 @@
     "sync:oracle:sales": "tsx workers/oracle-sync/index.ts sales",
     "sync:oracle:inventory": "tsx workers/oracle-sync/index.ts inventory",
     "sync:oracle:finance": "tsx workers/oracle-sync/index.ts finance",
-
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
-
     "docker:dev": "docker compose -f docker-compose.yml up --build",
     "docker:prod": "docker compose -f docker-compose.prod.yml up --build",
     "docker:down": "docker compose down",
@@ -34,19 +31,20 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-    "express": "^4.19.2",
-    "oracledb": "^6.5.1",
-    "dotenv": "^16.4.5",
-    "zod": "^3.23.8",
-    "winston": "^3.13.0",
-    "date-fns": "^3.6.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0"
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.4.1",
+    "helmet": "^7.1.0",
+    "oracledb": "^6.5.1",
+    "winston": "^3.13.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
-    "@types/cors": "^2.8.17",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.5.0",
