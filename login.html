@@ -79,6 +79,17 @@
     .footer-note {
       text-align: center; margin-top: 20px; font-size: .75rem; color: var(--muted);
     }
+    .forgot-link {
+      display: block; text-align: right; margin-top: 6px;
+      font-size: .75rem; color: var(--accent3); text-decoration: none;
+    }
+    .forgot-link:hover { text-decoration: underline; }
+    .success-msg {
+      display: none; margin-top: 14px; padding: 10px 14px;
+      border-radius: 8px; background: #f0f7f3; border: 1px solid var(--accent-mid);
+      color: var(--accent); font-size: .82rem; align-items: center; gap: 8px;
+    }
+    .success-msg.show { display: flex; }
   </style>
 </head>
 <body>
@@ -111,7 +122,9 @@
         </div>
       </div>
 
-      <button type="submit" class="btn" id="submitBtn">
+      <a href="#" class="forgot-link" id="forgotLink">Esqueci minha senha</a>
+
+      <button type="submit" class="btn" id="submitBtn" style="margin-top:18px">
         <i class="fa-solid fa-arrow-right-to-bracket"></i>
         <span id="btnText">Entrar</span>
       </button>
@@ -119,6 +132,10 @@
       <div class="error-msg" id="errorMsg">
         <i class="fa-solid fa-circle-exclamation"></i>
         <span id="errorText">E-mail ou senha inválidos.</span>
+      </div>
+      <div class="success-msg" id="successMsg">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="successText">E-mail de recuperação enviado. Verifique sua caixa de entrada.</span>
       </div>
     </form>
   </div>
@@ -154,6 +171,30 @@
   // Inicializa cliente Supabase
   var supabaseUrl = cfg.supabaseUrl;
   var supabaseAnonKey = cfg.supabaseAnonKey;
+
+  // Esqueci minha senha
+  document.getElementById('forgotLink').addEventListener('click', async function (e) {
+    e.preventDefault();
+    var email = document.getElementById('email').value.trim();
+    if (!email) {
+      showError('Digite seu e-mail acima antes de solicitar a recuperação.');
+      return;
+    }
+    hideError();
+    this.textContent = 'Enviando…';
+    this.style.pointerEvents = 'none';
+    try {
+      await fetch(supabaseUrl + '/auth/v1/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey },
+        body: JSON.stringify({ email: email }),
+      });
+    } catch (e) {}
+    this.textContent = 'Esqueci minha senha';
+    this.style.pointerEvents = '';
+    document.getElementById('successText').textContent = 'E-mail de recuperação enviado para ' + email + '. Verifique sua caixa de entrada.';
+    document.getElementById('successMsg').classList.add('show');
+  });
 
   // Toggle senha
   document.getElementById('togglePw').addEventListener('click', function () {
