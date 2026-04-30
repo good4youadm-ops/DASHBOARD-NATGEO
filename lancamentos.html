@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Lançamentos Financeiros</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --bg: #f5f5f7; --surface: #fff;
+      --border: #e5e5ea; --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93;
+      --red: #ff3b30; --orange: #ff9500; --blue: #007aff; --purple: #af52de;
+      --radius: 14px; --sidebar: 220px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 20px rgba(0,0,0,.10);
+    }
+    html, body { height: 100%; font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    /* ── Layout ── */
+    .shell { display: flex; height: 100vh; overflow: hidden; }
+    .sidebar { width: var(--sidebar); background: var(--accent); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 16px 10px; display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1rem; flex-shrink: 0; }
+    .logo-name { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .logo-name span { color: #95d5b2; }
+    .sidebar-section { padding: 16px 16px 4px; font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .08em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: rgba(255,255,255,.75); text-decoration: none; font-size: .82rem; font-weight: 500; border-radius: 8px; margin: 1px 8px; transition: background .15s, color .15s; }
+    .nav-item:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+    .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
+    .nav-badge { margin-left: auto; background: rgba(255,255,255,.25); color: #fff; font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+    .nav-badge.red { background: var(--red); }
+    .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: .65rem; color: rgba(255,255,255,.55); }
+    .logout-btn { background: none; border: none; color: rgba(255,255,255,.55); cursor: pointer; padding: 4px; border-radius: 6px; transition: color .15s; }
+    .logout-btn:hover { color: #fff; }
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+    .topbar-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .topbar-sub { font-size: .8rem; color: var(--muted); }
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 20px; width: fit-content; box-shadow: var(--shadow-sm); }
+    .tab-btn { padding: 8px 20px; border: none; border-radius: 9px; background: none; cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--muted); transition: all .15s; }
+    .tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(26,71,49,.3); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    /* ── Toolbar ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+    .search-wrap input { width: 100%; padding: 8px 12px 8px 36px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .85rem; background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--accent3); }
+    .search-wrap i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .8rem; }
+    select.filter { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .85rem; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    select.filter:focus { border-color: var(--accent3); }
+    .btn-primary { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+    .btn-primary:hover { background: var(--accent2); }
+    .ml-auto { margin-left: auto; }
+    /* ── Table ── */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    thead { background: #f9f9fb; }
+    th { padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 11px 14px; border-bottom: 1px solid #f0f0f5; color: var(--text2); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .badge-open      { background: #e8f4fd; color: var(--blue); }
+    .badge-paid      { background: var(--accent-bg); color: var(--accent); }
+    .badge-partial   { background: #fff8e6; color: #b8730a; }
+    .badge-overdue   { background: #fff1f0; color: var(--red); }
+    .badge-cancelled { background: #f5f5f7; color: var(--muted); }
+    .badge-written_off { background: #f5f5f7; color: var(--muted); }
+    .badge-negotiating { background: #f3ebff; color: var(--purple); }
+    .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .amount.red { color: var(--red); }
+    .amount.green { color: var(--accent); }
+    .actions { display: flex; gap: 6px; }
+    .btn-icon { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .8rem; transition: all .15s; }
+    .btn-icon:hover { border-color: var(--accent3); color: var(--accent); }
+    .btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    .page-btns { display: flex; gap: 4px; }
+    .page-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text2); cursor: pointer; font-size: .8rem; transition: all .15s; }
+    .page-btn:hover:not(:disabled) { border-color: var(--accent3); color: var(--accent); }
+    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    /* ── Empty / Loading ── */
+    .empty-state { padding: 48px; text-align: center; color: var(--muted); }
+    .empty-state i { font-size: 2rem; margin-bottom: 12px; display: block; opacity: .4; }
+    .empty-state p { font-size: .9rem; }
+    .loading-row td { text-align: center; padding: 32px; color: var(--muted); }
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.2); width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 4px; border-radius: 6px; transition: color .15s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field label { display: block; font-size: .75rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 8px 12px; border: 1.5px solid var(--border);
+      border-radius: 9px; font-size: .85rem; color: var(--text);
+      background: var(--bg); outline: none; transition: border-color .15s;
+      font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent3); background: #fff; }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .btn-cancel { padding: 9px 18px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text2); font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-cancel:hover { border-color: var(--muted); }
+    .btn-save { padding: 9px 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-save:hover { background: var(--accent2); }
+    .btn-save:disabled { opacity: .55; cursor: not-allowed; }
+    /* ── Confirm ── */
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1100; align-items: center; justify-content: center; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: var(--surface); border-radius: 16px; padding: 28px; max-width: 380px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
+    .confirm-box i { font-size: 2rem; color: var(--red); margin-bottom: 12px; }
+    .confirm-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: .85rem; color: var(--muted); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .btn-danger { padding: 9px 20px; border: none; border-radius: 10px; background: var(--red); color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; }
+    /* ── Toast ── */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--text); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: .83rem; font-weight: 500; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 10px; min-width: 240px; animation: slideIn .2s ease; }
+    .toast.success { background: var(--accent); }
+    .toast.error { background: var(--red); }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    /* ── Summary cards ── */
+    .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .summary-card .sc-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .summary-card .sc-value { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .summary-card .sc-value.red { color: var(--red); }
+    .summary-card .sc-value.green { color: var(--accent); }
+    .summary-card .sc-value.orange { color: var(--orange); }
+    .overdue-tag { font-size: .72rem; color: var(--red); font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+      <div class="logo-name">Nat<span>Geo</span></div>
+    </div>
+
+    <div class="sidebar-section">Principal</div>
+    <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+    <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
+    <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
+    <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
+
+    <div class="sidebar-section">Cadastros</div>
+    <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-users"></i><span>Clientes</span></a>
+    <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-store"></i><span>Fornecedores</span></a>
+
+    <div class="sidebar-section">Financeiro</div>
+    <a class="nav-item active" href="lancamentos.html"><i class="fa-solid fa-file-invoice-dollar"></i><span>Lançamentos</span></a>
+    <a class="nav-item" href="#"><i class="fa-solid fa-receipt"></i><span>A Receber</span></a>
+    <a class="nav-item" href="#"><i class="fa-solid fa-credit-card"></i><span>A Pagar</span></a>
+
+    <div class="sidebar-section">Relatorios</div>
+    <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
+
+    <div class="sidebar-footer">
+      <div class="avatar" id="userInitials">--</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Carregando…</div>
+        <div class="user-role">NatGeo</div>
+      </div>
+      <button class="logout-btn" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Lançamentos Financeiros</div>
+        <div class="topbar-sub">Gerencie contas a receber e a pagar</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="ar">
+          <i class="fa-solid fa-receipt"></i> A Receber
+        </button>
+        <button class="tab-btn" data-tab="ap">
+          <i class="fa-solid fa-credit-card"></i> A Pagar
+        </button>
+      </div>
+
+      <!-- ══ TAB: A RECEBER ══ -->
+      <div class="tab-pane active" id="tab-ar">
+        <div class="summary-row" id="arSummary">
+          <div class="summary-card"><div class="sc-label">Total em Aberto</div><div class="sc-value green" id="arTotal">—</div></div>
+          <div class="summary-card"><div class="sc-label">Vencidos</div><div class="sc-value red" id="arOverdue">—</div></div>
+          <div class="summary-card"><div class="sc-label">A vencer hoje</div><div class="sc-value orange" id="arToday">—</div></div>
+          <div class="summary-card"><div class="sc-label">Registros</div><div class="sc-value" id="arCount">—</div></div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="arSearch" placeholder="Buscar por documento…" />
+          </div>
+          <select class="filter" id="arStatusFilter">
+            <option value="">Todos os status</option>
+            <option value="open">Em aberto</option>
+            <option value="paid">Pago</option>
+            <option value="partial">Parcial</option>
+            <option value="overdue">Vencido</option>
+            <option value="negotiating">Negociando</option>
+            <option value="written_off">Baixado</option>
+          </select>
+          <button class="btn-primary ml-auto" id="arNewBtn">
+            <i class="fa-solid fa-plus"></i> Novo Lançamento
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Documento</th>
+                  <th>Emissão</th>
+                  <th>Vencimento</th>
+                  <th>Valor</th>
+                  <th>Pago</th>
+                  <th>Saldo</th>
+                  <th>Status</th>
+                  <th>Atraso</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="arBody">
+                <tr class="loading-row"><td colspan="10"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="arPagination" style="display:none">
+            <span id="arPagInfo"></span>
+            <div class="page-btns" id="arPageBtns"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: A PAGAR ══ -->
+      <div class="tab-pane" id="tab-ap">
+        <div class="summary-row">
+          <div class="summary-card"><div class="sc-label">Total em Aberto</div><div class="sc-value red" id="apTotal">—</div></div>
+          <div class="summary-card"><div class="sc-label">Vencidos</div><div class="sc-value red" id="apOverdue">—</div></div>
+          <div class="summary-card"><div class="sc-label">A vencer hoje</div><div class="sc-value orange" id="apToday">—</div></div>
+          <div class="summary-card"><div class="sc-label">Registros</div><div class="sc-value" id="apCount">—</div></div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="apSearch" placeholder="Buscar por documento ou fornecedor…" />
+          </div>
+          <select class="filter" id="apStatusFilter">
+            <option value="">Todos os status</option>
+            <option value="open">Em aberto</option>
+            <option value="paid">Pago</option>
+            <option value="partial">Parcial</option>
+            <option value="overdue">Vencido</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+          <select class="filter" id="apCategoryFilter">
+            <option value="">Todas as categorias</option>
+          </select>
+          <button class="btn-primary ml-auto" id="apNewBtn">
+            <i class="fa-solid fa-plus"></i> Novo Lançamento
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fornecedor</th>
+                  <th>Documento</th>
+                  <th>Categoria</th>
+                  <th>Emissão</th>
+                  <th>Vencimento</th>
+                  <th>Valor</th>
+                  <th>Pago</th>
+                  <th>Saldo</th>
+                  <th>Status</th>
+                  <th>Atraso</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="apBody">
+                <tr class="loading-row"><td colspan="11"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="apPagination" style="display:none">
+            <span id="apPagInfo"></span>
+            <div class="page-btns" id="apPageBtns"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL A RECEBER ══ -->
+<div class="modal-overlay" id="arModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="arModalTitle">Novo Lançamento — A Receber</span>
+      <button class="modal-close" id="arModalClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="arForm" novalidate>
+        <input type="hidden" id="arEditId" />
+        <div class="form-grid">
+          <div class="field full">
+            <label>Cliente (opcional)</label>
+            <select id="arCustomerId">
+              <option value="">— Selecione —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nº do Documento</label>
+            <input type="text" id="arDocumentNumber" placeholder="Ex: NF-001" maxlength="50" />
+          </div>
+          <div class="field">
+            <label>Parcela</label>
+            <input type="text" id="arParcel" placeholder="Ex: 1/3" maxlength="20" />
+          </div>
+          <div class="field">
+            <label>Data de Emissão *</label>
+            <input type="date" id="arIssueDate" required />
+          </div>
+          <div class="field">
+            <label>Data de Vencimento *</label>
+            <input type="date" id="arDueDate" required />
+          </div>
+          <div class="field">
+            <label>Valor *</label>
+            <input type="number" id="arFaceValue" min="0" step="0.01" placeholder="0,00" required />
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="arStatus">
+              <option value="open">Em aberto</option>
+              <option value="partial">Parcial</option>
+              <option value="paid">Pago</option>
+              <option value="overdue">Vencido</option>
+              <option value="negotiating">Negociando</option>
+              <option value="written_off">Baixado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Valor Pago</label>
+            <input type="number" id="arPaidAmount" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Data de Pagamento</label>
+            <input type="date" id="arPaymentDate" />
+          </div>
+          <div class="field">
+            <label>Juros</label>
+            <input type="number" id="arInterest" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Desconto</label>
+            <input type="number" id="arDiscount" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Forma de Pagamento</label>
+            <select id="arPaymentMethod">
+              <option value="">—</option>
+              <option value="boleto">Boleto</option>
+              <option value="pix">PIX</option>
+              <option value="ted">TED</option>
+              <option value="cheque">Cheque</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartão</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Conta Bancária</label>
+            <input type="text" id="arBankAccount" placeholder="Ex: Itaú 1234-5" maxlength="100" />
+          </div>
+          <div class="field full">
+            <label>Observações</label>
+            <textarea id="arNotes" placeholder="Observações adicionais…" maxlength="1000"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="arModalCancel">Cancelar</button>
+      <button class="btn-save" id="arModalSave"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL A PAGAR ══ -->
+<div class="modal-overlay" id="apModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="apModalTitle">Novo Lançamento — A Pagar</span>
+      <button class="modal-close" id="apModalClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="apForm" novalidate>
+        <input type="hidden" id="apEditId" />
+        <div class="form-grid">
+          <div class="field full">
+            <label>Fornecedor</label>
+            <input type="text" id="apSupplierName" placeholder="Nome do fornecedor" maxlength="200" />
+          </div>
+          <div class="field">
+            <label>CNPJ / CPF</label>
+            <input type="text" id="apSupplierDocument" placeholder="00.000.000/0001-00" maxlength="30" />
+          </div>
+          <div class="field">
+            <label>Nº do Documento</label>
+            <input type="text" id="apDocumentNumber" placeholder="Ex: NF-001" maxlength="50" />
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <input type="text" id="apCategory" list="apCategoryList" placeholder="Ex: Matéria Prima" maxlength="100" />
+            <datalist id="apCategoryList"></datalist>
+          </div>
+          <div class="field">
+            <label>Centro de Custo</label>
+            <input type="text" id="apCostCenter" placeholder="Ex: Operacional" maxlength="100" />
+          </div>
+          <div class="field">
+            <label>Parcela</label>
+            <input type="text" id="apParcel" placeholder="Ex: 1/3" maxlength="20" />
+          </div>
+          <div class="field">
+            <label>Data de Emissão *</label>
+            <input type="date" id="apIssueDate" required />
+          </div>
+          <div class="field">
+            <label>Data de Vencimento *</label>
+            <input type="date" id="apDueDate" required />
+          </div>
+          <div class="field">
+            <label>Valor *</label>
+            <input type="number" id="apFaceValue" min="0" step="0.01" placeholder="0,00" required />
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="apStatus">
+              <option value="open">Em aberto</option>
+              <option value="partial">Parcial</option>
+              <option value="paid">Pago</option>
+              <option value="overdue">Vencido</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Valor Pago</label>
+            <input type="number" id="apPaidAmount" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Data de Pagamento</label>
+            <input type="date" id="apPaymentDate" />
+          </div>
+          <div class="field">
+            <label>Juros</label>
+            <input type="number" id="apInterest" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Desconto</label>
+            <input type="number" id="apDiscount" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="field">
+            <label>Forma de Pagamento</label>
+            <select id="apPaymentMethod">
+              <option value="">—</option>
+              <option value="boleto">Boleto</option>
+              <option value="pix">PIX</option>
+              <option value="ted">TED</option>
+              <option value="cheque">Cheque</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartão</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Conta Bancária</label>
+            <input type="text" id="apBankAccount" placeholder="Ex: Itaú 1234-5" maxlength="100" />
+          </div>
+          <div class="field full">
+            <label>Observações</label>
+            <textarea id="apNotes" placeholder="Observações adicionais…" maxlength="1000"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="apModalCancel">Cancelar</button>
+      <button class="btn-save" id="apModalSave"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM DELETE ══ -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <h3>Excluir lançamento?</h3>
+    <p>Esta ação não pode ser desfeita. Apenas lançamentos manuais podem ser excluídos.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="confirmCancel">Cancelar</button>
+      <button class="btn-danger" id="confirmOk">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOASTS ══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/auth.js"></script>
+<script>
+(async function () {
+  'use strict';
+
+  const session = await NatGeoAuth.requireAuth();
+  if (!session) return;
+  const TOKEN = session.access_token;
+
+  const API = (path, opts = {}) => fetch(path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN, ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const fmt = v => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtDate = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—';
+  const today = new Date().toISOString().split('T')[0];
+
+  const BADGE = {
+    open: '<span class="badge badge-open">Em aberto</span>',
+    paid: '<span class="badge badge-paid">Pago</span>',
+    partial: '<span class="badge badge-partial">Parcial</span>',
+    overdue: '<span class="badge badge-overdue">Vencido</span>',
+    written_off: '<span class="badge badge-written_off">Baixado</span>',
+    negotiating: '<span class="badge badge-negotiating">Negociando</span>',
+    cancelled: '<span class="badge badge-cancelled">Cancelado</span>',
+  };
+
+  function toast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'}"></i>${msg}`;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Confirm ──────────────────────────────────────────────────────────────
+  let confirmResolve = null;
+  document.getElementById('confirmOk').onclick = () => { document.getElementById('confirmOverlay').classList.remove('open'); confirmResolve && confirmResolve(true); };
+  document.getElementById('confirmCancel').onclick = () => { document.getElementById('confirmOverlay').classList.remove('open'); confirmResolve && confirmResolve(false); };
+  function confirm() { document.getElementById('confirmOverlay').classList.add('open'); return new Promise(r => confirmResolve = r); }
+
+  // ── Customers list for AR select ──────────────────────────────────────────
+  let customers = [];
+  async function loadCustomers() {
+    try {
+      const r = await API('/api/customers?limit=200');
+      if (r.ok) { customers = (await r.json()).data || []; }
+    } catch (e) {}
+    const sel = document.getElementById('arCustomerId');
+    sel.innerHTML = '<option value="">— Nenhum —</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  }
+
+  // ── AP Categories ─────────────────────────────────────────────────────────
+  async function loadAPCategories() {
+    try {
+      const r = await API('/api/payable/categories');
+      if (!r.ok) return;
+      const cats = await r.json();
+      const sel = document.getElementById('apCategoryFilter');
+      const dl  = document.getElementById('apCategoryList');
+      cats.forEach(c => {
+        sel.innerHTML += `<option value="${c}">${c}</option>`;
+        dl.innerHTML  += `<option value="${c}">`;
+      });
+    } catch (e) {}
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // A RECEBER
+  // ════════════════════════════════════════════════════════════════════════
+  let arPage = 1, arTotal = 0, arData = [];
+
+  async function loadAR() {
+    const search = document.getElementById('arSearch').value.trim();
+    const status = document.getElementById('arStatusFilter').value;
+    const params = new URLSearchParams({ page: arPage, limit: 50 });
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+
+    document.getElementById('arBody').innerHTML = '<tr class="loading-row"><td colspan="10"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+
+    try {
+      const r = await API('/api/receivable?' + params);
+      if (!r.ok) throw new Error(await r.text());
+      const res = await r.json();
+      arData  = res.data;
+      arTotal = res.total;
+      renderARTable();
+      renderARSummary();
+      renderPagination('ar', arPage, arTotal, 50, p => { arPage = p; loadAR(); });
+    } catch (e) {
+      document.getElementById('arBody').innerHTML = `<tr class="loading-row"><td colspan="10" style="color:var(--red)">Erro: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderARTable() {
+    const tbody = document.getElementById('arBody');
+    if (!arData.length) {
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-receipt"></i><p>Nenhum lançamento encontrado</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = arData.map(r => {
+      const cname = r.customers?.name || '—';
+      const overdue = (r.days_overdue && r.days_overdue > 0) ? `<span class="overdue-tag">${r.days_overdue}d</span>` : '—';
+      return `<tr>
+        <td>${cname}</td>
+        <td>${r.document_number || '—'}${r.parcel ? ' <small style="color:var(--muted)">(${r.parcel})</small>' : ''}</td>
+        <td>${fmtDate(r.issue_date)}</td>
+        <td>${fmtDate(r.due_date)}</td>
+        <td class="amount">${fmt(r.face_value)}</td>
+        <td class="amount green">${fmt(r.paid_amount)}</td>
+        <td class="amount ${r.balance > 0 ? 'red' : ''}">${fmt(r.balance)}</td>
+        <td>${BADGE[r.status] || r.status}</td>
+        <td>${overdue}</td>
+        <td><div class="actions">
+          <button class="btn-icon" title="Editar" onclick="editAR('${r.id}')"><i class="fa-solid fa-pen"></i></button>
+          ${r.source_system === 'manual' ? `<button class="btn-icon danger" title="Excluir" onclick="deleteAR('${r.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderARSummary() {
+    const open = arData.filter(r => r.status !== 'paid' && r.status !== 'written_off' && r.status !== 'cancelled');
+    const overdue = open.filter(r => r.days_overdue > 0);
+    const todayDue = open.filter(r => r.due_date === today);
+    document.getElementById('arTotal').textContent  = fmt(open.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('arOverdue').textContent = fmt(overdue.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('arToday').textContent   = fmt(todayDue.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('arCount').textContent   = arTotal;
+  }
+
+  // AR Modal
+  const arModal = document.getElementById('arModal');
+  document.getElementById('arNewBtn').onclick = () => openARModal();
+  document.getElementById('arModalClose').onclick = () => arModal.classList.remove('open');
+  document.getElementById('arModalCancel').onclick = () => arModal.classList.remove('open');
+
+  function openARModal(data) {
+    document.getElementById('arModalTitle').textContent = data ? 'Editar Lançamento — A Receber' : 'Novo Lançamento — A Receber';
+    document.getElementById('arEditId').value = data?.id || '';
+    document.getElementById('arCustomerId').value    = data?.customer_id || '';
+    document.getElementById('arDocumentNumber').value = data?.document_number || '';
+    document.getElementById('arParcel').value        = data?.parcel || '';
+    document.getElementById('arIssueDate').value     = data?.issue_date?.split('T')[0] || today;
+    document.getElementById('arDueDate').value       = data?.due_date?.split('T')[0] || '';
+    document.getElementById('arFaceValue').value     = data?.face_value ?? '';
+    document.getElementById('arStatus').value        = data?.status || 'open';
+    document.getElementById('arPaidAmount').value    = data?.paid_amount ?? 0;
+    document.getElementById('arPaymentDate').value   = data?.payment_date?.split('T')[0] || '';
+    document.getElementById('arInterest').value      = data?.interest_amount ?? 0;
+    document.getElementById('arDiscount').value      = data?.discount_amount ?? 0;
+    document.getElementById('arPaymentMethod').value = data?.payment_method || '';
+    document.getElementById('arBankAccount').value   = data?.bank_account || '';
+    document.getElementById('arNotes').value         = data?.notes || '';
+    arModal.classList.add('open');
+  }
+
+  window.editAR = async function (id) {
+    try {
+      const r = await API('/api/receivable/' + id);
+      if (!r.ok) throw new Error();
+      openARModal(await r.json());
+    } catch (e) { toast('Erro ao carregar lançamento', 'error'); }
+  };
+
+  window.deleteAR = async function (id) {
+    if (!await confirm()) return;
+    try {
+      const r = await API('/api/receivable/' + id, { method: 'DELETE' });
+      if (!r.ok) { const j = await r.json(); throw new Error(j.error || 'Erro'); }
+      toast('Lançamento excluído'); loadAR();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  document.getElementById('arModalSave').onclick = async function () {
+    const id = document.getElementById('arEditId').value;
+    const body = {
+      customer_id:     document.getElementById('arCustomerId').value || null,
+      document_number: document.getElementById('arDocumentNumber').value || null,
+      parcel:          document.getElementById('arParcel').value || null,
+      issue_date:      document.getElementById('arIssueDate').value,
+      due_date:        document.getElementById('arDueDate').value,
+      face_value:      parseFloat(document.getElementById('arFaceValue').value) || 0,
+      status:          document.getElementById('arStatus').value,
+      paid_amount:     parseFloat(document.getElementById('arPaidAmount').value) || 0,
+      payment_date:    document.getElementById('arPaymentDate').value || null,
+      interest_amount: parseFloat(document.getElementById('arInterest').value) || 0,
+      discount_amount: parseFloat(document.getElementById('arDiscount').value) || 0,
+      payment_method:  document.getElementById('arPaymentMethod').value || null,
+      bank_account:    document.getElementById('arBankAccount').value || null,
+      notes:           document.getElementById('arNotes').value || null,
+    };
+    if (!body.issue_date || !body.due_date || !body.face_value) {
+      toast('Preencha os campos obrigatórios (*)','error'); return;
+    }
+    this.disabled = true;
+    try {
+      const r = await API(id ? '/api/receivable/' + id : '/api/receivable', { method: id ? 'PUT' : 'POST', body });
+      if (!r.ok) { const j = await r.json(); throw new Error(j.error || 'Erro'); }
+      arModal.classList.remove('open');
+      toast(id ? 'Lançamento atualizado' : 'Lançamento criado');
+      loadAR();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { this.disabled = false; }
+  };
+
+  // ════════════════════════════════════════════════════════════════════════
+  // A PAGAR
+  // ════════════════════════════════════════════════════════════════════════
+  let apPage = 1, apTotal = 0, apData = [];
+
+  async function loadAP() {
+    const search   = document.getElementById('apSearch').value.trim();
+    const status   = document.getElementById('apStatusFilter').value;
+    const category = document.getElementById('apCategoryFilter').value;
+    const params   = new URLSearchParams({ page: apPage, limit: 50 });
+    if (search)   params.set('search', search);
+    if (status)   params.set('status', status);
+    if (category) params.set('category', category);
+
+    document.getElementById('apBody').innerHTML = '<tr class="loading-row"><td colspan="11"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+
+    try {
+      const r = await API('/api/payable?' + params);
+      if (!r.ok) throw new Error(await r.text());
+      const res = await r.json();
+      apData  = res.data;
+      apTotal = res.total;
+      renderAPTable();
+      renderAPSummary();
+      renderPagination('ap', apPage, apTotal, 50, p => { apPage = p; loadAP(); });
+    } catch (e) {
+      document.getElementById('apBody').innerHTML = `<tr class="loading-row"><td colspan="11" style="color:var(--red)">Erro: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderAPTable() {
+    const tbody = document.getElementById('apBody');
+    if (!apData.length) {
+      tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-credit-card"></i><p>Nenhum lançamento encontrado</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = apData.map(r => {
+      const overdue = (r.days_overdue && r.days_overdue > 0) ? `<span class="overdue-tag">${r.days_overdue}d</span>` : '—';
+      return `<tr>
+        <td>${r.supplier_name || '—'}</td>
+        <td>${r.document_number || '—'}${r.parcel ? ` <small style="color:var(--muted)">(${r.parcel})</small>` : ''}</td>
+        <td>${r.category || '—'}</td>
+        <td>${fmtDate(r.issue_date)}</td>
+        <td>${fmtDate(r.due_date)}</td>
+        <td class="amount">${fmt(r.face_value)}</td>
+        <td class="amount green">${fmt(r.paid_amount)}</td>
+        <td class="amount ${r.balance > 0 ? 'red' : ''}">${fmt(r.balance)}</td>
+        <td>${BADGE[r.status] || r.status}</td>
+        <td>${overdue}</td>
+        <td><div class="actions">
+          <button class="btn-icon" title="Editar" onclick="editAP('${r.id}')"><i class="fa-solid fa-pen"></i></button>
+          ${r.source_system === 'manual' ? `<button class="btn-icon danger" title="Excluir" onclick="deleteAP('${r.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderAPSummary() {
+    const open    = apData.filter(r => r.status !== 'paid' && r.status !== 'cancelled');
+    const overdue = open.filter(r => r.days_overdue > 0);
+    const todayDue = open.filter(r => r.due_date === today);
+    document.getElementById('apTotal').textContent   = fmt(open.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('apOverdue').textContent = fmt(overdue.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('apToday').textContent   = fmt(todayDue.reduce((s, r) => s + (r.balance || 0), 0));
+    document.getElementById('apCount').textContent   = apTotal;
+  }
+
+  // AP Modal
+  const apModal = document.getElementById('apModal');
+  document.getElementById('apNewBtn').onclick = () => openAPModal();
+  document.getElementById('apModalClose').onclick = () => apModal.classList.remove('open');
+  document.getElementById('apModalCancel').onclick = () => apModal.classList.remove('open');
+
+  function openAPModal(data) {
+    document.getElementById('apModalTitle').textContent = data ? 'Editar Lançamento — A Pagar' : 'Novo Lançamento — A Pagar';
+    document.getElementById('apEditId').value          = data?.id || '';
+    document.getElementById('apSupplierName').value    = data?.supplier_name || '';
+    document.getElementById('apSupplierDocument').value = data?.supplier_document || '';
+    document.getElementById('apDocumentNumber').value  = data?.document_number || '';
+    document.getElementById('apCategory').value        = data?.category || '';
+    document.getElementById('apCostCenter').value      = data?.cost_center || '';
+    document.getElementById('apParcel').value          = data?.parcel || '';
+    document.getElementById('apIssueDate').value       = data?.issue_date?.split('T')[0] || today;
+    document.getElementById('apDueDate').value         = data?.due_date?.split('T')[0] || '';
+    document.getElementById('apFaceValue').value       = data?.face_value ?? '';
+    document.getElementById('apStatus').value          = data?.status || 'open';
+    document.getElementById('apPaidAmount').value      = data?.paid_amount ?? 0;
+    document.getElementById('apPaymentDate').value     = data?.payment_date?.split('T')[0] || '';
+    document.getElementById('apInterest').value        = data?.interest_amount ?? 0;
+    document.getElementById('apDiscount').value        = data?.discount_amount ?? 0;
+    document.getElementById('apPaymentMethod').value   = data?.payment_method || '';
+    document.getElementById('apBankAccount').value     = data?.bank_account || '';
+    document.getElementById('apNotes').value           = data?.notes || '';
+    apModal.classList.add('open');
+  }
+
+  window.editAP = async function (id) {
+    try {
+      const r = await API('/api/payable/' + id);
+      if (!r.ok) throw new Error();
+      openAPModal(await r.json());
+    } catch (e) { toast('Erro ao carregar lançamento', 'error'); }
+  };
+
+  window.deleteAP = async function (id) {
+    if (!await confirm()) return;
+    try {
+      const r = await API('/api/payable/' + id, { method: 'DELETE' });
+      if (!r.ok) { const j = await r.json(); throw new Error(j.error || 'Erro'); }
+      toast('Lançamento excluído'); loadAP();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  document.getElementById('apModalSave').onclick = async function () {
+    const id = document.getElementById('apEditId').value;
+    const body = {
+      supplier_name:     document.getElementById('apSupplierName').value || null,
+      supplier_document: document.getElementById('apSupplierDocument').value || null,
+      document_number:   document.getElementById('apDocumentNumber').value || null,
+      category:          document.getElementById('apCategory').value || null,
+      cost_center:       document.getElementById('apCostCenter').value || null,
+      parcel:            document.getElementById('apParcel').value || null,
+      issue_date:        document.getElementById('apIssueDate').value,
+      due_date:          document.getElementById('apDueDate').value,
+      face_value:        parseFloat(document.getElementById('apFaceValue').value) || 0,
+      status:            document.getElementById('apStatus').value,
+      paid_amount:       parseFloat(document.getElementById('apPaidAmount').value) || 0,
+      payment_date:      document.getElementById('apPaymentDate').value || null,
+      interest_amount:   parseFloat(document.getElementById('apInterest').value) || 0,
+      discount_amount:   parseFloat(document.getElementById('apDiscount').value) || 0,
+      payment_method:    document.getElementById('apPaymentMethod').value || null,
+      bank_account:      document.getElementById('apBankAccount').value || null,
+      notes:             document.getElementById('apNotes').value || null,
+    };
+    if (!body.issue_date || !body.due_date || !body.face_value) {
+      toast('Preencha os campos obrigatórios (*)','error'); return;
+    }
+    this.disabled = true;
+    try {
+      const r = await API(id ? '/api/payable/' + id : '/api/payable', { method: id ? 'PUT' : 'POST', body });
+      if (!r.ok) { const j = await r.json(); throw new Error(j.error || 'Erro'); }
+      apModal.classList.remove('open');
+      toast(id ? 'Lançamento atualizado' : 'Lançamento criado');
+      loadAP();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { this.disabled = false; }
+  };
+
+  // ── Pagination helper ─────────────────────────────────────────────────────
+  function renderPagination(prefix, page, total, limit, onPage) {
+    const pages = Math.ceil(total / limit) || 1;
+    const pagDiv = document.getElementById(prefix + 'Pagination');
+    pagDiv.style.display = total > 0 ? 'flex' : 'none';
+    document.getElementById(prefix + 'PagInfo').textContent = `${total} registros — Página ${page} de ${pages}`;
+    const btns = document.getElementById(prefix + 'PageBtns');
+    btns.innerHTML = `
+      <button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="(${prefix}Page=${page-1}, load${prefix.toUpperCase()}())">‹</button>
+      <button class="page-btn active">${page}</button>
+      <button class="page-btn" ${page >= pages ? 'disabled' : ''} onclick="(${prefix}Page=${page+1}, load${prefix.toUpperCase()}())">›</button>
+    `;
+    btns.querySelectorAll('.page-btn').forEach((b, i) => {
+      if (!b.disabled && (i === 0 || i === 2)) b.onclick = () => onPage(i === 0 ? page - 1 : page + 1);
+    });
+  }
+
+  // ── Search debounce ───────────────────────────────────────────────────────
+  let arTimer, apTimer;
+  document.getElementById('arSearch').oninput = () => { clearTimeout(arTimer); arTimer = setTimeout(() => { arPage = 1; loadAR(); }, 400); };
+  document.getElementById('apSearch').oninput = () => { clearTimeout(apTimer); apTimer = setTimeout(() => { apPage = 1; loadAP(); }, 400); };
+  document.getElementById('arStatusFilter').onchange = () => { arPage = 1; loadAR(); };
+  document.getElementById('apStatusFilter').onchange = () => { apPage = 1; loadAP(); };
+  document.getElementById('apCategoryFilter').onchange = () => { apPage = 1; loadAP(); };
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  await Promise.all([loadCustomers(), loadAPCategories()]);
+  loadAR();
+  loadAP();
+}());
+</script>
+</body>
+</html>

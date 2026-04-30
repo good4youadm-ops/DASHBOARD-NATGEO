@@ -521,6 +521,126 @@ app.delete('/api/suppliers/:id', async (req, res) => {
   catch (e) { logger.error('DELETE /api/suppliers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ── Lançamentos — Contas a Receber ────────────────────────────────────────────
+const qAR2 = z.object({
+  status: z.string().optional(),
+  customerId: z.string().uuid().optional(),
+  search: z.string().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const arBody = z.object({
+  customer_id:    z.string().uuid().optional().nullable(),
+  document_number: z.string().max(50).optional(),
+  parcel:         z.string().max(20).optional(),
+  issue_date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  due_date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  payment_date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  face_value:     z.coerce.number().min(0),
+  paid_amount:    z.coerce.number().min(0).default(0),
+  interest_amount: z.coerce.number().min(0).default(0),
+  discount_amount: z.coerce.number().min(0).default(0),
+  status:         z.enum(['open','paid','partial','overdue','written_off','negotiating']).default('open'),
+  payment_method: z.string().max(50).optional().nullable(),
+  bank_account:   z.string().max(100).optional().nullable(),
+  notes:          z.string().max(1000).optional().nullable(),
+});
+
+app.get('/api/receivable', async (req, res) => {
+  const q = parseQuery(qAR2, req.query, res); if (!q) return;
+  try { res.json(await financeRepo.listAccountsReceivable(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/receivable', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/receivable/:id', async (req, res) => {
+  try { res.json(await financeRepo.getAccountReceivable(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/receivable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/receivable', async (req, res) => {
+  const b = arBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await financeRepo.createAccountReceivable(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/receivable', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/receivable/:id', async (req, res) => {
+  const b = arBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await financeRepo.updateAccountReceivable(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/receivable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/receivable/:id', async (req, res) => {
+  try { await financeRepo.deleteAccountReceivable(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/receivable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Lançamentos — Contas a Pagar ──────────────────────────────────────────────
+const qAP2 = z.object({
+  status: z.string().optional(),
+  category: z.string().optional(),
+  search: z.string().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const apBody = z.object({
+  supplier_name:     z.string().max(200).optional().nullable(),
+  supplier_document: z.string().max(30).optional().nullable(),
+  document_number:   z.string().max(50).optional(),
+  parcel:            z.string().max(20).optional(),
+  category:          z.string().max(100).optional().nullable(),
+  cost_center:       z.string().max(100).optional().nullable(),
+  issue_date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  due_date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  payment_date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  face_value:        z.coerce.number().min(0),
+  paid_amount:       z.coerce.number().min(0).default(0),
+  interest_amount:   z.coerce.number().min(0).default(0),
+  discount_amount:   z.coerce.number().min(0).default(0),
+  status:            z.enum(['open','paid','partial','overdue','cancelled']).default('open'),
+  payment_method:    z.string().max(50).optional().nullable(),
+  bank_account:      z.string().max(100).optional().nullable(),
+  notes:             z.string().max(1000).optional().nullable(),
+});
+
+app.get('/api/payable', async (req, res) => {
+  const q = parseQuery(qAP2, req.query, res); if (!q) return;
+  try { res.json(await financeRepo.listAccountsPayable(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/payable', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/payable/categories', async (_req, res) => {
+  try { res.json(await financeRepo.listAPCategories(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/payable/categories', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/payable/:id', async (req, res) => {
+  try { res.json(await financeRepo.getAccountPayable(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/payable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/payable', async (req, res) => {
+  const b = apBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await financeRepo.createAccountPayable(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/payable', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/payable/:id', async (req, res) => {
+  const b = apBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await financeRepo.updateAccountPayable(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/payable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/payable/:id', async (req, res) => {
+  try { await financeRepo.deleteAccountPayable(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/payable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   logger.info(`API iniciada`, { port: PORT, env: NODE_ENV, tenant: TENANT_ID });
