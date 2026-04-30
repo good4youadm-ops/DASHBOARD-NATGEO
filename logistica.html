@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Logística</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --bg: #f5f5f7; --surface: #fff;
+      --border: #e5e5ea; --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93;
+      --red: #ff3b30; --orange: #ff9500; --blue: #007aff; --purple: #af52de;
+      --radius: 14px; --sidebar: 220px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 20px rgba(0,0,0,.10);
+    }
+    html, body { height: 100%; font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    .shell { display: flex; height: 100vh; overflow: hidden; }
+    .sidebar { width: var(--sidebar); background: var(--accent); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 16px 10px; display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1rem; flex-shrink: 0; }
+    .logo-name { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .logo-name span { color: #95d5b2; }
+    .sidebar-section { padding: 16px 16px 4px; font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .08em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: rgba(255,255,255,.75); text-decoration: none; font-size: .82rem; font-weight: 500; border-radius: 8px; margin: 1px 8px; transition: background .15s, color .15s; }
+    .nav-item:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+    .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
+    .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: .65rem; color: rgba(255,255,255,.55); }
+    .logout-btn { background: none; border: none; color: rgba(255,255,255,.55); cursor: pointer; padding: 4px; border-radius: 6px; transition: color .15s; }
+    .logout-btn:hover { color: #fff; }
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+    .topbar-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .topbar-sub { font-size: .8rem; color: var(--muted); }
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 20px; width: fit-content; box-shadow: var(--shadow-sm); }
+    .tab-btn { padding: 8px 20px; border: none; border-radius: 9px; background: none; cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--muted); transition: all .15s; display: flex; align-items: center; gap: 7px; }
+    .tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(26,71,49,.3); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    /* Toolbar */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 300px; }
+    .search-wrap input { width: 100%; padding: 8px 12px 8px 36px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .85rem; background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--accent3); }
+    .search-wrap i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .8rem; }
+    select.filter { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .85rem; background: var(--surface); color: var(--text); outline: none; cursor: pointer; }
+    select.filter:focus { border-color: var(--accent3); }
+    .btn-primary { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+    .btn-primary:hover { background: var(--accent2); }
+    .ml-auto { margin-left: auto; }
+    /* Table */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    thead { background: #f9f9fb; }
+    th { padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 11px 14px; border-bottom: 1px solid #f0f0f5; color: var(--text2); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .badge-active   { background: var(--accent-bg); color: var(--accent); }
+    .badge-inactive { background: #f5f5f7; color: var(--muted); }
+    .badge-pending  { background: #fff8e6; color: #b8730a; }
+    .badge-in_progress { background: #e8f4fd; color: var(--blue); }
+    .badge-completed   { background: var(--accent-bg); color: var(--accent); }
+    .badge-cancelled   { background: #f5f5f7; color: var(--muted); }
+    .actions { display: flex; gap: 6px; }
+    .btn-icon { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .8rem; transition: all .15s; }
+    .btn-icon:hover { border-color: var(--accent3); color: var(--accent); }
+    .btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    .page-btns { display: flex; gap: 4px; }
+    .page-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text2); cursor: pointer; font-size: .8rem; transition: all .15s; }
+    .page-btn:hover:not(:disabled) { border-color: var(--accent3); color: var(--accent); }
+    .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .empty-state { padding: 48px; text-align: center; color: var(--muted); }
+    .empty-state i { font-size: 2rem; margin-bottom: 12px; display: block; opacity: .4; }
+    .empty-state p { font-size: .9rem; }
+    .loading-row td { text-align: center; padding: 32px; color: var(--muted); }
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.2); width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 4px; border-radius: 6px; transition: color .15s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; }
+    .field label { font-size: .75rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: .85rem; color: var(--text); background: var(--bg); outline: none; transition: border-color .15s; font-family: inherit; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent3); background: #fff; }
+    .btn-cancel { padding: 9px 18px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text2); font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-cancel:hover { border-color: var(--muted); }
+    .btn-save { padding: 9px 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-save:hover { background: var(--accent2); }
+    .btn-save:disabled { opacity: .55; cursor: not-allowed; }
+    /* Confirm */
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1100; align-items: center; justify-content: center; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: var(--surface); border-radius: 16px; padding: 28px; max-width: 360px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
+    .confirm-box i { font-size: 2rem; color: var(--red); margin-bottom: 12px; }
+    .confirm-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: .85rem; color: var(--muted); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .btn-danger { padding: 9px 20px; border: none; border-radius: 10px; background: var(--red); color: #fff; font-size: .85rem; font-weight: 600; cursor: pointer; }
+    /* Toast */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--text); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: .83rem; font-weight: 500; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 10px; min-width: 240px; animation: slideIn .2s ease; }
+    .toast.success { background: var(--accent); }
+    .toast.error { background: var(--red); }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+      <div class="logo-name">Nat<span>Geo</span></div>
+    </div>
+    <div class="sidebar-section">Principal</div>
+    <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+    <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
+    <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
+    <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
+    <div class="sidebar-section">Comercial</div>
+    <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
+    <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-users"></i><span>Clientes</span></a>
+    <div class="sidebar-section">Financeiro</div>
+    <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-file-invoice-dollar"></i><span>Lançamentos</span></a>
+    <div class="sidebar-section">Operações</div>
+    <a class="nav-item active" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
+    <div class="sidebar-section">Relatórios</div>
+    <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
+    <div class="sidebar-footer">
+      <div class="avatar" id="userInitials">--</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Carregando…</div>
+        <div class="user-role">NatGeo</div>
+      </div>
+      <button class="logout-btn" id="logoutBtn" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Logística</div>
+        <div class="topbar-sub">Motoristas, veículos e rotas de entrega</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="drivers"><i class="fa-solid fa-id-card"></i> Motoristas</button>
+        <button class="tab-btn" data-tab="vehicles"><i class="fa-solid fa-car-side"></i> Veículos</button>
+        <button class="tab-btn" data-tab="routes"><i class="fa-solid fa-route"></i> Rotas</button>
+      </div>
+
+      <!-- ══ MOTORISTAS ══ -->
+      <div class="tab-pane active" id="tab-drivers">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="driverSearch" placeholder="Buscar motorista…" />
+          </div>
+          <select class="filter" id="driverActiveFilter">
+            <option value="">Todos</option>
+            <option value="true">Ativos</option>
+            <option value="false">Inativos</option>
+          </select>
+          <button class="btn-primary ml-auto" id="newDriverBtn"><i class="fa-solid fa-plus"></i> Novo Motorista</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>CPF</th>
+                  <th>CNH</th>
+                  <th>Categoria</th>
+                  <th>Vencimento CNH</th>
+                  <th>Telefone</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="driversTbody">
+                <tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="driversPageInfo">—</span>
+            <div class="page-btns">
+              <button class="page-btn" id="driverPrev" disabled><i class="fa-solid fa-chevron-left"></i></button>
+              <button class="page-btn" id="driverNext" disabled><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ VEÍCULOS ══ -->
+      <div class="tab-pane" id="tab-vehicles">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="vehicleSearch" placeholder="Buscar por placa ou modelo…" />
+          </div>
+          <select class="filter" id="vehicleTypeFilter">
+            <option value="">Todos os tipos</option>
+            <option value="car">Carro</option>
+            <option value="van">Van</option>
+            <option value="truck">Caminhão</option>
+            <option value="motorcycle">Moto</option>
+          </select>
+          <button class="btn-primary ml-auto" id="newVehicleBtn"><i class="fa-solid fa-plus"></i> Novo Veículo</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Placa</th>
+                  <th>Modelo</th>
+                  <th>Marca</th>
+                  <th>Ano</th>
+                  <th>Tipo</th>
+                  <th>Cap. (kg)</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="vehiclesTbody">
+                <tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="vehiclesPageInfo">—</span>
+            <div class="page-btns">
+              <button class="page-btn" id="vehiclePrev" disabled><i class="fa-solid fa-chevron-left"></i></button>
+              <button class="page-btn" id="vehicleNext" disabled><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ROTAS ══ -->
+      <div class="tab-pane" id="tab-routes">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="routeSearch" placeholder="Buscar rota…" />
+          </div>
+          <select class="filter" id="routeStatusFilter">
+            <option value="">Todos os status</option>
+            <option value="pending">Pendente</option>
+            <option value="in_progress">Em andamento</option>
+            <option value="completed">Concluída</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+          <button class="btn-primary ml-auto" id="newRouteBtn"><i class="fa-solid fa-plus"></i> Nova Rota</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Motorista</th>
+                  <th>Veículo</th>
+                  <th>Paradas</th>
+                  <th>Peso Total</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="routesTbody">
+                <tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="routesPageInfo">—</span>
+            <div class="page-btns">
+              <button class="page-btn" id="routePrev" disabled><i class="fa-solid fa-chevron-left"></i></button>
+              <button class="page-btn" id="routeNext" disabled><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Driver Modal ── -->
+<div class="modal-overlay" id="driverModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="driverModalTitle">Novo Motorista</span>
+      <button class="modal-close" onclick="closeModal('driverModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full"><label>Nome Completo *</label><input type="text" id="dName" placeholder="Nome do motorista" /></div>
+        <div class="field"><label>CPF</label><input type="text" id="dDocument" placeholder="000.000.000-00" /></div>
+        <div class="field"><label>Telefone</label><input type="text" id="dPhone" placeholder="(00) 00000-0000" /></div>
+        <div class="field"><label>E-mail</label><input type="email" id="dEmail" placeholder="motorista@email.com" /></div>
+        <div class="field"><label>Nº CNH</label><input type="text" id="dCnh" placeholder="00000000000" /></div>
+        <div class="field"><label>Categoria CNH</label>
+          <select id="dCnhCategory">
+            <option value="">Selecionar</option>
+            <option value="A">A</option><option value="B">B</option><option value="AB">AB</option>
+            <option value="C">C</option><option value="D">D</option><option value="E">E</option>
+          </select>
+        </div>
+        <div class="field"><label>Vencimento CNH</label><input type="date" id="dCnhExpiry" /></div>
+        <div class="field"><label>Status</label>
+          <select id="dActive"><option value="true">Ativo</option><option value="false">Inativo</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('driverModal')">Cancelar</button>
+      <button class="btn-save" id="driverSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Vehicle Modal ── -->
+<div class="modal-overlay" id="vehicleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="vehicleModalTitle">Novo Veículo</span>
+      <button class="modal-close" onclick="closeModal('vehicleModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Placa *</label><input type="text" id="vPlate" placeholder="AAA-0000" /></div>
+        <div class="field"><label>Tipo *</label>
+          <select id="vType">
+            <option value="car">Carro</option><option value="van">Van</option>
+            <option value="truck">Caminhão</option><option value="motorcycle">Moto</option>
+          </select>
+        </div>
+        <div class="field"><label>Marca</label><input type="text" id="vBrand" placeholder="Fiat, Ford…" /></div>
+        <div class="field"><label>Modelo</label><input type="text" id="vModel" placeholder="Uno, Transit…" /></div>
+        <div class="field"><label>Ano</label><input type="number" id="vYear" placeholder="2020" min="1990" max="2099" /></div>
+        <div class="field"><label>Capacidade (kg)</label><input type="number" id="vCapacity" placeholder="1000" min="0" step="0.01" /></div>
+        <div class="field"><label>Status</label>
+          <select id="vActive"><option value="true">Ativo</option><option value="false">Inativo</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('vehicleModal')">Cancelar</button>
+      <button class="btn-save" id="vehicleSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Route Modal ── -->
+<div class="modal-overlay" id="routeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="routeModalTitle">Nova Rota</span>
+      <button class="modal-close" onclick="closeModal('routeModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Data da Rota *</label><input type="date" id="rDate" /></div>
+        <div class="field"><label>Status</label>
+          <select id="rStatus"><option value="pending">Pendente</option><option value="in_progress">Em andamento</option><option value="completed">Concluída</option></select>
+        </div>
+        <div class="field full"><label>Motorista</label>
+          <select id="rDriver"><option value="">Selecionar motorista…</option></select>
+        </div>
+        <div class="field full"><label>Veículo</label>
+          <select id="rVehicle"><option value="">Selecionar veículo…</option></select>
+        </div>
+        <div class="field"><label>Nº de Paradas</label><input type="number" id="rStops" min="0" placeholder="0" /></div>
+        <div class="field"><label>Peso Total (kg)</label><input type="number" id="rWeight" min="0" step="0.01" placeholder="0,00" /></div>
+        <div class="field full"><label>Observações</label>
+          <input type="text" id="rNotes" placeholder="Observações sobre a rota…" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('routeModal')">Cancelar</button>
+      <button class="btn-save" id="routeSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm ── -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <h3 id="confirmTitle">Confirmar exclusão</h3>
+    <p id="confirmMsg">Esta ação não pode ser desfeita.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="confirmNo">Cancelar</button>
+      <button class="btn-danger" id="confirmYes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script>
+// ── Auth ──
+NatGeoAuth.requireAuth();
+(async () => {
+  const user = await NatGeoAuth.getUser();
+  if (user) {
+    const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userInitials').textContent = name.charAt(0).toUpperCase();
+  }
+})();
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await NatGeoAuth.signOut();
+  window.location.replace('login.html');
+});
+
+// ── Utils ──
+function fmtDate(d) { if(!d) return '—'; return new Date(d+'T00:00').toLocaleDateString('pt-BR'); }
+function fmtNum(v) { return v!=null ? Number(v).toLocaleString('pt-BR') : '—'; }
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<i class="fa-solid fa-${type==='success'?'check':'circle-exclamation'}"></i> ${msg}`;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function renderPagination(infoId, prevId, nextId, total, page, limit) {
+  const pages = Math.ceil(total / limit) || 1;
+  const from = (page - 1) * limit + 1;
+  const to   = Math.min(page * limit, total);
+  document.getElementById(infoId).textContent = total ? `${from}–${to} de ${total}` : '0 registros';
+  document.getElementById(prevId).disabled = page <= 1;
+  document.getElementById(nextId).disabled = page >= pages;
+}
+
+// ── Tabs ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ══════════════════════════════════════════════════
+// ── MOTORISTAS ──
+// ══════════════════════════════════════════════════
+const driversState = { page:1, limit:20, total:0, search:'', isActive:'', editingId:null };
+
+async function loadDrivers() {
+  document.getElementById('driversTbody').innerHTML = '<tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+  try {
+    const p = { page: driversState.page, limit: driversState.limit };
+    if (driversState.search)   p.search   = driversState.search;
+    if (driversState.isActive !== '') p.isActive = driversState.isActive === 'true';
+    const res = await DashboardAPI.logistics.drivers.list(p);
+    driversState.total = res.total;
+    renderDrivers(res.data);
+    renderPagination('driversPageInfo','driverPrev','driverNext', res.total, res.page, res.limit);
+  } catch(e) {
+    document.getElementById('driversTbody').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> ${e.message}</td></tr>`;
+  }
+}
+
+function renderDrivers(drivers) {
+  if (!drivers.length) {
+    document.getElementById('driversTbody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-id-card"></i><p>Nenhum motorista cadastrado</p></div></td></tr>';
+    return;
+  }
+  document.getElementById('driversTbody').innerHTML = drivers.map(d => `
+    <tr>
+      <td><strong>${d.name}</strong></td>
+      <td>${d.document||'—'}</td>
+      <td>${d.cnh_number||'—'}</td>
+      <td>${d.cnh_category||'—'}</td>
+      <td>${fmtDate(d.cnh_expiry)}</td>
+      <td>${d.phone||'—'}</td>
+      <td><span class="badge badge-${d.is_active?'active':'inactive'}">${d.is_active?'Ativo':'Inativo'}</span></td>
+      <td><div class="actions">
+        <button class="btn-icon" title="Editar" onclick="editDriver(${JSON.stringify(d).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn-icon danger" title="Desativar" onclick="confirmDelete('driver','${d.id}','Desativar motorista','O motorista será marcado como inativo.')"><i class="fa-solid fa-user-slash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openDriverModal(title='Novo Motorista') {
+  document.getElementById('driverModalTitle').textContent = title;
+  openModal('driverModal');
+}
+
+function editDriver(d) {
+  driversState.editingId = d.id;
+  document.getElementById('dName').value        = d.name || '';
+  document.getElementById('dDocument').value    = d.document || '';
+  document.getElementById('dPhone').value       = d.phone || '';
+  document.getElementById('dEmail').value       = d.email || '';
+  document.getElementById('dCnh').value         = d.cnh_number || '';
+  document.getElementById('dCnhCategory').value = d.cnh_category || '';
+  document.getElementById('dCnhExpiry').value   = d.cnh_expiry || '';
+  document.getElementById('dActive').value      = String(d.is_active !== false);
+  openDriverModal('Editar Motorista');
+}
+
+document.getElementById('newDriverBtn').addEventListener('click', () => {
+  driversState.editingId = null;
+  ['dName','dDocument','dPhone','dEmail','dCnh','dCnhExpiry'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dCnhCategory').value = '';
+  document.getElementById('dActive').value = 'true';
+  openDriverModal('Novo Motorista');
+});
+
+document.getElementById('driverSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('driverSaveBtn');
+  const name = document.getElementById('dName').value.trim();
+  if (!name) { toast('Informe o nome do motorista', 'error'); return; }
+  const body = {
+    name,
+    document:     document.getElementById('dDocument').value || null,
+    phone:        document.getElementById('dPhone').value    || null,
+    email:        document.getElementById('dEmail').value    || null,
+    cnh_number:   document.getElementById('dCnh').value      || null,
+    cnh_category: document.getElementById('dCnhCategory').value || null,
+    cnh_expiry:   document.getElementById('dCnhExpiry').value   || null,
+    is_active:    document.getElementById('dActive').value === 'true',
+  };
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    if (driversState.editingId) {
+      await DashboardAPI.logistics.drivers.update(driversState.editingId, body);
+      toast('Motorista atualizado');
+    } else {
+      await DashboardAPI.logistics.drivers.create(body);
+      toast('Motorista cadastrado');
+    }
+    closeModal('driverModal');
+    driversState.editingId = null;
+    loadDrivers();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }
+});
+
+let driverSearchTimer;
+document.getElementById('driverSearch').addEventListener('input', e => {
+  clearTimeout(driverSearchTimer);
+  driverSearchTimer = setTimeout(() => { driversState.search = e.target.value; driversState.page=1; loadDrivers(); }, 400);
+});
+document.getElementById('driverActiveFilter').addEventListener('change', e => { driversState.isActive = e.target.value; driversState.page=1; loadDrivers(); });
+document.getElementById('driverPrev').addEventListener('click', () => { if(driversState.page>1){driversState.page--;loadDrivers();} });
+document.getElementById('driverNext').addEventListener('click', () => { const p=Math.ceil(driversState.total/driversState.limit); if(driversState.page<p){driversState.page++;loadDrivers();} });
+
+// ══════════════════════════════════════════════════
+// ── VEÍCULOS ──
+// ══════════════════════════════════════════════════
+const vehiclesState = { page:1, limit:20, total:0, search:'', type:'', editingId:null };
+
+async function loadVehicles() {
+  document.getElementById('vehiclesTbody').innerHTML = '<tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+  try {
+    const p = { page: vehiclesState.page, limit: vehiclesState.limit };
+    if (vehiclesState.search) p.search = vehiclesState.search;
+    if (vehiclesState.type)   p.type   = vehiclesState.type;
+    const res = await DashboardAPI.logistics.vehicles.list(p);
+    vehiclesState.total = res.total;
+    renderVehicles(res.data);
+    renderPagination('vehiclesPageInfo','vehiclePrev','vehicleNext', res.total, res.page, res.limit);
+  } catch(e) {
+    document.getElementById('vehiclesTbody').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> ${e.message}</td></tr>`;
+  }
+}
+
+const vTypeLabel = { car:'Carro', van:'Van', truck:'Caminhão', motorcycle:'Moto' };
+function renderVehicles(vehicles) {
+  if (!vehicles.length) {
+    document.getElementById('vehiclesTbody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-car-side"></i><p>Nenhum veículo cadastrado</p></div></td></tr>';
+    return;
+  }
+  document.getElementById('vehiclesTbody').innerHTML = vehicles.map(v => `
+    <tr>
+      <td><strong>${v.plate}</strong></td>
+      <td>${v.model||'—'}</td>
+      <td>${v.brand||'—'}</td>
+      <td>${v.year||'—'}</td>
+      <td>${vTypeLabel[v.type]||v.type}</td>
+      <td>${v.capacity_kg != null ? fmtNum(v.capacity_kg)+' kg' : '—'}</td>
+      <td><span class="badge badge-${v.is_active?'active':'inactive'}">${v.is_active?'Ativo':'Inativo'}</span></td>
+      <td><div class="actions">
+        <button class="btn-icon" title="Editar" onclick="editVehicle(${JSON.stringify(v).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn-icon danger" title="Desativar" onclick="confirmDelete('vehicle','${v.id}','Desativar veículo','O veículo será marcado como inativo.')"><i class="fa-solid fa-ban"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function editVehicle(v) {
+  vehiclesState.editingId = v.id;
+  document.getElementById('vPlate').value    = v.plate || '';
+  document.getElementById('vType').value     = v.type || 'car';
+  document.getElementById('vBrand').value    = v.brand || '';
+  document.getElementById('vModel').value    = v.model || '';
+  document.getElementById('vYear').value     = v.year || '';
+  document.getElementById('vCapacity').value = v.capacity_kg || '';
+  document.getElementById('vActive').value   = String(v.is_active !== false);
+  document.getElementById('vehicleModalTitle').textContent = 'Editar Veículo';
+  openModal('vehicleModal');
+}
+
+document.getElementById('newVehicleBtn').addEventListener('click', () => {
+  vehiclesState.editingId = null;
+  ['vPlate','vBrand','vModel','vYear','vCapacity'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('vType').value = 'car';
+  document.getElementById('vActive').value = 'true';
+  document.getElementById('vehicleModalTitle').textContent = 'Novo Veículo';
+  openModal('vehicleModal');
+});
+
+document.getElementById('vehicleSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('vehicleSaveBtn');
+  const plate = document.getElementById('vPlate').value.trim().toUpperCase();
+  if (!plate) { toast('Informe a placa do veículo', 'error'); return; }
+  const body = {
+    plate,
+    type:        document.getElementById('vType').value,
+    brand:       document.getElementById('vBrand').value    || null,
+    model:       document.getElementById('vModel').value    || null,
+    year:        parseInt(document.getElementById('vYear').value) || null,
+    capacity_kg: parseFloat(document.getElementById('vCapacity').value) || null,
+    is_active:   document.getElementById('vActive').value === 'true',
+  };
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    if (vehiclesState.editingId) {
+      await DashboardAPI.logistics.vehicles.update(vehiclesState.editingId, body);
+      toast('Veículo atualizado');
+    } else {
+      await DashboardAPI.logistics.vehicles.create(body);
+      toast('Veículo cadastrado');
+    }
+    closeModal('vehicleModal');
+    vehiclesState.editingId = null;
+    loadVehicles();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }
+});
+
+let vehicleSearchTimer;
+document.getElementById('vehicleSearch').addEventListener('input', e => {
+  clearTimeout(vehicleSearchTimer);
+  vehicleSearchTimer = setTimeout(() => { vehiclesState.search = e.target.value; vehiclesState.page=1; loadVehicles(); }, 400);
+});
+document.getElementById('vehicleTypeFilter').addEventListener('change', e => { vehiclesState.type = e.target.value; vehiclesState.page=1; loadVehicles(); });
+document.getElementById('vehiclePrev').addEventListener('click', () => { if(vehiclesState.page>1){vehiclesState.page--;loadVehicles();} });
+document.getElementById('vehicleNext').addEventListener('click', () => { const p=Math.ceil(vehiclesState.total/vehiclesState.limit); if(vehiclesState.page<p){vehiclesState.page++;loadVehicles();} });
+
+// ══════════════════════════════════════════════════
+// ── ROTAS ──
+// ══════════════════════════════════════════════════
+const routesState = { page:1, limit:20, total:0, search:'', status:'', editingId:null };
+
+async function loadRoutes() {
+  document.getElementById('routesTbody').innerHTML = '<tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+  try {
+    const p = { page: routesState.page, limit: routesState.limit };
+    if (routesState.search) p.search = routesState.search;
+    if (routesState.status) p.status = routesState.status;
+    const res = await DashboardAPI.logistics.routes.list(p);
+    routesState.total = res.total;
+    renderRoutes(res.data);
+    renderPagination('routesPageInfo','routePrev','routeNext', res.total, res.page, res.limit);
+  } catch(e) {
+    document.getElementById('routesTbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> ${e.message}</td></tr>`;
+  }
+}
+
+const routeStatusLabel = { pending:'Pendente', in_progress:'Em andamento', completed:'Concluída', cancelled:'Cancelada' };
+function renderRoutes(routes) {
+  if (!routes.length) {
+    document.getElementById('routesTbody').innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-route"></i><p>Nenhuma rota registrada</p></div></td></tr>';
+    return;
+  }
+  document.getElementById('routesTbody').innerHTML = routes.map(r => `
+    <tr>
+      <td>${fmtDate(r.route_date)}</td>
+      <td>${r.drivers?.name||'—'}</td>
+      <td>${r.vehicles?.plate||'—'} ${r.vehicles?.model?'('+r.vehicles.model+')':''}</td>
+      <td>${r.total_stops??'—'}</td>
+      <td>${r.total_weight_kg != null ? fmtNum(r.total_weight_kg)+' kg' : '—'}</td>
+      <td><span class="badge badge-${r.status}">${routeStatusLabel[r.status]||r.status}</span></td>
+      <td><div class="actions">
+        <button class="btn-icon" title="Editar" onclick="editRoute(${JSON.stringify(r).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+        ${r.status!=='cancelled'?`<button class="btn-icon danger" title="Cancelar" onclick="confirmDelete('route','${r.id}','Cancelar rota','A rota será marcada como cancelada.')"><i class="fa-solid fa-ban"></i></button>`:''}
+      </div></td>
+    </tr>`).join('');
+}
+
+async function loadRouteSelects() {
+  try {
+    const [dr, vh] = await Promise.all([
+      DashboardAPI.logistics.drivers.list({ limit: 200, isActive: true }),
+      DashboardAPI.logistics.vehicles.list({ limit: 200, isActive: true }),
+    ]);
+    const dSel = document.getElementById('rDriver');
+    const vSel = document.getElementById('rVehicle');
+    dSel.innerHTML = '<option value="">Selecionar motorista…</option>' + dr.data.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    vSel.innerHTML = '<option value="">Selecionar veículo…</option>' + vh.data.map(v => `<option value="${v.id}">${v.plate} — ${v.model||v.type}</option>`).join('');
+  } catch(_) {}
+}
+
+function editRoute(r) {
+  routesState.editingId = r.id;
+  document.getElementById('rDate').value   = r.route_date || '';
+  document.getElementById('rStatus').value = r.status || 'pending';
+  document.getElementById('rStops').value  = r.total_stops || '';
+  document.getElementById('rWeight').value = r.total_weight_kg || '';
+  document.getElementById('rNotes').value  = r.notes || '';
+  loadRouteSelects().then(() => {
+    if (r.driver_id)  document.getElementById('rDriver').value  = r.driver_id;
+    if (r.vehicle_id) document.getElementById('rVehicle').value = r.vehicle_id;
+  });
+  document.getElementById('routeModalTitle').textContent = 'Editar Rota';
+  openModal('routeModal');
+}
+
+document.getElementById('newRouteBtn').addEventListener('click', () => {
+  routesState.editingId = null;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('rDate').value   = today;
+  document.getElementById('rStatus').value = 'pending';
+  document.getElementById('rStops').value  = '';
+  document.getElementById('rWeight').value = '';
+  document.getElementById('rNotes').value  = '';
+  loadRouteSelects();
+  document.getElementById('routeModalTitle').textContent = 'Nova Rota';
+  openModal('routeModal');
+});
+
+document.getElementById('routeSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('routeSaveBtn');
+  const date = document.getElementById('rDate').value;
+  if (!date) { toast('Informe a data da rota', 'error'); return; }
+  const body = {
+    route_date:       date,
+    status:           document.getElementById('rStatus').value,
+    driver_id:        document.getElementById('rDriver').value  || null,
+    vehicle_id:       document.getElementById('rVehicle').value || null,
+    total_stops:      parseInt(document.getElementById('rStops').value)  || null,
+    total_weight_kg:  parseFloat(document.getElementById('rWeight').value) || null,
+    notes:            document.getElementById('rNotes').value || null,
+  };
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    if (routesState.editingId) {
+      await DashboardAPI.logistics.routes.update(routesState.editingId, body);
+      toast('Rota atualizada');
+    } else {
+      await DashboardAPI.logistics.routes.create(body);
+      toast('Rota criada');
+    }
+    closeModal('routeModal');
+    routesState.editingId = null;
+    loadRoutes();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }
+});
+
+let routeSearchTimer;
+document.getElementById('routeSearch').addEventListener('input', e => {
+  clearTimeout(routeSearchTimer);
+  routeSearchTimer = setTimeout(() => { routesState.search = e.target.value; routesState.page=1; loadRoutes(); }, 400);
+});
+document.getElementById('routeStatusFilter').addEventListener('change', e => { routesState.status = e.target.value; routesState.page=1; loadRoutes(); });
+document.getElementById('routePrev').addEventListener('click', () => { if(routesState.page>1){routesState.page--;loadRoutes();} });
+document.getElementById('routeNext').addEventListener('click', () => { const p=Math.ceil(routesState.total/routesState.limit); if(routesState.page<p){routesState.page++;loadRoutes();} });
+
+// ══════════════════════════════════════════════════
+// ── CONFIRM DELETE ──
+// ══════════════════════════════════════════════════
+let confirmTarget = { type: null, id: null };
+
+function confirmDelete(type, id, title, msg) {
+  confirmTarget = { type, id };
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+document.getElementById('confirmNo').addEventListener('click', () => {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  confirmTarget = { type: null, id: null };
+});
+
+document.getElementById('confirmYes').addEventListener('click', async () => {
+  const btn = document.getElementById('confirmYes');
+  btn.disabled = true; btn.textContent = 'Aguarde…';
+  const { type, id } = confirmTarget;
+  try {
+    if (type === 'driver')  await DashboardAPI.logistics.drivers.delete(id);
+    if (type === 'vehicle') await DashboardAPI.logistics.vehicles.delete(id);
+    if (type === 'route')   await DashboardAPI.logistics.routes.delete(id);
+    toast('Operação realizada');
+    document.getElementById('confirmOverlay').classList.remove('open');
+    confirmTarget = { type: null, id: null };
+    if (type === 'driver')  loadDrivers();
+    if (type === 'vehicle') loadVehicles();
+    if (type === 'route')   loadRoutes();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Confirmar'; }
+});
+
+// ── Init ──
+loadDrivers();
+loadVehicles();
+loadRoutes();
+</script>
+</body>
+</html>

@@ -14,6 +14,8 @@ import * as syncRepo from '../repositories/sync';
 import * as customersRepo from '../repositories/customers';
 import * as productsRepo from '../repositories/products';
 import * as suppliersRepo from '../repositories/suppliers';
+import * as ordersRepo from '../repositories/orders';
+import * as logisticsRepo from '../repositories/logistics';
 
 dotenv.config();
 
@@ -639,6 +641,239 @@ app.put('/api/payable/:id', async (req, res) => {
 app.delete('/api/payable/:id', async (req, res) => {
   try { await financeRepo.deleteAccountPayable(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
   catch (e) { logger.error('DELETE /api/payable/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Pedidos (Sales Orders) ────────────────────────────────────────────────────
+const qOrders = z.object({
+  search:     z.string().max(100).optional(),
+  status:     z.string().optional(),
+  customerId: z.string().uuid().optional(),
+  dateFrom:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page:       z.coerce.number().int().min(1).default(1),
+  limit:      z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const orderBody = z.object({
+  customer_id:     z.string().uuid().optional().nullable(),
+  order_number:    z.string().max(50).optional().nullable(),
+  order_date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  delivery_date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  status:          z.enum(['pending','approved','processing','shipped','delivered','cancelled','partial']).default('pending'),
+  payment_terms:   z.string().max(100).optional().nullable(),
+  payment_method:  z.string().max(50).optional().nullable(),
+  salesperson:     z.string().max(100).optional().nullable(),
+  subtotal:        z.coerce.number().min(0).default(0),
+  discount_amount: z.coerce.number().min(0).default(0),
+  tax_amount:      z.coerce.number().min(0).default(0),
+  freight_amount:  z.coerce.number().min(0).default(0),
+  total_amount:    z.coerce.number().min(0).default(0),
+  notes:           z.string().max(2000).optional().nullable(),
+});
+
+const orderItemBody = z.object({
+  product_id:   z.string().uuid().optional().nullable(),
+  product_name: z.string().max(200),
+  product_code: z.string().max(50).optional().nullable(),
+  unit:         z.string().max(10).default('UN'),
+  line_number:  z.coerce.number().int().min(1).optional(),
+  quantity:     z.coerce.number().min(0),
+  unit_price:   z.coerce.number().min(0),
+  discount_pct: z.coerce.number().min(0).max(100).default(0),
+  discount_amount: z.coerce.number().min(0).default(0),
+  total_amount: z.coerce.number().min(0),
+});
+
+app.get('/api/orders', async (req, res) => {
+  const q = parseQuery(qOrders, req.query, res); if (!q) return;
+  try { res.json(await ordersRepo.listOrders(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/orders', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/orders/:id', async (req, res) => {
+  try { res.json(await ordersRepo.getOrder(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/orders/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/orders/:id/items', async (req, res) => {
+  try { res.json(await ordersRepo.getOrderItems(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/orders/:id/items', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/orders', async (req, res) => {
+  const b = orderBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await ordersRepo.createOrder(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/orders', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/orders/:id/items', async (req, res) => {
+  const b = orderItemBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await ordersRepo.addOrderItem(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('POST /api/orders/:id/items', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/orders/:id', async (req, res) => {
+  const b = orderBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await ordersRepo.updateOrder(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/orders/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/orders/:id/items/:itemId', async (req, res) => {
+  try { await ordersRepo.removeOrderItem(supabaseAdmin, TENANT_ID, req.params.id, req.params.itemId); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/orders/:id/items/:itemId', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/orders/:id', async (req, res) => {
+  try { await ordersRepo.deleteOrder(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/orders/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Estoque — movimentos manuais ──────────────────────────────────────────────
+const movementBody = z.object({
+  product_id:     z.string().uuid(),
+  movement_date:  z.string().default(() => new Date().toISOString()),
+  movement_type:  z.enum(['entrada','saida','ajuste','transferencia','devolucao','perda','avaria','inventario']),
+  direction:      z.enum(['in','out']),
+  warehouse_from: z.string().max(50).optional().nullable(),
+  warehouse_to:   z.string().max(50).optional().nullable(),
+  quantity:       z.coerce.number(),
+  unit_cost:      z.coerce.number().min(0).optional().nullable(),
+  total_cost:     z.coerce.number().min(0).optional().nullable(),
+  document_ref:   z.string().max(100).optional().nullable(),
+  reason:         z.string().max(500).optional().nullable(),
+  operator:       z.string().max(100).optional().nullable(),
+});
+
+app.get('/api/stock/movements', async (req, res) => {
+  const q = parseQuery(qLimit50, req.query, res); if (!q) return;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('inventory_movements')
+      .select('*, products(name,sku)')
+      .eq('tenant_id', TENANT_ID)
+      .order('created_at', { ascending: false })
+      .range(0, (q.limit ?? 50) - 1);
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (e) { logger.error('GET /api/stock/movements', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/stock/movements', async (req, res) => {
+  const b = movementBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try {
+    const payload = { ...b.data, tenant_id: TENANT_ID, source_system: 'manual', source_id: crypto.randomUUID() };
+    const { data, error } = await supabaseAdmin
+      .from('inventory_movements')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(payload as any)
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (e) { logger.error('POST /api/stock/movements', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Logística — Motoristas ────────────────────────────────────────────────────
+const driverBody = z.object({
+  name:         z.string().min(1).max(200),
+  document:     z.string().max(20).optional().nullable(),
+  cnh:          z.string().max(30).optional().nullable(),
+  cnh_category: z.string().max(5).optional().nullable(),
+  cnh_expiry:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  phone:        z.string().max(20).optional().nullable(),
+  email:        z.string().email().optional().nullable(),
+  is_active:    z.boolean().default(true),
+  notes:        z.string().max(1000).optional().nullable(),
+});
+
+app.get('/api/drivers', async (req, res) => {
+  try { res.json(await logisticsRepo.listDrivers(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/drivers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/drivers', async (req, res) => {
+  const b = driverBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await logisticsRepo.createDriver(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/drivers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/drivers/:id', async (req, res) => {
+  const b = driverBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await logisticsRepo.updateDriver(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/drivers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/drivers/:id', async (req, res) => {
+  try { await logisticsRepo.deleteDriver(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/drivers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Logística — Veículos ──────────────────────────────────────────────────────
+const vehicleBody = z.object({
+  plate:       z.string().min(1).max(10),
+  model:       z.string().max(100).optional().nullable(),
+  brand:       z.string().max(100).optional().nullable(),
+  year:        z.coerce.number().int().min(1980).max(2030).optional().nullable(),
+  type:        z.enum(['caminhao','van','moto','carro','utilitario']).optional().nullable(),
+  capacity_kg: z.coerce.number().min(0).optional().nullable(),
+  is_active:   z.boolean().default(true),
+  notes:       z.string().max(1000).optional().nullable(),
+});
+
+app.get('/api/vehicles', async (req, res) => {
+  try { res.json(await logisticsRepo.listVehicles(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/vehicles', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/vehicles', async (req, res) => {
+  const b = vehicleBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await logisticsRepo.createVehicle(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/vehicles', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/vehicles/:id', async (req, res) => {
+  const b = vehicleBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await logisticsRepo.updateVehicle(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/vehicles/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/vehicles/:id', async (req, res) => {
+  try { await logisticsRepo.deleteVehicle(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/vehicles/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Logística — Rotas ─────────────────────────────────────────────────────────
+const routeBody = z.object({
+  route_date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  driver_id:        z.string().uuid().optional().nullable(),
+  vehicle_id:       z.string().uuid().optional().nullable(),
+  status:           z.enum(['planned','in_progress','completed','cancelled']).default('planned'),
+  total_weight_kg:  z.coerce.number().min(0).optional().nullable(),
+  notes:            z.string().max(1000).optional().nullable(),
+});
+
+app.get('/api/routes', async (req, res) => {
+  const { dateFrom, dateTo } = req.query as Record<string, string>;
+  try { res.json(await logisticsRepo.listRoutes(supabaseAdmin, TENANT_ID, dateFrom, dateTo)); }
+  catch (e) { logger.error('GET /api/routes', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/routes', async (req, res) => {
+  const b = routeBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await logisticsRepo.createRoute(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/routes', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/routes/:id', async (req, res) => {
+  const b = routeBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await logisticsRepo.updateRoute(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/routes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/routes/:id', async (req, res) => {
+  try { await logisticsRepo.deleteRoute(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/routes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

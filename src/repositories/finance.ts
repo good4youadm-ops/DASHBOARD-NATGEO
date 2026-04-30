@@ -101,14 +101,13 @@ export async function listAccountsPayable(client: SupabaseClient, p: ListAPParam
       { count: 'exact' },
     )
     .eq('tenant_id', p.tenantId)
-    .order('due_date', { ascending: true })
-    .range(from, from + limit - 1);
+    .order('due_date', { ascending: true });
 
   if (p.status)   q = q.eq('status', p.status);
   if (p.category) q = q.eq('category', p.category);
   if (p.search)   q = q.or(`document_number.ilike.%${p.search}%,supplier_name.ilike.%${p.search}%`);
 
-  const { data, error, count } = await q;
+  const { data, error, count } = await q.range(from, from + limit - 1);
   if (error) throw error;
   return { data: data ?? [], total: count ?? 0, page, limit };
 }

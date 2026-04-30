@@ -17,13 +17,12 @@ export async function listCustomers(client: SupabaseClient, p: ListParams) {
     .from('customers')
     .select('id,code,name,trade_name,document,document_type,email,phone,segment,classification,credit_limit,payment_terms,is_active,synced_at', { count: 'exact' })
     .eq('tenant_id', p.tenantId)
-    .order('name', { ascending: true })
-    .range(from, from + limit - 1);
+    .order('name', { ascending: true });
 
   if (p.search)           q = q.or(`name.ilike.%${p.search}%,document.ilike.%${p.search}%,code.ilike.%${p.search}%`);
   if (p.isActive != null) q = q.eq('is_active', p.isActive);
 
-  const { data, error, count } = await q;
+  const { data, error, count } = await q.range(from, from + limit - 1);
   if (error) throw error;
   return { data: data ?? [], total: count ?? 0, page, limit };
 }
