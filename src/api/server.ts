@@ -11,6 +11,9 @@ import * as salesRepo from '../repositories/sales';
 import * as inventoryRepo from '../repositories/inventory';
 import * as financeRepo from '../repositories/finance';
 import * as syncRepo from '../repositories/sync';
+import * as customersRepo from '../repositories/customers';
+import * as productsRepo from '../repositories/products';
+import * as suppliersRepo from '../repositories/suppliers';
 
 dotenv.config();
 
@@ -350,6 +353,172 @@ app.get('/api/sync/errors', async (req, res) => {
     logger.error('GET /api/sync/errors', { error: e });
     res.status(500).json({ error: errMsg(e) });
   }
+});
+
+// ── CRUD: Clientes ────────────────────────────────────────────────────────────
+const qCrudList = z.object({
+  search:   z.string().max(200).optional(),
+  isActive: z.enum(['true','false']).transform(v => v === 'true').optional(),
+  page:     z.coerce.number().int().min(1).default(1),
+  limit:    z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const customerBody = z.object({
+  name:          z.string().min(1).max(255),
+  trade_name:    z.string().max(255).optional(),
+  code:          z.string().max(50).optional(),
+  document:      z.string().max(20).optional(),
+  document_type: z.enum(['cpf','cnpj','outros']).optional(),
+  email:         z.string().email().max(255).optional().or(z.literal('')),
+  phone:         z.string().max(30).optional(),
+  segment:       z.string().max(100).optional(),
+  classification:z.string().max(10).optional(),
+  credit_limit:  z.coerce.number().min(0).optional(),
+  payment_terms: z.string().max(100).optional(),
+  is_active:     z.boolean().optional(),
+});
+
+app.get('/api/customers', async (req, res) => {
+  const q = parseQuery(qCrudList, req.query, res); if (!q) return;
+  try { res.json(await customersRepo.listCustomers(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/customers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/customers/:id', async (req, res) => {
+  try { res.json(await customersRepo.getCustomer(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/customers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/customers', async (req, res) => {
+  const b = customerBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await customersRepo.createCustomer(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/customers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/customers/:id', async (req, res) => {
+  const b = customerBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await customersRepo.updateCustomer(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/customers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/customers/:id', async (req, res) => {
+  try { await customersRepo.deleteCustomer(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/customers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── CRUD: Produtos ────────────────────────────────────────────────────────────
+const productBody = z.object({
+  name:           z.string().min(1).max(255),
+  sku:            z.string().max(50).optional(),
+  description:    z.string().max(1000).optional(),
+  category:       z.string().max(100).optional(),
+  subcategory:    z.string().max(100).optional(),
+  brand:          z.string().max(100).optional(),
+  supplier_name:  z.string().max(255).optional(),
+  unit:           z.string().max(10).default('UN'),
+  unit_weight:    z.coerce.number().min(0).optional(),
+  units_per_box:  z.coerce.number().int().min(1).optional(),
+  cost_price:     z.coerce.number().min(0).optional(),
+  sale_price:     z.coerce.number().min(0).optional(),
+  min_price:      z.coerce.number().min(0).optional(),
+  ncm:            z.string().max(20).optional(),
+  ean:            z.string().max(20).optional(),
+  abc_curve:      z.enum(['A','B','C','D']).optional(),
+  is_fractionable:z.boolean().optional(),
+  requires_cold:  z.boolean().optional(),
+  shelf_life_days:z.coerce.number().int().min(0).optional(),
+  min_stock:      z.coerce.number().min(0).optional(),
+  max_stock:      z.coerce.number().min(0).optional(),
+  reorder_point:  z.coerce.number().min(0).optional(),
+  is_active:      z.boolean().optional(),
+});
+
+app.get('/api/products', async (req, res) => {
+  const q = parseQuery(z.object({
+    search:   z.string().max(200).optional(),
+    category: z.string().max(100).optional(),
+    abcCurve: z.enum(['A','B','C','D']).optional(),
+    isActive: z.enum(['true','false']).transform(v => v === 'true').optional(),
+    page:     z.coerce.number().int().min(1).default(1),
+    limit:    z.coerce.number().int().min(1).max(200).default(50),
+  }), req.query, res); if (!q) return;
+  try { res.json(await productsRepo.listProducts(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/products', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/products/categories', async (_req, res) => {
+  try { res.json(await productsRepo.listCategories(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/products/categories', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/products/:id', async (req, res) => {
+  try { res.json(await productsRepo.getProduct(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/products/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/products', async (req, res) => {
+  const b = productBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await productsRepo.createProduct(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/products', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/products/:id', async (req, res) => {
+  const b = productBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await productsRepo.updateProduct(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/products/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  try { await productsRepo.deleteProduct(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/products/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── CRUD: Fornecedores ────────────────────────────────────────────────────────
+const supplierBody = z.object({
+  name:          z.string().min(1).max(255),
+  trade_name:    z.string().max(255).optional(),
+  document:      z.string().max(20).optional(),
+  document_type: z.enum(['cpf','cnpj']).optional(),
+  email:         z.string().email().max(255).optional().or(z.literal('')),
+  phone:         z.string().max(30).optional(),
+  category:      z.string().max(100).optional(),
+  payment_terms: z.string().max(100).optional(),
+  credit_limit:  z.coerce.number().min(0).optional(),
+  is_active:     z.boolean().optional(),
+});
+
+app.get('/api/suppliers', async (req, res) => {
+  const q = parseQuery(qCrudList, req.query, res); if (!q) return;
+  try { res.json(await suppliersRepo.listSuppliers(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/suppliers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/suppliers/:id', async (req, res) => {
+  try { res.json(await suppliersRepo.getSupplier(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/suppliers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.post('/api/suppliers', async (req, res) => {
+  const b = supplierBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await suppliersRepo.createSupplier(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/suppliers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.put('/api/suppliers/:id', async (req, res) => {
+  const b = supplierBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await suppliersRepo.updateSupplier(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/suppliers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.delete('/api/suppliers/:id', async (req, res) => {
+  try { await suppliersRepo.deleteSupplier(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/suppliers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
