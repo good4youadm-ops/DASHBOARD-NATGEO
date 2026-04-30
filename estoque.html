@@ -362,6 +362,7 @@
     <button class="bntab" data-tab="perdas-avarias"        onclick="switchTab(this)"><i class="fa-solid fa-triangle-exclamation"></i> Perdas &amp; Avarias</button>
     <button class="bntab" data-tab="produtividade"         onclick="switchTab(this)"><i class="fa-solid fa-person-digging"></i> Produtividade</button>
     <button class="bntab" data-tab="projecoes"             onclick="switchTab(this)"><i class="fa-solid fa-chart-line"></i> Projeções <span class="fase2">Fase 2</span></button>
+    <button class="bntab" data-tab="movimentos"            onclick="switchTab(this);loadMovimentos()"><i class="fa-solid fa-right-left"></i> Movimentos</button>
   </div>
 
   <!-- ========== VISÃO GERAL ========== -->
@@ -799,7 +800,128 @@
     </div>
   </div>
 
+  <!-- ========== MOVIMENTOS MANUAIS ========== -->
+  <div class="bloco content" id="tab-movimentos">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div style="position:relative">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.8rem"></i>
+          <input type="text" id="movSearch" placeholder="Buscar produto…" style="padding:7px 12px 7px 32px;border:1.5px solid var(--border);border-radius:9px;font-size:.83rem;background:var(--surface);color:var(--text);outline:none;width:220px" />
+        </div>
+        <select id="movTypeFilter" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.83rem;background:var(--surface);color:var(--text);outline:none;cursor:pointer">
+          <option value="">Todos os tipos</option>
+          <option value="entrada">Entrada</option>
+          <option value="saida">Saída</option>
+          <option value="ajuste">Ajuste</option>
+          <option value="transferencia">Transferência</option>
+          <option value="devolucao">Devolução</option>
+          <option value="perda">Perda</option>
+          <option value="avaria">Avaria</option>
+          <option value="inventario">Inventário</option>
+        </select>
+      </div>
+      <button onclick="openMovModal()" style="display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:.84rem;font-weight:600;cursor:pointer">
+        <i class="fa-solid fa-plus"></i> Novo Movimento
+      </button>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <thead style="background:#f9f9fb">
+            <tr>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Data</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Tipo</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Direção</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Depósito Orig.</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Depósito Dest.</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Qtd</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Doc. Ref.</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Motivo</th>
+              <th style="padding:9px 14px;text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)">Origem</th>
+            </tr>
+          </thead>
+          <tbody id="movTbody">
+            <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-top:1px solid var(--border);font-size:.79rem;color:var(--muted)">
+        <span id="movPageInfo">—</span>
+        <div style="display:flex;gap:4px">
+          <button id="movPrevBtn" disabled onclick="movPage--; loadMovimentos()" style="padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text2);cursor:pointer;font-size:.79rem"><i class="fa-solid fa-chevron-left"></i></button>
+          <button id="movNextBtn" disabled onclick="movPage++; loadMovimentos()" style="padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text2);cursor:pointer;font-size:.79rem"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
+
+<!-- ── Modal Novo Movimento ── -->
+<div id="movModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column">
+    <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1rem;font-weight:700;color:var(--text)">Novo Movimento de Estoque</span>
+      <button onclick="closeMovModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;border-radius:6px"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Data do Movimento *</label>
+          <input type="date" id="mDate" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Tipo *</label>
+          <select id="mType" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none;cursor:pointer">
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+            <option value="ajuste">Ajuste</option>
+            <option value="transferencia">Transferência</option>
+            <option value="devolucao">Devolução</option>
+            <option value="perda">Perda</option>
+            <option value="avaria">Avaria</option>
+            <option value="inventario">Inventário</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Direção *</label>
+          <select id="mDirection" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none;cursor:pointer">
+            <option value="in">Entrada (in)</option>
+            <option value="out">Saída (out)</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Quantidade *</label>
+          <input type="number" id="mQty" min="0" step="0.001" placeholder="0" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Depósito Origem</label>
+          <input type="text" id="mFrom" placeholder="ex: Matriz" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Depósito Destino</label>
+          <input type="text" id="mTo" placeholder="ex: Filial SP" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Custo Unitário (R$)</label>
+          <input type="number" id="mUnitCost" min="0" step="0.01" placeholder="0,00" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Documento Ref.</label>
+          <input type="text" id="mDocRef" placeholder="ex: NF-001234" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+        <div style="display:flex;flex-direction:column;grid-column:1/-1">
+          <label style="font-size:.74rem;font-weight:600;color:var(--text2);margin-bottom:5px">Motivo / Observação</label>
+          <input type="text" id="mReason" placeholder="Motivo do movimento…" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.84rem;color:var(--text);background:var(--surface2);outline:none" />
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+      <button onclick="closeMovModal()" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text2);font-size:.84rem;font-weight:600;cursor:pointer">Cancelar</button>
+      <button id="movSaveBtn" onclick="saveMovimento()" style="padding:8px 20px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:.84rem;font-weight:600;cursor:pointer"><i class="fa-solid fa-floppy-disk"></i> Registrar</button>
+    </div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast success" id="toast">
@@ -1131,11 +1253,22 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
 (async function initEstoque() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
-  const [summaryArr, products, expiring] = await Promise.all([
-    DashboardAPI.inventory.summary(),
-    DashboardAPI.inventory.products(),
-    DashboardAPI.inventory.expiring(90),
-  ]);
+  let summaryArr, products, expiring;
+  try {
+    [summaryArr, products, expiring] = await Promise.all([
+      DashboardAPI.inventory.summary(),
+      DashboardAPI.inventory.products(),
+      DashboardAPI.inventory.expiring(90),
+    ]);
+  } catch (e) {
+    document.querySelector('.main').insertAdjacentHTML('afterbegin',
+      `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span><strong>Erro ao carregar dados:</strong> ${e.message}. Verifique a conexão com a API e tente recarregar.</span>
+      </div>`);
+    DashboardAPI.afterLoad();
+    return;
+  }
 
   const summary = Array.isArray(summaryArr) ? (summaryArr[0] || {}) : (summaryArr || {});
   const fK = DashboardAPI.fmtBRL;
@@ -1292,6 +1425,107 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
 
   DashboardAPI.afterLoad();
 })();
+
+/* ── MOVIMENTOS MANUAIS ── */
+let movPage = 1, movTotal = 0;
+const MOV_LIMIT = 30;
+
+async function loadMovimentos() {
+  const tbody = document.getElementById('movTbody');
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--muted)"><i class="fa-solid fa-spinner fa-spin"></i> Carregando…</td></tr>';
+  try {
+    const p = { page: movPage, limit: MOV_LIMIT };
+    const s = document.getElementById('movSearch').value;
+    const t = document.getElementById('movTypeFilter').value;
+    if (s) p.search = s;
+    if (t) p.movement_type = t;
+    const res = await DashboardAPI.stock.movements(p);
+    const items = Array.isArray(res) ? res : (res.data || []);
+    movTotal = res.total || items.length;
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)"><i class="fa-solid fa-right-left" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.4"></i>Nenhum movimento encontrado</td></tr>';
+    } else {
+      const typeLabel = { entrada:'Entrada',saida:'Saída',ajuste:'Ajuste',transferencia:'Transferência',devolucao:'Devolução',perda:'Perda',avaria:'Avaria',inventario:'Inventário' };
+      const dirColor  = { in:'var(--accent)', out:'var(--red)' };
+      tbody.innerHTML = items.map(m => `
+        <tr style="border-bottom:1px solid #f0f0f5">
+          <td style="padding:10px 14px;color:var(--text2)">${m.movement_date ? new Date(m.movement_date+'T00:00').toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="padding:10px 14px"><span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:600;background:#f5f5f7;color:var(--text2)">${typeLabel[m.movement_type]||m.movement_type}</span></td>
+          <td style="padding:10px 14px"><span style="font-weight:700;color:${dirColor[m.direction]||'var(--text)'}">${m.direction==='in'?'↑ in':'↓ out'}</span></td>
+          <td style="padding:10px 14px;color:var(--text2)">${m.warehouse_from||'—'}</td>
+          <td style="padding:10px 14px;color:var(--text2)">${m.warehouse_to||'—'}</td>
+          <td style="padding:10px 14px;font-weight:600;font-variant-numeric:tabular-nums">${m.quantity}</td>
+          <td style="padding:10px 14px;color:var(--muted)">${m.document_ref||'—'}</td>
+          <td style="padding:10px 14px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.reason||'—'}</td>
+          <td style="padding:10px 14px"><span style="display:inline-flex;padding:2px 7px;border-radius:12px;font-size:.7rem;font-weight:600;background:${m.source_system==='manual'?'var(--accent-mid)':'#f5f5f7'};color:${m.source_system==='manual'?'var(--accent2)':'var(--muted)'}">${m.source_system}</span></td>
+        </tr>`).join('');
+    }
+    const pages = Math.ceil(movTotal / MOV_LIMIT) || 1;
+    const from  = (movPage - 1) * MOV_LIMIT + 1;
+    const to    = Math.min(movPage * MOV_LIMIT, movTotal);
+    document.getElementById('movPageInfo').textContent = movTotal ? `${from}–${to} de ${movTotal}` : '0 registros';
+    document.getElementById('movPrevBtn').disabled = movPage <= 1;
+    document.getElementById('movNextBtn').disabled = movPage >= pages;
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--red)"><i class="fa-solid fa-circle-exclamation"></i> ${e.message}</td></tr>`;
+  }
+}
+
+let movSearchTimer;
+document.getElementById('movSearch').addEventListener('input', () => {
+  clearTimeout(movSearchTimer);
+  movSearchTimer = setTimeout(() => { movPage = 1; loadMovimentos(); }, 400);
+});
+document.getElementById('movTypeFilter').addEventListener('change', () => { movPage = 1; loadMovimentos(); });
+
+function openMovModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('mDate').value      = today;
+  document.getElementById('mType').value      = 'entrada';
+  document.getElementById('mDirection').value = 'in';
+  document.getElementById('mQty').value       = '';
+  document.getElementById('mFrom').value      = '';
+  document.getElementById('mTo').value        = '';
+  document.getElementById('mUnitCost').value  = '';
+  document.getElementById('mDocRef').value    = '';
+  document.getElementById('mReason').value    = '';
+  document.getElementById('movModal').style.display = 'flex';
+}
+
+function closeMovModal() {
+  document.getElementById('movModal').style.display = 'none';
+}
+
+async function saveMovimento() {
+  const btn  = document.getElementById('movSaveBtn');
+  const date = document.getElementById('mDate').value;
+  const qty  = parseFloat(document.getElementById('mQty').value);
+  if (!date)     { showToast('error','Campo obrigatório','Informe a data do movimento'); return; }
+  if (!qty || qty <= 0) { showToast('error','Campo obrigatório','Informe uma quantidade válida'); return; }
+  const body = {
+    movement_date:  date,
+    movement_type:  document.getElementById('mType').value,
+    direction:      document.getElementById('mDirection').value,
+    quantity:       qty,
+    warehouse_from: document.getElementById('mFrom').value     || null,
+    warehouse_to:   document.getElementById('mTo').value       || null,
+    unit_cost:      parseFloat(document.getElementById('mUnitCost').value) || null,
+    document_ref:   document.getElementById('mDocRef').value   || null,
+    reason:         document.getElementById('mReason').value   || null,
+  };
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    await DashboardAPI.stock.move(body);
+    showToast('success','Movimento registrado','Lançamento salvo com sucesso');
+    closeMovModal();
+    loadMovimentos();
+  } catch (e) {
+    showToast('error','Erro',''+e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Registrar';
+  }
+}
 
 /* ── EXPORT BTN ── */
 document.querySelector('.top-btn:not(.accent):not(.red)').addEventListener('click',()=>showToast('success','Exportado','Relatório exportado — log de auditoria registrado'));

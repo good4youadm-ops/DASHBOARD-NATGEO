@@ -1094,13 +1094,24 @@ new Chart(document.getElementById('chartCalPag'), {
 (async function initFinanceiro() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
-  const [finSum, arList, apList, topClis, byDay] = await Promise.all([
-    DashboardAPI.finance.summary(),
-    DashboardAPI.finance.receivable(),
-    DashboardAPI.finance.payable(),
-    DashboardAPI.sales.customers(10),
-    DashboardAPI.sales.byDay(),
-  ]);
+  let finSum, arList, apList, topClis, byDay;
+  try {
+    [finSum, arList, apList, topClis, byDay] = await Promise.all([
+      DashboardAPI.finance.summary(),
+      DashboardAPI.finance.receivable(),
+      DashboardAPI.finance.payable(),
+      DashboardAPI.sales.customers(10),
+      DashboardAPI.sales.byDay(),
+    ]);
+  } catch (e) {
+    document.querySelector('.main').insertAdjacentHTML('afterbegin',
+      `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span><strong>Erro ao carregar dados:</strong> ${e.message}. Verifique a conexão com a API e tente recarregar.</span>
+      </div>`);
+    DashboardAPI.afterLoad();
+    return;
+  }
 
   // ── KPI Cards ──────────────────────────────────────────
   const sum = Array.isArray(finSum) ? (finSum[0] || {}) : (finSum || {});

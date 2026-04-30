@@ -1846,10 +1846,21 @@ function exportCSV() {
 (async function initComercial() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
-  const [summary, byDay] = await Promise.all([
-    DashboardAPI.sales.summary(12),
-    DashboardAPI.sales.byDay(),
-  ]);
+  let summary, byDay;
+  try {
+    [summary, byDay] = await Promise.all([
+      DashboardAPI.sales.summary(12),
+      DashboardAPI.sales.byDay(),
+    ]);
+  } catch (e) {
+    document.querySelector('.main').insertAdjacentHTML('afterbegin',
+      `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span><strong>Erro ao carregar dados:</strong> ${e.message}. Verifique a conexão com a API e tente recarregar.</span>
+      </div>`);
+    DashboardAPI.afterLoad();
+    return;
+  }
 
   if (!summary || !summary.length) { DashboardAPI.afterLoad(); return; }
 

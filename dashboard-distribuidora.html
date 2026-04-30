@@ -1201,15 +1201,26 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
 (async function initDashboard() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
-  const [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring] = await Promise.all([
-    DashboardAPI.sales.summary(3),
-    DashboardAPI.sales.byDay(),
-    DashboardAPI.sales.products(6),
-    DashboardAPI.sales.customers(5),
-    DashboardAPI.inventory.summary(),
-    DashboardAPI.inventory.products(),
-    DashboardAPI.inventory.expiring(30),
-  ]);
+  let salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring;
+  try {
+    [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring] = await Promise.all([
+      DashboardAPI.sales.summary(3),
+      DashboardAPI.sales.byDay(),
+      DashboardAPI.sales.products(6),
+      DashboardAPI.sales.customers(5),
+      DashboardAPI.inventory.summary(),
+      DashboardAPI.inventory.products(),
+      DashboardAPI.inventory.expiring(30),
+    ]);
+  } catch (e) {
+    document.querySelector('.main').insertAdjacentHTML('afterbegin',
+      `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span><strong>Erro ao carregar dados:</strong> ${e.message}. Verifique a conexão com a API e tente recarregar.</span>
+      </div>`);
+    DashboardAPI.afterLoad();
+    return;
+  }
 
   const cur  = salesArr[0] || {};
   const prev = salesArr[1] || {};

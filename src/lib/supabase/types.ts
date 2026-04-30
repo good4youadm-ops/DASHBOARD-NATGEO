@@ -1,5 +1,5 @@
 // Auto-generated types — regenerate via: npm run db:types
-// Mantido manualmente — cobre todas as 16 tabelas + 10 views das migrations 001-008
+// Mantido manualmente — cobre todas as tabelas + views das migrations 001-012
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
@@ -28,9 +28,12 @@ export interface Database {
           id: string; tenant_id: string; full_name: string | null;
           role: 'owner' | 'admin' | 'manager' | 'viewer';
           is_active: boolean; settings: Json;
+          last_login_at: string | null;
+          failed_login_attempts: number;
+          locked_until: string | null;
           created_at: string; updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['user_profiles']['Row'], 'created_at' | 'updated_at'>;
+        Insert: Omit<Database['public']['Tables']['user_profiles']['Row'], 'created_at' | 'updated_at' | 'failed_login_attempts'>;
         Update: Partial<Database['public']['Tables']['user_profiles']['Insert']>;
       };
 
@@ -214,6 +217,7 @@ export interface Database {
         Row: {
           id: string; tenant_id: string; source_system: string; source_id: string;
           product_id: string | null; product_source_id: string | null;
+          sales_order_item_id: string | null;
           lot_source_id: string | null; movement_date: string;
           movement_type: 'entrada' | 'saida' | 'ajuste' | 'transferencia' | 'devolucao' | 'perda' | 'avaria' | 'inventario';
           direction: 'in' | 'out';
@@ -225,6 +229,19 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['inventory_movements']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['inventory_movements']['Insert']>;
+      };
+
+      // ── 010: Histórico de preços ─────────────────────────────────────────────
+      product_price_history: {
+        Row: {
+          id: string; tenant_id: string; product_id: string;
+          cost_price: number | null; sale_price: number | null; min_price: number | null;
+          effective_from: string; effective_to: string | null;
+          source: 'oracle_sync' | 'manual';
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['product_price_history']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['product_price_history']['Insert']>;
       };
 
       // ── 009: Fornecedores ────────────────────────────────────────────────────
@@ -240,6 +257,58 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['suppliers']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['suppliers']['Insert']>;
+      };
+
+      // ── 012: Logística ──────────────────────────────────────────────────────
+      drivers: {
+        Row: {
+          id: string; tenant_id: string; name: string;
+          document: string | null;
+          phone: string | null; email: string | null;
+          cnh_number: string | null; cnh_category: string | null; cnh_expiry: string | null;
+          is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['drivers']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['drivers']['Insert']>;
+      };
+
+      vehicles: {
+        Row: {
+          id: string; tenant_id: string;
+          plate: string; model: string | null; brand: string | null; year: number | null;
+          type: 'car' | 'van' | 'truck' | 'motorcycle';
+          capacity_kg: number | null;
+          is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['vehicles']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['vehicles']['Insert']>;
+      };
+
+      delivery_routes: {
+        Row: {
+          id: string; tenant_id: string;
+          route_date: string; driver_id: string | null; vehicle_id: string | null;
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+          total_stops: number | null; total_weight_kg: number | null; notes: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['delivery_routes']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['delivery_routes']['Insert']>;
+      };
+
+      route_stops: {
+        Row: {
+          id: string; tenant_id: string;
+          route_id: string; sales_order_id: string | null;
+          stop_order: number; customer_name: string | null; address: string | null;
+          status: 'pending' | 'delivered' | 'failed' | 'skipped';
+          delivered_at: string | null; notes: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['route_stops']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['route_stops']['Insert']>;
       };
 
       // ── 006: Financeiro ──────────────────────────────────────────────────────
