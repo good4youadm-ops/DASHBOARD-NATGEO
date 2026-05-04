@@ -1,4 +1,4 @@
-import { oracleConfigured } from './config';
+import { oracleConfigured, config } from './config';
 import { logger } from './utils/logger';
 
 async function main() {
