@@ -311,6 +311,453 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['route_stops']['Insert']>;
       };
 
+      // ── 013: RBAC ───────────────────────────────────────────────────────────
+      branches: {
+        Row: {
+          id: string; tenant_id: string; name: string; code: string | null;
+          address: Json; phone: string | null; email: string | null;
+          is_active: boolean; is_headquarters: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['branches']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['branches']['Insert']>;
+      };
+
+      permissions: {
+        Row: {
+          id: string; code: string; resource: string; action: string;
+          description: string | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['permissions']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['permissions']['Insert']>;
+      };
+
+      roles: {
+        Row: {
+          id: string; tenant_id: string | null; name: string; display_name: string;
+          description: string | null; is_system: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['roles']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['roles']['Insert']>;
+      };
+
+      role_permissions: {
+        Row: { role_id: string; permission_id: string };
+        Insert: Database['public']['Tables']['role_permissions']['Row'];
+        Update: Partial<Database['public']['Tables']['role_permissions']['Row']>;
+      };
+
+      user_roles: {
+        Row: {
+          id: string; user_id: string; role_id: string;
+          granted_by: string | null; granted_at: string; expires_at: string | null;
+        };
+        Insert: Omit<Database['public']['Tables']['user_roles']['Row'], 'id' | 'granted_at'>;
+        Update: Partial<Database['public']['Tables']['user_roles']['Insert']>;
+      };
+
+      sessions: {
+        Row: {
+          id: string; tenant_id: string; user_id: string;
+          ip_address: string | null; user_agent: string | null;
+          login_at: string; logout_at: string | null;
+          last_activity_at: string; is_active: boolean; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['sessions']['Row'], 'id' | 'login_at' | 'last_activity_at' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['sessions']['Insert']>;
+      };
+
+      // ── 014: Master Data ────────────────────────────────────────────────────
+      brands: {
+        Row: {
+          id: string; tenant_id: string; name: string; code: string | null;
+          logo_url: string | null; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['brands']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['brands']['Insert']>;
+      };
+
+      categories: {
+        Row: {
+          id: string; tenant_id: string; parent_id: string | null;
+          name: string; code: string | null; level: number; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['categories']['Insert']>;
+      };
+
+      product_skus: {
+        Row: {
+          id: string; tenant_id: string; product_id: string;
+          sku_code: string; barcode: string | null; name: string;
+          attributes: Json; stock_qty: number; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['product_skus']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['product_skus']['Insert']>;
+      };
+
+      price_tables: {
+        Row: {
+          id: string; tenant_id: string; name: string; code: string | null;
+          description: string | null; is_default: boolean; is_active: boolean;
+          valid_from: string | null; valid_to: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['price_tables']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['price_tables']['Insert']>;
+      };
+
+      price_table_items: {
+        Row: {
+          id: string; tenant_id: string; price_table_id: string; product_id: string;
+          unit_price: number; min_qty: number; discount_pct: number;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['price_table_items']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['price_table_items']['Insert']>;
+      };
+
+      payment_methods: {
+        Row: {
+          id: string; tenant_id: string; name: string; code: string;
+          type: 'cash' | 'bank_transfer' | 'credit_card' | 'debit_card' | 'boleto' | 'pix' | 'check' | 'other';
+          installments: number; grace_days: number; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['payment_methods']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['payment_methods']['Insert']>;
+      };
+
+      sales_reps: {
+        Row: {
+          id: string; tenant_id: string; user_id: string | null;
+          name: string; code: string | null; email: string | null; phone: string | null;
+          region: string | null; commission_pct: number; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['sales_reps']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['sales_reps']['Insert']>;
+      };
+
+      carriers: {
+        Row: {
+          id: string; tenant_id: string; name: string; code: string | null;
+          document: string | null; email: string | null; phone: string | null;
+          modality: 'road' | 'air' | 'sea' | 'express' | 'own' | null;
+          api_key: string | null; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['carriers']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['carriers']['Insert']>;
+      };
+
+      cost_centers: {
+        Row: {
+          id: string; tenant_id: string; parent_id: string | null;
+          name: string; code: string; description: string | null; is_active: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['cost_centers']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['cost_centers']['Insert']>;
+      };
+
+      // ── 015: Comercial ───────────────────────────────────────────────────────
+      quotes: {
+        Row: {
+          id: string; tenant_id: string; customer_id: string; sales_rep_id: string | null;
+          price_table_id: string | null; quote_number: string;
+          status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted';
+          subtotal: number; discount_pct: number; discount_value: number; total: number;
+          valid_until: string | null; notes: string | null; converted_to: string | null;
+          created_by: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['quotes']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['quotes']['Insert']>;
+      };
+
+      quote_items: {
+        Row: {
+          id: string; tenant_id: string; quote_id: string; product_id: string;
+          quantity: number; unit_price: number; discount_pct: number; total: number;
+          notes: string | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['quote_items']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['quote_items']['Insert']>;
+      };
+
+      returns: {
+        Row: {
+          id: string; tenant_id: string; order_id: string | null; customer_id: string;
+          return_number: string;
+          reason: 'defect' | 'wrong_item' | 'excess' | 'customer_request' | 'other';
+          status: 'pending' | 'approved' | 'rejected' | 'completed' | 'refunded';
+          total: number; refund_method: 'credit' | 'cash' | 'exchange' | null;
+          notes: string | null; approved_by: string | null; approved_at: string | null;
+          created_by: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['returns']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['returns']['Insert']>;
+      };
+
+      return_items: {
+        Row: {
+          id: string; tenant_id: string; return_id: string; product_id: string;
+          quantity: number; unit_price: number; total: number;
+          condition: 'good' | 'damaged' | 'destroyed' | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['return_items']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['return_items']['Insert']>;
+      };
+
+      goals: {
+        Row: {
+          id: string; tenant_id: string; sales_rep_id: string | null; branch_id: string | null;
+          period_type: 'monthly' | 'quarterly' | 'yearly';
+          period_year: number; period_month: number | null; period_quarter: number | null;
+          target_revenue: number; target_orders: number | null; target_customers: number | null;
+          notes: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['goals']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['goals']['Insert']>;
+      };
+
+      commissions: {
+        Row: {
+          id: string; tenant_id: string; sales_rep_id: string; order_id: string | null;
+          period_year: number; period_month: number;
+          base_amount: number; commission_pct: number; commission_value: number;
+          bonus_value: number; total_value: number;
+          status: 'pending' | 'approved' | 'paid' | 'cancelled';
+          paid_at: string | null; notes: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['commissions']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['commissions']['Insert']>;
+      };
+
+      campaigns: {
+        Row: {
+          id: string; tenant_id: string; name: string; description: string | null;
+          type: 'discount' | 'bonus' | 'cashback' | 'gift' | 'points';
+          status: 'draft' | 'active' | 'paused' | 'finished' | 'cancelled';
+          starts_at: string; ends_at: string | null;
+          min_order_value: number | null; discount_pct: number | null; discount_value: number | null;
+          conditions: Json; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['campaigns']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['campaigns']['Insert']>;
+      };
+
+      bonuses: {
+        Row: {
+          id: string; tenant_id: string; campaign_id: string | null;
+          sales_rep_id: string; order_id: string | null;
+          value: number; type: 'cash' | 'product' | 'points';
+          status: 'pending' | 'approved' | 'paid' | 'cancelled';
+          notes: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['bonuses']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['bonuses']['Insert']>;
+      };
+
+      // ── 016: Estoque Estendido ────────────────────────────────────────────────
+      stock_reservations: {
+        Row: {
+          id: string; tenant_id: string; product_id: string;
+          order_id: string | null; quote_id: string | null;
+          warehouse: string; reserved_qty: number;
+          status: 'active' | 'released' | 'consumed' | 'expired';
+          expires_at: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['stock_reservations']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['stock_reservations']['Insert']>;
+      };
+
+      inventory_counts: {
+        Row: {
+          id: string; tenant_id: string; count_number: string;
+          status: 'draft' | 'in_progress' | 'completed' | 'cancelled';
+          warehouse: string; notes: string | null;
+          started_at: string | null; finished_at: string | null;
+          created_by: string | null; finished_by: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['inventory_counts']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['inventory_counts']['Insert']>;
+      };
+
+      inventory_count_items: {
+        Row: {
+          id: string; tenant_id: string; count_id: string; product_id: string;
+          expected_qty: number | null; counted_qty: number | null;
+          difference: Generated<number | null>;
+          notes: string | null; counted_at: string | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['inventory_count_items']['Row'], 'id' | 'created_at' | 'difference'>;
+        Update: Partial<Database['public']['Tables']['inventory_count_items']['Insert']>;
+      };
+
+      // ── 017: Financeiro Estendido ─────────────────────────────────────────────
+      financial_categories: {
+        Row: {
+          id: string; tenant_id: string; parent_id: string | null;
+          name: string; code: string; type: 'revenue' | 'expense' | 'transfer';
+          is_active: boolean; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['financial_categories']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['financial_categories']['Insert']>;
+      };
+
+      bank_accounts: {
+        Row: {
+          id: string; tenant_id: string; name: string; bank_name: string;
+          bank_code: string | null; agency: string | null; account: string | null;
+          account_type: 'checking' | 'savings' | 'investment' | 'cash';
+          currency: string; initial_balance: number; current_balance: number;
+          is_active: boolean; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['bank_accounts']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['bank_accounts']['Insert']>;
+      };
+
+      transactions: {
+        Row: {
+          id: string; tenant_id: string; bank_account_id: string;
+          category_id: string | null; cost_center_id: string | null;
+          receivable_id: string | null; payable_id: string | null;
+          type: 'credit' | 'debit' | 'transfer';
+          amount: number; balance_after: number | null;
+          description: string; reference: string | null;
+          transaction_date: string; reconciled: boolean; reconciled_at: string | null;
+          created_by: string | null; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['transactions']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['transactions']['Insert']>;
+      };
+
+      // ── 018: Fiscal ───────────────────────────────────────────────────────────
+      invoice_items: {
+        Row: {
+          id: string; tenant_id: string; invoice_id: string;
+          product_id: string | null; order_item_id: string | null;
+          sequence: number; description: string; ncm: string | null; cfop: string;
+          unit: string; quantity: number; unit_price: number; total: number;
+          icms_cst: string | null; icms_base: number; icms_rate: number; icms_value: number;
+          pis_cst: string | null; pis_rate: number; pis_value: number;
+          cofins_cst: string | null; cofins_rate: number; cofins_value: number;
+          ipi_cst: string | null; ipi_rate: number; ipi_value: number;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['invoice_items']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['invoice_items']['Insert']>;
+      };
+
+      fiscal_configs: {
+        Row: {
+          id: string; tenant_id: string; cnpj: string; ie: string | null;
+          crt: '1' | '2' | '3' | '4';
+          ambiente: 'homologacao' | 'producao';
+          serie: string; next_nfe_number: number;
+          certificado_validade: string | null; logo_url: string | null;
+          settings: Json; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['fiscal_configs']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['fiscal_configs']['Insert']>;
+      };
+
+      tax_rules: {
+        Row: {
+          id: string; tenant_id: string; ncm: string | null; cfop: string | null;
+          uf_origin: string | null; uf_dest: string | null;
+          icms_cst: string | null; icms_rate: number;
+          pis_cst: string | null; pis_rate: number;
+          cofins_cst: string | null; cofins_rate: number;
+          ipi_cst: string | null; ipi_rate: number;
+          is_active: boolean; created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['tax_rules']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['tax_rules']['Insert']>;
+      };
+
+      // ── 019: Logística Estendida ──────────────────────────────────────────────
+      deliveries: {
+        Row: {
+          id: string; tenant_id: string; route_id: string | null; order_id: string | null;
+          driver_id: string | null; vehicle_id: string | null; carrier_id: string | null;
+          tracking_code: string | null;
+          status: 'pending' | 'pickup' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'returned';
+          scheduled_date: string | null; delivered_at: string | null;
+          latitude: number | null; longitude: number | null;
+          proof_url: string | null; notes: string | null; recipient_name: string | null;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['deliveries']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['deliveries']['Insert']>;
+      };
+
+      shipping_events: {
+        Row: {
+          id: string; tenant_id: string; delivery_id: string;
+          event_type: 'created' | 'dispatched' | 'in_hub' | 'in_transit' | 'out_for_delivery' | 'delivery_attempt' | 'delivered' | 'failed' | 'returned' | 'cancelled';
+          description: string | null; latitude: number | null; longitude: number | null;
+          location_name: string | null; occurred_at: string; source: string;
+        };
+        Insert: Omit<Database['public']['Tables']['shipping_events']['Row'], 'id'>;
+        Update: Partial<Database['public']['Tables']['shipping_events']['Insert']>;
+      };
+
+      // ── 020: Integrações ──────────────────────────────────────────────────────
+      import_jobs: {
+        Row: {
+          id: string; tenant_id: string; entity: string; source: string;
+          status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+          file_name: string | null; file_url: string | null;
+          total_rows: number | null; processed_rows: number; success_rows: number; error_rows: number;
+          started_at: string | null; finished_at: string | null;
+          created_by: string | null; options: Json;
+          created_at: string; updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['import_jobs']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['import_jobs']['Insert']>;
+      };
+
+      import_errors: {
+        Row: {
+          id: string; tenant_id: string; job_id: string;
+          row_number: number | null; row_data: Json | null;
+          error_code: string | null; error_msg: string; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['import_errors']['Row'], 'id' | 'created_at'>;
+        Update: never;
+      };
+
+      webhooks_log: {
+        Row: {
+          id: string; tenant_id: string | null; source: string; event_type: string;
+          payload: Json; headers: Json;
+          status: 'received' | 'processed' | 'failed' | 'ignored';
+          error_msg: string | null; processed_at: string | null;
+          ip_address: string | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['webhooks_log']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['webhooks_log']['Insert']>;
+      };
+
+      api_keys: {
+        Row: {
+          id: string; tenant_id: string; name: string;
+          key_hash: string; prefix: string; scopes: string[];
+          is_active: boolean; expires_at: string | null; last_used_at: string | null;
+          created_by: string | null; created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['api_keys']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['api_keys']['Insert']>;
+      };
+
       // ── 006: Financeiro ──────────────────────────────────────────────────────
       accounts_receivable: {
         Row: {
@@ -467,10 +914,125 @@ export interface Database {
           aging_bucket: 'em_dia' | 'atraso_1_15' | 'atraso_16_30' | 'atraso_31_60' | 'atraso_61_90' | 'atraso_90_mais';
         };
       };
+
+      // ── 021: BI Views ────────────────────────────────────────────────────────
+      vw_sales_rep_performance: {
+        Row: {
+          tenant_id: string; sales_rep_id: string; sales_rep_name: string;
+          region: string | null; month: string;
+          total_orders: number; unique_customers: number;
+          total_revenue: number; avg_order_value: number;
+          revenue_per_customer: number | null;
+          cancelled_orders: number; delivery_rate_pct: number | null;
+        };
+      };
+
+      vw_product_ranking: {
+        Row: {
+          tenant_id: string; product_id: string; product_name: string;
+          sku: string | null; category_id: string | null; month: string;
+          total_qty_sold: number; total_revenue: number;
+          order_count: number; customer_count: number; revenue_rank: number;
+        };
+      };
+
+      vw_customer_ranking: {
+        Row: {
+          tenant_id: string; customer_id: string; customer_name: string;
+          customer_document: string | null; month: string;
+          total_orders: number; total_revenue: number; avg_ticket: number;
+          last_order_date: string | null; revenue_rank: number;
+        };
+      };
+
+      vw_daily_kpis: {
+        Row: {
+          tenant_id: string; kpi_date: string;
+          new_orders: number; gross_revenue: number;
+          cancelled_orders: number; cancelled_revenue: number | null;
+          active_customers: number;
+          deliveries_done: number; pending_deliveries: number;
+        };
+      };
+
+      vw_ar_aging: {
+        Row: {
+          tenant_id: string; id: string; customer_id: string; customer_name: string;
+          document_number: string | null; amount: number; amount_paid: number;
+          balance: number; due_date: string; days_overdue: number;
+          aging_bucket: 'paid' | 'current' | '1-30' | '31-60' | '61-90' | '90+';
+          status: string;
+        };
+      };
+
+      vw_goals_vs_actual: {
+        Row: {
+          tenant_id: string; sales_rep_id: string; sales_rep_name: string;
+          period_year: number; period_month: number;
+          target_revenue: number; target_orders: number | null;
+          actual_revenue: number; actual_orders: number;
+          revenue_attainment_pct: number | null; orders_attainment_pct: number | null;
+        };
+      };
+
+      vw_critical_stock: {
+        Row: {
+          tenant_id: string; product_id: string; product_name: string;
+          sku: string | null; warehouse: string; current_stock: number;
+          min_stock: number | null; max_stock: number | null;
+          stock_status: 'out_of_stock' | 'critical' | 'low' | 'ok';
+          qty_to_reorder: number | null;
+        };
+      };
+
+      vw_stock_reservations_summary: {
+        Row: {
+          tenant_id: string; product_id: string; product_name: string;
+          product_sku: string | null; warehouse: string; total_reserved: number;
+        };
+      };
+
+      vw_inventory_count_summary: {
+        Row: {
+          tenant_id: string; id: string; count_number: string; status: string;
+          warehouse: string; started_at: string | null; finished_at: string | null;
+          total_items: number; counted_items: number; total_divergence: number;
+        };
+      };
+
+      vw_cash_flow: {
+        Row: {
+          tenant_id: string; bank_account_id: string; account_name: string;
+          flow_date: string; credits: number; debits: number;
+          net: number; running_balance: number;
+        };
+      };
+
+      vw_financial_summary: {
+        Row: {
+          tenant_id: string; month: string;
+          total_receivable: number; total_received: number; balance_receivable: number;
+          overdue_count: number; overdue_amount: number | null;
+        };
+      };
+
+      vw_deliveries_summary: {
+        Row: {
+          tenant_id: string; status: string; total: number;
+          overdue: number; avg_delivery_hours: number | null;
+        };
+      };
     };
 
     Functions: {
       get_user_tenant_id: { Args: Record<string, never>; Returns: string };
+      log_audit: {
+        Args: {
+          p_tenant_id: string; p_user_id: string; p_action: string;
+          p_entity: string; p_entity_id: string; p_changes?: Json;
+        };
+        Returns: void;
+      };
     };
   };
 }

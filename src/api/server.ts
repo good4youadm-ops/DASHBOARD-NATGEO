@@ -16,6 +16,12 @@ import * as productsRepo from '../repositories/products';
 import * as suppliersRepo from '../repositories/suppliers';
 import * as ordersRepo from '../repositories/orders';
 import * as logisticsRepo from '../repositories/logistics';
+import * as masterDataRepo from '../repositories/master-data';
+import * as commercialRepo from '../repositories/commercial';
+import * as finExtRepo from '../repositories/finance-extended';
+import * as fiscalRepo from '../repositories/fiscal';
+import * as stockExtRepo from '../repositories/stock-extended';
+import * as integrationsRepo from '../repositories/integrations';
 
 dotenv.config();
 
@@ -874,6 +880,566 @@ app.put('/api/routes/:id', async (req, res) => {
 app.delete('/api/routes/:id', async (req, res) => {
   try { await logisticsRepo.deleteRoute(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
   catch (e) { logger.error('DELETE /api/routes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Marcas ──────────────────────────────────────────────────────
+const brandBody = z.object({
+  name:      z.string().min(1).max(200),
+  code:      z.string().max(50).optional(),
+  logo_url:  z.string().url().optional().nullable(),
+  is_active: z.boolean().optional(),
+});
+
+app.get('/api/brands', async (_req, res) => {
+  try { res.json(await masterDataRepo.listBrands(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/brands', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/brands', async (req, res) => {
+  const b = brandBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createBrand(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/brands', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/brands/:id', async (req, res) => {
+  const b = brandBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updateBrand(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/brands/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/brands/:id', async (req, res) => {
+  try { await masterDataRepo.deleteBrand(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/brands/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Categorias ──────────────────────────────────────────────────
+const categoryBody = z.object({
+  name:      z.string().min(1).max(200),
+  code:      z.string().max(50).optional(),
+  parent_id: z.string().uuid().optional().nullable(),
+  level:     z.coerce.number().int().min(1).max(5).optional(),
+  is_active: z.boolean().optional(),
+});
+
+app.get('/api/categories', async (_req, res) => {
+  try { res.json(await masterDataRepo.listCategories(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/categories', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/categories', async (req, res) => {
+  const b = categoryBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createCategory(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/categories', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/categories/:id', async (req, res) => {
+  const b = categoryBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updateCategory(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/categories/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Formas de Pagamento ────────────────────────────────────────
+const paymentMethodBody = z.object({
+  name:         z.string().min(1).max(200),
+  code:         z.string().min(1).max(50),
+  type:         z.enum(['cash','bank_transfer','credit_card','debit_card','boleto','pix','check','other']),
+  installments: z.coerce.number().int().min(1).max(60).optional(),
+  grace_days:   z.coerce.number().int().min(0).max(365).optional(),
+  is_active:    z.boolean().optional(),
+});
+
+app.get('/api/payment-methods', async (_req, res) => {
+  try { res.json(await masterDataRepo.listPaymentMethods(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/payment-methods', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/payment-methods', async (req, res) => {
+  const b = paymentMethodBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createPaymentMethod(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/payment-methods', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/payment-methods/:id', async (req, res) => {
+  const b = paymentMethodBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updatePaymentMethod(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/payment-methods/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Representantes ──────────────────────────────────────────────
+const salesRepBody = z.object({
+  name:           z.string().min(1).max(200),
+  code:           z.string().max(50).optional().nullable(),
+  email:          z.string().email().optional().nullable(),
+  phone:          z.string().max(30).optional().nullable(),
+  region:         z.string().max(100).optional().nullable(),
+  commission_pct: z.coerce.number().min(0).max(100).optional(),
+  is_active:      z.boolean().optional(),
+});
+
+app.get('/api/sales-reps', async (req, res) => {
+  const activeOnly = req.query.active !== 'false';
+  try { res.json(await masterDataRepo.listSalesReps(supabaseAdmin, TENANT_ID, activeOnly)); }
+  catch (e) { logger.error('GET /api/sales-reps', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/sales-reps', async (req, res) => {
+  const b = salesRepBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createSalesRep(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/sales-reps', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/sales-reps/:id', async (req, res) => {
+  const b = salesRepBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updateSalesRep(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/sales-reps/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Transportadoras ────────────────────────────────────────────
+const carrierBody = z.object({
+  name:     z.string().min(1).max(200),
+  code:     z.string().max(50).optional().nullable(),
+  document: z.string().max(20).optional().nullable(),
+  email:    z.string().email().optional().nullable(),
+  phone:    z.string().max(30).optional().nullable(),
+  modality: z.enum(['road','air','sea','express','own']).optional().nullable(),
+  is_active:z.boolean().optional(),
+});
+
+app.get('/api/carriers', async (req, res) => {
+  const activeOnly = req.query.active !== 'false';
+  try { res.json(await masterDataRepo.listCarriers(supabaseAdmin, TENANT_ID, activeOnly)); }
+  catch (e) { logger.error('GET /api/carriers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/carriers', async (req, res) => {
+  const b = carrierBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createCarrier(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/carriers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/carriers/:id', async (req, res) => {
+  const b = carrierBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updateCarrier(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/carriers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Master Data — Centros de Custo ────────────────────────────────────────────
+const costCenterBody = z.object({
+  name:      z.string().min(1).max(200),
+  code:      z.string().min(1).max(50),
+  parent_id: z.string().uuid().optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+  is_active: z.boolean().optional(),
+});
+
+app.get('/api/cost-centers', async (_req, res) => {
+  try { res.json(await masterDataRepo.listCostCenters(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/cost-centers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/cost-centers', async (req, res) => {
+  const b = costCenterBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await masterDataRepo.createCostCenter(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/cost-centers', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/cost-centers/:id', async (req, res) => {
+  const b = costCenterBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await masterDataRepo.updateCostCenter(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/cost-centers/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Comercial — Orçamentos ────────────────────────────────────────────────────
+const quoteBody = z.object({
+  customer_id:    z.string().uuid(),
+  sales_rep_id:   z.string().uuid().optional().nullable(),
+  price_table_id: z.string().uuid().optional().nullable(),
+  quote_number:   z.string().max(50),
+  status:         z.enum(['draft','sent','accepted','rejected','expired','converted']).optional(),
+  valid_until:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  subtotal:       z.coerce.number().min(0).optional(),
+  discount_pct:   z.coerce.number().min(0).max(100).optional(),
+  discount_value: z.coerce.number().min(0).optional(),
+  total:          z.coerce.number().min(0).optional(),
+  notes:          z.string().max(2000).optional().nullable(),
+});
+const quoteItemBody = z.object({
+  product_id:  z.string().uuid(),
+  quantity:    z.coerce.number().min(0.001),
+  unit_price:  z.coerce.number().min(0),
+  discount_pct:z.coerce.number().min(0).max(100).optional(),
+  total:       z.coerce.number().min(0).optional(),
+  notes:       z.string().max(500).optional().nullable(),
+});
+const qCommercialList = z.object({
+  status:      z.string().optional(),
+  customerId:  z.string().uuid().optional(),
+  salesRepId:  z.string().uuid().optional(),
+  page:        z.coerce.number().int().min(1).default(1),
+  limit:       z.coerce.number().int().min(1).max(200).default(50),
+});
+
+app.get('/api/quotes', async (req, res) => {
+  const q = parseQuery(qCommercialList, req.query, res); if (!q) return;
+  try { res.json(await commercialRepo.listQuotes(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/quotes', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/quotes/:id', async (req, res) => {
+  try { res.json(await commercialRepo.getQuote(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/quotes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/quotes', async (req, res) => {
+  const b = quoteBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await commercialRepo.createQuote(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/quotes', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/quotes/:id/items', async (req, res) => {
+  const b = quoteItemBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await commercialRepo.addQuoteItem(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('POST /api/quotes/:id/items', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/quotes/:id', async (req, res) => {
+  const b = quoteBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await commercialRepo.updateQuote(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/quotes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/quotes/:id/items/:itemId', async (req, res) => {
+  try { await commercialRepo.removeQuoteItem(supabaseAdmin, TENANT_ID, req.params.itemId); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/quotes/:id/items/:itemId', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/quotes/:id', async (req, res) => {
+  try { await commercialRepo.deleteQuote(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/quotes/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Comercial — Metas e Comissões ─────────────────────────────────────────────
+const goalBody = z.object({
+  sales_rep_id:     z.string().uuid().optional().nullable(),
+  branch_id:        z.string().uuid().optional().nullable(),
+  period_type:      z.enum(['monthly','quarterly','yearly']),
+  period_year:      z.coerce.number().int().min(2020).max(2099),
+  period_month:     z.coerce.number().int().min(1).max(12).optional().nullable(),
+  period_quarter:   z.coerce.number().int().min(1).max(4).optional().nullable(),
+  target_revenue:   z.coerce.number().min(0),
+  target_orders:    z.coerce.number().int().min(0).optional().nullable(),
+  target_customers: z.coerce.number().int().min(0).optional().nullable(),
+  notes:            z.string().max(500).optional().nullable(),
+});
+const qYear = z.object({
+  year:  z.coerce.number().int().min(2020).max(2099).default(new Date().getFullYear()),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+});
+
+app.get('/api/goals', async (req, res) => {
+  const q = parseQuery(qYear, req.query, res); if (!q) return;
+  try { res.json(await commercialRepo.listGoals(supabaseAdmin, TENANT_ID, q.year, q.month)); }
+  catch (e) { logger.error('GET /api/goals', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/goals', async (req, res) => {
+  const b = goalBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await commercialRepo.upsertGoal(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/goals', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/goals/vs-actual', async (req, res) => {
+  const q = parseQuery(qYear, req.query, res); if (!q) return;
+  try { res.json(await commercialRepo.getGoalsVsActual(supabaseAdmin, TENANT_ID, q.year, q.month)); }
+  catch (e) { logger.error('GET /api/goals/vs-actual', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/sales-reps/performance', async (req, res) => {
+  const q = parseQuery(qMonths, req.query, res); if (!q) return;
+  try { res.json(await commercialRepo.getSalesRepPerformance(supabaseAdmin, TENANT_ID, q.months)); }
+  catch (e) { logger.error('GET /api/sales-reps/performance', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Financeiro Estendido — Contas Bancárias ───────────────────────────────────
+const bankAccountBody = z.object({
+  name:            z.string().min(1).max(200),
+  bank_name:       z.string().min(1).max(200),
+  bank_code:       z.string().max(10).optional().nullable(),
+  agency:          z.string().max(20).optional().nullable(),
+  account:         z.string().max(20).optional().nullable(),
+  account_type:    z.enum(['checking','savings','investment','cash']),
+  currency:        z.string().length(3).optional(),
+  initial_balance: z.coerce.number().optional(),
+  is_active:       z.boolean().optional(),
+});
+
+app.get('/api/bank-accounts', async (_req, res) => {
+  try { res.json(await finExtRepo.listBankAccounts(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/bank-accounts', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/bank-accounts', async (req, res) => {
+  const b = bankAccountBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await finExtRepo.createBankAccount(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/bank-accounts', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/bank-accounts/:id', async (req, res) => {
+  const b = bankAccountBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await finExtRepo.updateBankAccount(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/bank-accounts/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/bank-accounts/:id', async (req, res) => {
+  try { await finExtRepo.deleteBankAccount(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/bank-accounts/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Financeiro Estendido — Transações ─────────────────────────────────────────
+const transactionBody = z.object({
+  bank_account_id:  z.string().uuid(),
+  category_id:      z.string().uuid().optional().nullable(),
+  cost_center_id:   z.string().uuid().optional().nullable(),
+  type:             z.enum(['credit','debit','transfer']),
+  amount:           z.coerce.number().min(0.01),
+  description:      z.string().min(1).max(500),
+  reference:        z.string().max(100).optional().nullable(),
+  transaction_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reconciled:       z.boolean().optional(),
+});
+const qTransactions = z.object({
+  bankAccountId: z.string().uuid().optional(),
+  categoryId:    z.string().uuid().optional(),
+  type:          z.enum(['credit','debit','transfer']).optional(),
+  reconciled:    z.enum(['true','false']).transform(v => v === 'true').optional(),
+  dateFrom:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page:          z.coerce.number().int().min(1).default(1),
+  limit:         z.coerce.number().int().min(1).max(200).default(50),
+});
+
+app.get('/api/transactions', async (req, res) => {
+  const q = parseQuery(qTransactions, req.query, res); if (!q) return;
+  try { res.json(await finExtRepo.listTransactions(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/transactions', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/transactions', async (req, res) => {
+  const b = transactionBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await finExtRepo.createTransaction(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/transactions', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/transactions/:id', async (req, res) => {
+  const b = transactionBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await finExtRepo.updateTransaction(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/transactions/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/transactions/:id', async (req, res) => {
+  try { await finExtRepo.deleteTransaction(supabaseAdmin, TENANT_ID, req.params.id); res.status(204).end(); }
+  catch (e) { logger.error('DELETE /api/transactions/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/cash-flow', async (req, res) => {
+  const q = parseQuery(z.object({ bankAccountId: z.string().uuid().optional(), months: z.coerce.number().int().min(1).max(24).default(3) }), req.query, res); if (!q) return;
+  try { res.json(await finExtRepo.getCashFlow(supabaseAdmin, TENANT_ID, q.bankAccountId, q.months)); }
+  catch (e) { logger.error('GET /api/cash-flow', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Fiscal — Notas Fiscais ────────────────────────────────────────────────────
+const invoiceBody = z.object({
+  customer_id:   z.string().uuid().optional().nullable(),
+  sales_order_id:z.string().uuid().optional().nullable(),
+  invoice_number:z.string().max(20).optional().nullable(),
+  series:        z.string().max(5).optional(),
+  direction:     z.enum(['outgoing','incoming']).optional(),
+  status:        z.enum(['draft','pending','authorized','rejected','cancelled','contingency']).optional(),
+  issue_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  total_products:z.coerce.number().min(0).optional(),
+  total_freight: z.coerce.number().min(0).optional(),
+  total_tax:     z.coerce.number().min(0).optional(),
+  total_invoice: z.coerce.number().min(0).optional(),
+  notes:         z.string().max(2000).optional().nullable(),
+});
+const qInvoiceList = z.object({
+  status:     z.string().optional(),
+  direction:  z.enum(['outgoing','incoming']).optional(),
+  customerId: z.string().uuid().optional(),
+  dateFrom:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  page:       z.coerce.number().int().min(1).default(1),
+  limit:      z.coerce.number().int().min(1).max(200).default(50),
+});
+
+app.get('/api/invoices', async (req, res) => {
+  const q = parseQuery(qInvoiceList, req.query, res); if (!q) return;
+  try { res.json(await fiscalRepo.listInvoices(supabaseAdmin, { tenantId: TENANT_ID, ...q })); }
+  catch (e) { logger.error('GET /api/invoices', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/invoices/:id', async (req, res) => {
+  try { res.json(await fiscalRepo.getInvoice(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/invoices/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/invoices', async (req, res) => {
+  const b = invoiceBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.status(201).json(await fiscalRepo.createInvoice(supabaseAdmin, TENANT_ID, b.data)); }
+  catch (e) { logger.error('POST /api/invoices', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/invoices/:id', async (req, res) => {
+  const b = invoiceBody.partial().safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await fiscalRepo.updateInvoice(supabaseAdmin, TENANT_ID, req.params.id, b.data)); }
+  catch (e) { logger.error('PUT /api/invoices/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.delete('/api/invoices/:id', async (req, res) => {
+  try { res.json(await fiscalRepo.cancelInvoice(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('DELETE /api/invoices/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Fiscal — Configurações e Regras ──────────────────────────────────────────
+app.get('/api/fiscal/config', async (_req, res) => {
+  try { res.json(await fiscalRepo.getFiscalConfig(supabaseAdmin, TENANT_ID)); }
+  catch (e) { logger.error('GET /api/fiscal/config', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/fiscal/config', async (req, res) => {
+  try { res.json(await fiscalRepo.upsertFiscalConfig(supabaseAdmin, TENANT_ID, req.body as Record<string, unknown>)); }
+  catch (e) { logger.error('PUT /api/fiscal/config', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/fiscal/tax-rules', async (req, res) => {
+  try { res.json(await fiscalRepo.listTaxRules(supabaseAdmin, TENANT_ID, req.query.ncm as string | undefined)); }
+  catch (e) { logger.error('GET /api/fiscal/tax-rules', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/fiscal/tax-rules', async (req, res) => {
+  try { res.status(201).json(await fiscalRepo.createTaxRule(supabaseAdmin, TENANT_ID, req.body as Record<string, unknown>)); }
+  catch (e) { logger.error('POST /api/fiscal/tax-rules', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Estoque Estendido — Crítico e Reservas ────────────────────────────────────
+app.get('/api/stock/critical', async (req, res) => {
+  try { res.json(await stockExtRepo.getCriticalStock(supabaseAdmin, TENANT_ID, req.query.warehouse as string | undefined)); }
+  catch (e) { logger.error('GET /api/stock/critical', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/stock/product-ranking', async (req, res) => {
+  const q = parseQuery(z.object({ months: z.coerce.number().int().min(1).max(24).default(3), limit: z.coerce.number().int().min(1).max(100).default(20) }), req.query, res); if (!q) return;
+  try { res.json(await stockExtRepo.getProductRanking(supabaseAdmin, TENANT_ID, q.months, q.limit)); }
+  catch (e) { logger.error('GET /api/stock/product-ranking', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Estoque — Contagens de Inventário ────────────────────────────────────────
+app.get('/api/inventory-counts', async (req, res) => {
+  try { res.json(await stockExtRepo.listInventoryCounts(supabaseAdmin, TENANT_ID, req.query.status as string | undefined)); }
+  catch (e) { logger.error('GET /api/inventory-counts', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/inventory-counts/:id', async (req, res) => {
+  try { res.json(await stockExtRepo.getInventoryCount(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/inventory-counts/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/inventory-counts', async (req, res) => {
+  const authUser = (req as Request & { user?: { id: string } }).user;
+  try { res.status(201).json(await stockExtRepo.createInventoryCount(supabaseAdmin, TENANT_ID, req.body as Record<string, unknown>, authUser?.id ?? '')); }
+  catch (e) { logger.error('POST /api/inventory-counts', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.put('/api/inventory-counts/:id', async (req, res) => {
+  try { res.json(await stockExtRepo.updateInventoryCount(supabaseAdmin, TENANT_ID, req.params.id, req.body as Record<string, unknown>)); }
+  catch (e) { logger.error('PUT /api/inventory-counts/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.post('/api/inventory-counts/:id/items', async (req, res) => {
+  const b = z.object({ product_id: z.string().uuid(), counted_qty: z.coerce.number(), notes: z.string().max(500).optional() }).safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  try { res.json(await stockExtRepo.upsertCountItem(supabaseAdmin, TENANT_ID, req.params.id, b.data.product_id, b.data.counted_qty, b.data.notes)); }
+  catch (e) { logger.error('POST /api/inventory-counts/:id/items', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Integrações — Jobs de Importação ─────────────────────────────────────────
+app.get('/api/import-jobs', async (req, res) => {
+  const q = parseQuery(qLimit20, req.query, res); if (!q) return;
+  try { res.json(await integrationsRepo.listImportJobs(supabaseAdmin, TENANT_ID, q.limit)); }
+  catch (e) { logger.error('GET /api/import-jobs', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+app.get('/api/import-jobs/:id', async (req, res) => {
+  try { res.json(await integrationsRepo.getImportJob(supabaseAdmin, TENANT_ID, req.params.id)); }
+  catch (e) { logger.error('GET /api/import-jobs/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// CSV import — cria job e enfileira (processamento real seria em worker separado)
+app.post('/api/import/csv', async (req, res) => {
+  const b = z.object({
+    entity:    z.enum(['customers','products','suppliers','orders','receivable','payable']),
+    file_name: z.string().max(255).optional(),
+    options:   z.record(z.unknown()).optional(),
+  }).safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
+  const authUser = (req as Request & { user?: { id: string } }).user;
+  try {
+    const job = await integrationsRepo.createImportJob(
+      supabaseAdmin, TENANT_ID, b.data.entity, 'csv', authUser?.id ?? '', b.data.options ?? {}
+    );
+    res.status(202).json({ message: 'Job de importação criado', job });
+  } catch (e) { logger.error('POST /api/import/csv', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ── Webhook receiver ──────────────────────────────────────────────────────────
+app.post('/api/webhooks/:source', async (req, res) => {
+  const source = req.params.source;
+  const allowedSources = ['oracle','sefaz','stripe','crm','erp'];
+  if (!allowedSources.includes(source)) {
+    res.status(400).json({ error: 'Fonte de webhook não reconhecida' });
+    return;
+  }
+  try {
+    const log = await integrationsRepo.logWebhook(
+      supabaseAdmin,
+      TENANT_ID,
+      source,
+      String(req.headers['x-event-type'] ?? req.body?.event ?? 'unknown'),
+      req.body as unknown,
+      Object.fromEntries(Object.entries(req.headers).map(([k, v]) => [k, String(v)])),
+      req.ip,
+    );
+    res.status(202).json({ received: true, id: log?.id });
+  } catch (e) {
+    logger.error(`POST /api/webhooks/${source}`, { error: e });
+    res.status(500).json({ error: errMsg(e) });
+  }
+});
+
+// ── BI — KPIs diários ─────────────────────────────────────────────────────────
+app.get('/api/bi/daily-kpis', async (req, res) => {
+  const q = parseQuery(z.object({
+    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateTo:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }), req.query, res); if (!q) return;
+  try {
+    let dbq = supabaseAdmin.from('vw_daily_kpis').select('*').eq('tenant_id', TENANT_ID).order('kpi_date', { ascending: false });
+    if (q.dateFrom) dbq = dbq.gte('kpi_date', q.dateFrom);
+    if (q.dateTo) dbq = dbq.lte('kpi_date', q.dateTo);
+    const { data, error } = await dbq.limit(90);
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (e) { logger.error('GET /api/bi/daily-kpis', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/bi/customer-ranking', async (req, res) => {
+  const q = parseQuery(qMonths, req.query, res); if (!q) return;
+  try {
+    const since = new Date(); since.setMonth(since.getMonth() - q.months);
+    const { data, error } = await supabaseAdmin
+      .from('vw_customer_ranking')
+      .select('*')
+      .eq('tenant_id', TENANT_ID)
+      .gte('month', since.toISOString().slice(0, 7))
+      .order('revenue_rank')
+      .limit(50);
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (e) { logger.error('GET /api/bi/customer-ranking', { error: e }); res.status(500).json({ error: errMsg(e) }); }
+});
+
+app.get('/api/bi/ar-aging', async (_req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('vw_ar_aging')
+      .select('*')
+      .eq('tenant_id', TENANT_ID)
+      .order('days_overdue', { ascending: false });
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (e) { logger.error('GET /api/bi/ar-aging', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
