@@ -51,15 +51,21 @@ export async function syncFinance(fullSync = false): Promise<void> {
 
   if (arRows.length > 0) {
     const mapped = arRows.map((r) => mapAccountReceivable(r, tenantId, sourceName));
-    if (!config.sync.dryRun) {
+    if (config.sync.dryRun) {
+      logger.info(`[${ENTITY_AR}] DRY RUN — ${mapped.length} registros não gravados`);
+    } else {
       const result = await batchUpsert(sb, 'accounts_receivable', mapped);
       logger.info(`[${ENTITY_AR}] Upsert concluído`, result);
+      if (result.failed > 0) {
+        logger.warn(`[${ENTITY_AR}] ${result.failed} registros falharam — checkpoint NÃO avançado`);
+      } else {
+        const last = arRows[arRows.length - 1] as Record<string, unknown>;
+        await saveCheckpoint(sb, tenantId, sourceName, ENTITY_AR, {
+          last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
+          last_source_id: String(last['SOURCE_ID'] ?? ''),
+        });
+      }
     }
-    const last = arRows[arRows.length - 1] as Record<string, unknown>;
-    await saveCheckpoint(sb, tenantId, sourceName, ENTITY_AR, {
-      last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
-      last_source_id: String(last['SOURCE_ID'] ?? ''),
-    });
   } else {
     logger.info(`[${ENTITY_AR}] Nenhum título novo`);
   }
@@ -105,15 +111,21 @@ export async function syncFinance(fullSync = false): Promise<void> {
 
   if (apRows.length > 0) {
     const mapped = apRows.map((r) => mapAccountPayable(r, tenantId, sourceName));
-    if (!config.sync.dryRun) {
+    if (config.sync.dryRun) {
+      logger.info(`[${ENTITY_AP}] DRY RUN — ${mapped.length} registros não gravados`);
+    } else {
       const result = await batchUpsert(sb, 'accounts_payable', mapped);
       logger.info(`[${ENTITY_AP}] Upsert concluído`, result);
+      if (result.failed > 0) {
+        logger.warn(`[${ENTITY_AP}] ${result.failed} registros falharam — checkpoint NÃO avançado`);
+      } else {
+        const last = apRows[apRows.length - 1] as Record<string, unknown>;
+        await saveCheckpoint(sb, tenantId, sourceName, ENTITY_AP, {
+          last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
+          last_source_id: String(last['SOURCE_ID'] ?? ''),
+        });
+      }
     }
-    const last = apRows[apRows.length - 1] as Record<string, unknown>;
-    await saveCheckpoint(sb, tenantId, sourceName, ENTITY_AP, {
-      last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
-      last_source_id: String(last['SOURCE_ID'] ?? ''),
-    });
   } else {
     logger.info(`[${ENTITY_AP}] Nenhum título a pagar novo`);
   }

@@ -65,11 +65,17 @@ export async function syncProducts(fullSync = false): Promise<void> {
 
   const mapped = rows.map((r) => mapProduct(r, tenantId, sourceName));
 
-  if (!config.sync.dryRun) {
-    const result = await batchUpsert(sb, 'products', mapped);
-    logger.info(`[${ENTITY}] Upsert concluído`, result);
-  } else {
+  if (config.sync.dryRun) {
     logger.info(`[${ENTITY}] DRY RUN — ${mapped.length} registros não gravados`);
+    return;
+  }
+
+  const result = await batchUpsert(sb, 'products', mapped);
+  logger.info(`[${ENTITY}] Upsert concluído`, result);
+
+  if (result.failed > 0) {
+    logger.warn(`[${ENTITY}] ${result.failed} registros falharam — checkpoint NÃO avançado para evitar perda de dados`);
+    return;
   }
 
   const lastRow = rows[rows.length - 1] as Record<string, unknown>;

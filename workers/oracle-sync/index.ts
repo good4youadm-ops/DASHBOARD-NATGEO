@@ -38,6 +38,19 @@ async function main() {
     if (entity === 'all' || entity === 'inventory')  await syncInventory(fullSync);
     if (entity === 'all' || entity === 'finance')    await syncFinance(fullSync);
 
+    // Atualiza views materializadas após sync bem-sucedido
+    if (!config.sync.dryRun && (entity === 'all' || entity === 'sales')) {
+      try {
+        const { getSupabaseAdmin } = await import('./supabase/client');
+        const sb = getSupabaseAdmin();
+        await sb.rpc('refresh_dashboard_views');
+        logger.info('Views materializadas atualizadas');
+      } catch (viewErr) {
+        // Não fatal — views ficam desatualizadas mas dados foram gravados
+        logger.warn('Falha ao atualizar views materializadas', { error: viewErr });
+      }
+    }
+
     logger.info('Sync concluído com sucesso');
   } catch (err) {
     logger.error('Erro fatal no sync', { error: err });

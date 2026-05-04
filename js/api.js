@@ -127,11 +127,6 @@
       removeItem: (id, itemId) => apiFetch('/api/orders/' + id + '/items/' + itemId, { method: 'DELETE' }),
     },
 
-    stock: {
-      movements: (p) => apiFetch('/api/stock/movements' + (p ? '?' + new URLSearchParams(p) : '')),
-      move:      (b) => apiFetch('/api/stock/movements', { method: 'POST', body: JSON.stringify(b) }),
-    },
-
     receivable: {
       list:   (p)     => apiFetch('/api/receivable' + (p ? '?' + new URLSearchParams(p) : '')),
       get:    (id)    => apiFetch('/api/receivable/' + id),
@@ -168,6 +163,188 @@
         update: (id, b) => apiFetch('/api/routes/' + id, { method: 'PUT', body: JSON.stringify(b) }),
         delete: (id)    => apiFetch('/api/routes/' + id, { method: 'DELETE' }),
       },
+      deliveries: {
+        list:        (p)     => apiFetch('/api/deliveries' + (p ? '?' + new URLSearchParams(p) : '')),
+        get:         (id)    => apiFetch('/api/deliveries/' + id),
+        create:      (b)     => apiFetch('/api/deliveries', { method: 'POST', body: JSON.stringify(b) }),
+        update:      (id, b) => apiFetch('/api/deliveries/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+        addEvent:    (id, b) => apiFetch('/api/deliveries/' + id + '/events', { method: 'POST', body: JSON.stringify(b) }),
+      },
+    },
+
+    // ── Dados Mestres ─────────────────────────────────────────────────────────
+    brands: {
+      list:   (p)     => apiFetch('/api/brands' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/brands', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/brands/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/brands/' + id, { method: 'DELETE' }),
+    },
+
+    categories: {
+      list:   (p)     => apiFetch('/api/categories' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/categories', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/categories/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/categories/' + id, { method: 'DELETE' }),
+    },
+
+    paymentMethods: {
+      list:   (p)     => apiFetch('/api/payment-methods' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/payment-methods', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/payment-methods/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/payment-methods/' + id, { method: 'DELETE' }),
+    },
+
+    salesReps: {
+      list:        (p)     => apiFetch('/api/sales-reps' + (p ? '?' + new URLSearchParams(p) : '')),
+      create:      (b)     => apiFetch('/api/sales-reps', { method: 'POST', body: JSON.stringify(b) }),
+      update:      (id, b) => apiFetch('/api/sales-reps/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete:      (id)    => apiFetch('/api/sales-reps/' + id, { method: 'DELETE' }),
+      performance: (p)     => apiFetch('/api/sales-reps/performance' + (p ? '?' + new URLSearchParams(p) : '')),
+    },
+
+    carriers: {
+      list:   (p)     => apiFetch('/api/carriers' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/carriers', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/carriers/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/carriers/' + id, { method: 'DELETE' }),
+    },
+
+    costCenters: {
+      list:   (p)     => apiFetch('/api/cost-centers' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/cost-centers', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/cost-centers/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/cost-centers/' + id, { method: 'DELETE' }),
+    },
+
+    // ── Módulo Comercial ──────────────────────────────────────────────────────
+    quotes: {
+      list:       (p)          => apiFetch('/api/quotes' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:        (id)         => apiFetch('/api/quotes/' + id),
+      create:     (b)          => apiFetch('/api/quotes', { method: 'POST', body: JSON.stringify(b) }),
+      update:     (id, b)      => apiFetch('/api/quotes/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete:     (id)         => apiFetch('/api/quotes/' + id, { method: 'DELETE' }),
+      addItem:    (id, b)      => apiFetch('/api/quotes/' + id + '/items', { method: 'POST', body: JSON.stringify(b) }),
+      removeItem: (id, itemId) => apiFetch('/api/quotes/' + id + '/items/' + itemId, { method: 'DELETE' }),
+    },
+
+    goals: {
+      list:      (p) => apiFetch('/api/goals' + (p ? '?' + new URLSearchParams(p) : '')),
+      upsert:    (b) => apiFetch('/api/goals', { method: 'POST', body: JSON.stringify(b) }),
+      vsActual:  (p) => apiFetch('/api/goals/vs-actual' + (p ? '?' + new URLSearchParams(p) : '')),
+    },
+
+    commissions: {
+      list:   (p)     => apiFetch('/api/commissions' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/commissions', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/commissions/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+    },
+
+    returns: {
+      list:    (p)     => apiFetch('/api/returns' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:     (id)    => apiFetch('/api/returns/' + id),
+      create:  (b)     => apiFetch('/api/returns', { method: 'POST', body: JSON.stringify(b) }),
+      update:  (id, b) => apiFetch('/api/returns/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+    },
+
+    campaigns: {
+      list:   (p)     => apiFetch('/api/campaigns' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:    (id)    => apiFetch('/api/campaigns/' + id),
+      create: (b)     => apiFetch('/api/campaigns', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/campaigns/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/campaigns/' + id, { method: 'DELETE' }),
+    },
+
+    // ── Módulo Financeiro Estendido ───────────────────────────────────────────
+    bankAccounts: {
+      list:   (p)     => apiFetch('/api/bank-accounts' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:    (id)    => apiFetch('/api/bank-accounts/' + id),
+      create: (b)     => apiFetch('/api/bank-accounts', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/bank-accounts/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/bank-accounts/' + id, { method: 'DELETE' }),
+    },
+
+    transactions: {
+      list:   (p)     => apiFetch('/api/transactions' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:    (id)    => apiFetch('/api/transactions/' + id),
+      create: (b)     => apiFetch('/api/transactions', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/transactions/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/transactions/' + id, { method: 'DELETE' }),
+      cashFlow: (p)   => apiFetch('/api/cash-flow' + (p ? '?' + new URLSearchParams(p) : '')),
+    },
+
+    financialCategories: {
+      list:   (p)     => apiFetch('/api/financial-categories' + (p ? '?' + new URLSearchParams(p) : '')),
+      create: (b)     => apiFetch('/api/financial-categories', { method: 'POST', body: JSON.stringify(b) }),
+      update: (id, b) => apiFetch('/api/financial-categories/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      delete: (id)    => apiFetch('/api/financial-categories/' + id, { method: 'DELETE' }),
+    },
+
+    // ── Módulo Fiscal ─────────────────────────────────────────────────────────
+    invoices: {
+      list:       (p)          => apiFetch('/api/invoices' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:        (id)         => apiFetch('/api/invoices/' + id),
+      create:     (b)          => apiFetch('/api/invoices', { method: 'POST', body: JSON.stringify(b) }),
+      update:     (id, b)      => apiFetch('/api/invoices/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      cancel:     (id)         => apiFetch('/api/invoices/' + id + '/cancel', { method: 'POST' }),
+      addItem:    (id, b)      => apiFetch('/api/invoices/' + id + '/items', { method: 'POST', body: JSON.stringify(b) }),
+      removeItem: (id, itemId) => apiFetch('/api/invoices/' + id + '/items/' + itemId, { method: 'DELETE' }),
+    },
+
+    fiscal: {
+      getConfig:    ()  => apiFetch('/api/fiscal/config'),
+      saveConfig:   (b) => apiFetch('/api/fiscal/config', { method: 'PUT', body: JSON.stringify(b) }),
+      taxRules:     (p) => apiFetch('/api/fiscal/tax-rules' + (p ? '?' + new URLSearchParams(p) : '')),
+      createTaxRule:(b) => apiFetch('/api/fiscal/tax-rules', { method: 'POST', body: JSON.stringify(b) }),
+      updateTaxRule:(id, b) => apiFetch('/api/fiscal/tax-rules/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+      deleteTaxRule:(id)    => apiFetch('/api/fiscal/tax-rules/' + id, { method: 'DELETE' }),
+    },
+
+    // ── Módulo Estoque Estendido ──────────────────────────────────────────────
+    stock: {
+      movements:   (p) => apiFetch('/api/stock/movements' + (p ? '?' + new URLSearchParams(p) : '')),
+      move:        (b) => apiFetch('/api/stock/movements', { method: 'POST', body: JSON.stringify(b) }),
+      critical:    (p) => apiFetch('/api/stock/critical' + (p ? '?' + new URLSearchParams(p) : '')),
+      ranking:     (p) => apiFetch('/api/stock/product-ranking' + (p ? '?' + new URLSearchParams(p) : '')),
+      reservations: {
+        list:    (p)     => apiFetch('/api/stock/reservations' + (p ? '?' + new URLSearchParams(p) : '')),
+        create:  (b)     => apiFetch('/api/stock/reservations', { method: 'POST', body: JSON.stringify(b) }),
+        release: (id)    => apiFetch('/api/stock/reservations/' + id + '/release', { method: 'POST' }),
+      },
+      counts: {
+        list:      (p)         => apiFetch('/api/inventory-counts' + (p ? '?' + new URLSearchParams(p) : '')),
+        get:       (id)        => apiFetch('/api/inventory-counts/' + id),
+        create:    (b)         => apiFetch('/api/inventory-counts', { method: 'POST', body: JSON.stringify(b) }),
+        update:    (id, b)     => apiFetch('/api/inventory-counts/' + id, { method: 'PUT', body: JSON.stringify(b) }),
+        upsertItem:(id, b)     => apiFetch('/api/inventory-counts/' + id + '/items', { method: 'POST', body: JSON.stringify(b) }),
+      },
+    },
+
+    // ── Integrações ───────────────────────────────────────────────────────────
+    imports: {
+      list:   (p) => apiFetch('/api/import-jobs' + (p ? '?' + new URLSearchParams(p) : '')),
+      get:    (id) => apiFetch('/api/import-jobs/' + id),
+      csv:    (entity, b) => apiFetch('/api/import/csv?entity=' + entity, { method: 'POST', body: JSON.stringify(b) }),
+    },
+
+    webhooks: {
+      list: (p) => apiFetch('/api/webhooks' + (p ? '?' + new URLSearchParams(p) : '')),
+    },
+
+    apiKeys: {
+      list:   ()        => apiFetch('/api/api-keys'),
+      create: (b)       => apiFetch('/api/api-keys', { method: 'POST', body: JSON.stringify(b) }),
+      revoke: (id)      => apiFetch('/api/api-keys/' + id + '/revoke', { method: 'POST' }),
+    },
+
+    // ── BI / Analytics ────────────────────────────────────────────────────────
+    bi: {
+      dailyKpis:       (p) => apiFetch('/api/bi/daily-kpis' + (p ? '?' + new URLSearchParams(p) : '')),
+      customerRanking: (p) => apiFetch('/api/bi/customer-ranking' + (p ? '?' + new URLSearchParams(p) : '')),
+      arAging:         ()  => apiFetch('/api/bi/ar-aging'),
+      goalsVsActual:   (p) => apiFetch('/api/goals/vs-actual' + (p ? '?' + new URLSearchParams(p) : '')),
+      productRanking:  (p) => apiFetch('/api/stock/product-ranking' + (p ? '?' + new URLSearchParams(p) : '')),
+      salesRepPerf:    (p) => apiFetch('/api/sales-reps/performance' + (p ? '?' + new URLSearchParams(p) : '')),
+      cashFlow:        (p) => apiFetch('/api/cash-flow' + (p ? '?' + new URLSearchParams(p) : '')),
     },
   };
 

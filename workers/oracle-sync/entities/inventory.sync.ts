@@ -48,17 +48,21 @@ export async function syncInventory(fullSync = false): Promise<void> {
 
   if (posRows.length > 0) {
     const mapped = posRows.map((r) => mapStockPosition(r, tenantId, sourceName));
-    if (!config.sync.dryRun) {
+    if (config.sync.dryRun) {
+      logger.info(`[${ENTITY_POS}] DRY RUN — ${mapped.length} posições`);
+    } else {
       const result = await batchUpsert(sb, 'stock_positions', mapped);
       logger.info(`[${ENTITY_POS}] Upsert concluído`, result);
-    } else {
-      logger.info(`[${ENTITY_POS}] DRY RUN — ${mapped.length} posições`);
+      if (result.failed > 0) {
+        logger.warn(`[${ENTITY_POS}] ${result.failed} posições falharam — checkpoint NÃO avançado`);
+      } else {
+        const last = posRows[posRows.length - 1] as Record<string, unknown>;
+        await saveCheckpoint(sb, tenantId, sourceName, ENTITY_POS, {
+          last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
+          last_source_id: String(last['SOURCE_ID'] ?? ''),
+        });
+      }
     }
-    const last = posRows[posRows.length - 1] as Record<string, unknown>;
-    await saveCheckpoint(sb, tenantId, sourceName, ENTITY_POS, {
-      last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
-      last_source_id: String(last['SOURCE_ID'] ?? ''),
-    });
   } else {
     logger.info(`[${ENTITY_POS}] Nenhuma posição nova`);
   }
@@ -99,15 +103,21 @@ export async function syncInventory(fullSync = false): Promise<void> {
 
   if (lotRows.length > 0) {
     const mapped = lotRows.map((r) => mapStockLot(r, tenantId, sourceName));
-    if (!config.sync.dryRun) {
+    if (config.sync.dryRun) {
+      logger.info(`[${ENTITY_LOT}] DRY RUN — ${mapped.length} lotes`);
+    } else {
       const result = await batchUpsert(sb, 'stock_lots', mapped);
       logger.info(`[${ENTITY_LOT}] Upsert concluído`, result);
+      if (result.failed > 0) {
+        logger.warn(`[${ENTITY_LOT}] ${result.failed} lotes falharam — checkpoint NÃO avançado`);
+      } else {
+        const last = lotRows[lotRows.length - 1] as Record<string, unknown>;
+        await saveCheckpoint(sb, tenantId, sourceName, ENTITY_LOT, {
+          last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
+          last_source_id: String(last['SOURCE_ID'] ?? ''),
+        });
+      }
     }
-    const last = lotRows[lotRows.length - 1] as Record<string, unknown>;
-    await saveCheckpoint(sb, tenantId, sourceName, ENTITY_LOT, {
-      last_source_updated_at: String(last['UPDATED_AT_SOURCE'] ?? ''),
-      last_source_id: String(last['SOURCE_ID'] ?? ''),
-    });
   } else {
     logger.info(`[${ENTITY_LOT}] Nenhum lote novo`);
   }

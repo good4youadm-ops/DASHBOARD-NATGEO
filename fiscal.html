@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Fiscal / NF-e</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
+      --border: #e5e5ea; --border2: #d1d1d6;
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff; --green: #34c759;
+      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93; --muted2: #aeaeb2;
+      --sidebar-w: 230px; --header-h: 56px;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+    }
+    html { font-size: 14px; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+    .sidebar { width: var(--sidebar-w); background: rgba(255,255,255,.9); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; overflow-y: auto; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; }
+    .logo-name { font-size: 1rem; font-weight: 700; } .logo-name span { color: var(--accent3); }
+    .sidebar-section { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 14px 16px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 14px; margin: 1px 8px; border-radius: var(--radius-sm); color: var(--text2); font-size: .875rem; font-weight: 500; text-decoration: none; transition: background .12s; }
+    .nav-item:hover { background: var(--surface2); } .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+    .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
+    .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-mid); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+    .u-name { font-size: .8rem; font-weight: 600; } .u-role { font-size: .72rem; color: var(--muted); }
+    .logout-btn { margin-left: auto; color: var(--muted); font-size: .9rem; cursor: pointer; } .logout-btn:hover { color: var(--red); }
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { height: var(--header-h); background: rgba(255,255,255,.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .page-title { font-size: 1rem; font-weight: 700; } .page-sub { font-size: .8rem; color: var(--muted); margin-top: 1px; } .spacer { flex: 1; }
+    .tab-bar { display: flex; gap: 4px; padding: 20px 24px 0; }
+    .tab-btn { padding: 8px 20px; border: 1.5px solid var(--border); border-radius: 8px 8px 0 0; background: var(--surface2); color: var(--muted); font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .15s; border-bottom: none; position: relative; top: 1px; }
+    .tab-btn.active { background: var(--surface); color: var(--accent); border-bottom-color: var(--surface); }
+    .tab-btn i { margin-right: 6px; }
+    .content { padding: 0 24px 24px; flex: 1; }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+    .card { background: var(--surface); border-radius: 0 var(--radius) var(--radius) var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
+    .search-wrap input { width: 100%; padding: 7px 12px 7px 34px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; background: var(--bg); color: var(--text); outline: none; }
+    .search-wrap input:focus { border-color: var(--accent3); background: #fff; }
+    .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .8rem; }
+    .filter-select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; color: var(--text); background: var(--bg); outline: none; cursor: pointer; }
+    .btn-primary { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .btn-primary:hover { background: var(--accent2); }
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th { padding: 10px 12px; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--accent-bg); }
+    tbody td { padding: 10px 12px; color: var(--text2); vertical-align: middle; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .badge-green { background: #d1fae5; color: #065f46; } .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-blue { background: #dbeafe; color: #1e40af; } .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; } .badge-gray { background: #f3f4f6; color: #374151; }
+    .act-btn { padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: transparent; color: var(--text2); font-size: .8rem; cursor: pointer; transition: all .12s; }
+    .act-btn:hover { border-color: var(--accent3); color: var(--accent); }
+    .act-btn.danger:hover { border-color: var(--red); color: var(--red); }
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    .pag-btns { display: flex; gap: 4px; }
+    .pag-btn { padding: 4px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: transparent; color: var(--text2); font-size: .8rem; cursor: pointer; }
+    .pag-btn:hover:not(:disabled) { border-color: var(--accent3); color: var(--accent); }
+    .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 500; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .form-row { display: grid; gap: 14px; margin-bottom: 14px; }
+    .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .field label { display: block; font-size: .75rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; color: var(--text); background: var(--bg); outline: none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent3); background: #fff; }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .btn-cancel { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: transparent; color: var(--text2); font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .btn-save { padding: 8px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .section-title { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 0 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+    .empty-state { padding: 48px; text-align: center; color: var(--muted); }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    .loading-row td { text-align: center; padding: 32px; color: var(--muted); }
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 600; align-items: center; justify-content: center; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 360px; width: 100%; box-shadow: var(--shadow-md); }
+    .confirm-box h3 { font-size: .95rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: .85rem; color: var(--muted); margin-bottom: 20px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-danger { padding: 8px 16px; background: var(--red); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: .85rem; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 8px; min-width: 220px; opacity: 0; transform: translateY(8px); transition: all .22s; }
+    .toast.in { opacity: 1; transform: translateY(0); } .toast.out { opacity: 0; transform: translateY(8px); }
+    @media(max-width:800px) {
+      :root { --sidebar-w: 56px; }
+      .nav-item span, .sidebar-section, .u-name, .u-role, .logo-name { display: none; }
+      .sidebar-logo { justify-content: center; padding: 0; }
+      .nav-item { justify-content: center; padding: 8px; }
+      .form-row.cols-2, .form-row.cols-3, .form-row.cols-4, .config-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+    <div><div class="logo-name">Nat<span>Geo</span></div></div>
+  </div>
+  <div class="sidebar-section">Principal</div>
+  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
+  <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
+  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
+  <div class="sidebar-section">Operações</div>
+  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
+  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
+  <a class="nav-item active" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
+  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
+  <a class="nav-item" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
+  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
+  <div class="sidebar-section">Cadastros</div>
+  <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
+  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
+  <div class="sidebar-section">Relatórios</div>
+  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
+  <div class="sidebar-footer">
+    <div class="avatar">U</div>
+    <div><div class="u-name">Usuário</div><div class="u-role">Operador</div></div>
+    <i class="fa-solid fa-right-from-bracket logout-btn"></i>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Fiscal / NF-e</div>
+      <div class="page-sub">Notas fiscais, regras de imposto e configurações fiscais</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('invoices')" id="tab-invoices"><i class="fa-solid fa-file-invoice-dollar"></i>Notas Fiscais</button>
+    <button class="tab-btn" onclick="switchTab('taxrules')" id="tab-taxrules"><i class="fa-solid fa-percent"></i>Regras de Imposto</button>
+    <button class="tab-btn" onclick="switchTab('config')" id="tab-config"><i class="fa-solid fa-gear"></i>Configuração</button>
+  </div>
+
+  <div class="content">
+    <!-- NF-e -->
+    <div class="tab-panel active" id="panel-invoices">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="inv-search" placeholder="Buscar nota, chave de acesso..." oninput="debounceInvoices()" />
+          </div>
+          <select class="filter-select" id="inv-status" onchange="loadInvoices()">
+            <option value="">Todos os status</option>
+            <option value="draft">Rascunho</option>
+            <option value="pending">Pendente</option>
+            <option value="authorized">Autorizada</option>
+            <option value="rejected">Rejeitada</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+          <select class="filter-select" id="inv-direction" onchange="loadInvoices()">
+            <option value="">Entrada e Saída</option>
+            <option value="outgoing">Saída</option>
+            <option value="incoming">Entrada</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn-primary" onclick="openInvoiceModal()"><i class="fa-solid fa-plus"></i> Nova NF</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Série / Número</th>
+                <th>Natureza</th>
+                <th>Cliente / Fornecedor</th>
+                <th>Emissão</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="invoices-tbody">
+              <tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="inv-count">—</span>
+          <div class="pag-btns">
+            <button class="pag-btn" id="inv-prev" onclick="invoicesPrev()" disabled><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="pag-btn" id="inv-next" onclick="invoicesNext()"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGRAS DE IMPOSTO -->
+    <div class="tab-panel" id="panel-taxrules">
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="tax-search" placeholder="Buscar NCM..." oninput="debouceTaxRules()" />
+          </div>
+          <div class="spacer"></div>
+          <button class="btn-primary" onclick="openTaxRuleModal()"><i class="fa-solid fa-plus"></i> Nova Regra</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>NCM</th>
+                <th>Descrição</th>
+                <th>CFOP</th>
+                <th>ICMS %</th>
+                <th>PIS %</th>
+                <th>COFINS %</th>
+                <th>IPI %</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="taxrules-tbody">
+              <tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÃO FISCAL -->
+    <div class="tab-panel" id="panel-config">
+      <div class="card" style="padding:24px">
+        <div class="section-title">Dados da Empresa Emissora</div>
+        <div class="config-grid">
+          <div class="field"><label>CNPJ</label><input type="text" id="cfg-cnpj" placeholder="00.000.000/0001-00" /></div>
+          <div class="field"><label>Razão Social</label><input type="text" id="cfg-razao" /></div>
+          <div class="field"><label>Nome Fantasia</label><input type="text" id="cfg-fantasia" /></div>
+          <div class="field"><label>Inscrição Estadual</label><input type="text" id="cfg-ie" /></div>
+          <div class="field"><label>CRT (Regime Tributário)</label>
+            <select id="cfg-crt">
+              <option value="1">1 — Simples Nacional</option>
+              <option value="2">2 — Simples Nacional (excesso)</option>
+              <option value="3">3 — Regime Normal</option>
+            </select>
+          </div>
+          <div class="field"><label>CFOP Padrão Saída</label><input type="text" id="cfg-cfop" placeholder="ex: 5102" /></div>
+        </div>
+        <div class="section-title" style="margin-top:24px">Ambiente SEFAZ</div>
+        <div class="config-grid">
+          <div class="field"><label>Ambiente</label>
+            <select id="cfg-env">
+              <option value="homologacao">Homologação (testes)</option>
+              <option value="producao">Produção</option>
+            </select>
+          </div>
+          <div class="field"><label>UF Emissora</label><input type="text" id="cfg-uf" placeholder="SP" maxlength="2" /></div>
+          <div class="field"><label>Série Padrão NF-e</label><input type="number" id="cfg-serie" value="1" min="1" /></div>
+          <div class="field"><label>Próximo Número NF-e</label><input type="number" id="cfg-next-nfe" value="1" min="1" /></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px">
+          <button class="btn-primary" onclick="saveFiscalConfig()"><i class="fa-solid fa-floppy-disk"></i> Salvar Configuração</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NF -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="inv-modal-title">Nova Nota Fiscal</span>
+      <button class="modal-close" onclick="closeInvoiceModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="inv-id" />
+      <div class="form-row cols-2">
+        <div class="field"><label>Cliente</label>
+          <select id="inv-customer-id"><option value="">Selecione...</option></select>
+        </div>
+        <div class="field"><label>Direção</label>
+          <select id="inv-direction-field">
+            <option value="outgoing">Saída</option>
+            <option value="incoming">Entrada</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="field"><label>Série</label><input type="number" id="inv-series" value="1" min="1" /></div>
+        <div class="field"><label>Número NF</label><input type="number" id="inv-number" min="1" /></div>
+        <div class="field"><label>Data Emissão</label><input type="date" id="inv-issue-date" /></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Natureza da Operação</label><input type="text" id="inv-nature" placeholder="Venda de mercadoria" /></div>
+        <div class="field"><label>Status</label>
+          <select id="inv-status-field">
+            <option value="draft">Rascunho</option>
+            <option value="pending">Pendente autorização</option>
+            <option value="authorized">Autorizada</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="field"><label>Total Produtos</label><input type="number" id="inv-total-products" step="0.01" placeholder="0,00" /></div>
+        <div class="field"><label>Total Impostos</label><input type="number" id="inv-total-taxes" step="0.01" placeholder="0,00" /></div>
+        <div class="field"><label>Total NF</label><input type="number" id="inv-total" step="0.01" placeholder="0,00" /></div>
+      </div>
+      <div class="field"><label>Chave de Acesso</label><input type="text" id="inv-access-key" maxlength="44" placeholder="44 dígitos" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeInvoiceModal()">Cancelar</button>
+      <button class="btn-save" id="inv-save-btn" onclick="saveInvoice()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGRA -->
+<div class="modal-overlay" id="taxrule-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="tr-modal-title">Nova Regra de Imposto</span>
+      <button class="modal-close" onclick="closeTaxRuleModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tr-id" />
+      <div class="form-row cols-2">
+        <div class="field"><label>NCM *</label><input type="text" id="tr-ncm" maxlength="8" placeholder="00000000" /></div>
+        <div class="field"><label>CFOP *</label><input type="text" id="tr-cfop" maxlength="5" placeholder="5102" /></div>
+      </div>
+      <div class="field" style="margin-bottom:14px"><label>Descrição</label><input type="text" id="tr-desc" /></div>
+      <div class="form-row cols-4">
+        <div class="field"><label>ICMS %</label><input type="number" id="tr-icms" step="0.01" min="0" max="100" /></div>
+        <div class="field"><label>PIS %</label><input type="number" id="tr-pis" step="0.01" min="0" max="100" /></div>
+        <div class="field"><label>COFINS %</label><input type="number" id="tr-cofins" step="0.01" min="0" max="100" /></div>
+        <div class="field"><label>IPI %</label><input type="number" id="tr-ipi" step="0.01" min="0" max="100" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeTaxRuleModal()">Cancelar</button>
+      <button class="btn-save" id="tr-save-btn" onclick="saveTaxRule()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Confirmar</h3>
+    <p id="confirm-msg">Deseja continuar?</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-danger" id="confirm-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+(async function () {
+  await NatGeoAuth.requireAuth();
+
+  let invPage = 1;
+  let invDebounce, taxDebounce;
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    document.getElementById('panel-' + id).classList.add('active');
+    if (id === 'invoices') loadInvoices();
+    else if (id === 'taxrules') loadTaxRules();
+    else loadFiscalConfig();
+  }
+
+  function toast(msg, type) {
+    const c = document.getElementById('toasts');
+    const t = document.createElement('div');
+    const icon = type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
+    const color = type === 'error' ? 'var(--red)' : 'var(--accent3)';
+    t.className = 'toast';
+    t.innerHTML = `<i class="fa-solid ${icon}" style="color:${color}"></i>${msg}`;
+    c.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('in'));
+    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3500);
+  }
+
+  function statusBadge(s) {
+    const map = {
+      draft: ['badge-gray', 'Rascunho'], pending: ['badge-amber', 'Pendente'],
+      authorized: ['badge-green', 'Autorizada'], rejected: ['badge-red', 'Rejeitada'],
+      cancelled: ['badge-red', 'Cancelada'], contingency: ['badge-purple', 'Contingência'],
+    };
+    const [cls, lbl] = map[s] || ['badge-gray', s];
+    return `<span class="badge ${cls}">${lbl}</span>`;
+  }
+
+  // Invoices
+  function debounceInvoices() { clearTimeout(invDebounce); invDebounce = setTimeout(loadInvoices, 350); }
+
+  async function loadInvoices() {
+    const tbody = document.getElementById('invoices-tbody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+    try {
+      const result = await DashboardAPI.invoices.list({
+        page: invPage, limit: 20,
+        status: document.getElementById('inv-status').value,
+        direction: document.getElementById('inv-direction').value,
+      });
+      const rows = result.data || (Array.isArray(result) ? result : []);
+      document.getElementById('inv-count').textContent = (result.total != null ? result.total : rows.length) + ' nota(s)';
+      document.getElementById('inv-prev').disabled = invPage <= 1;
+      document.getElementById('inv-next').disabled = rows.length < 20;
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-file-invoice-dollar"></i>Nenhuma nota encontrada.</div></td></tr>'; return; }
+      tbody.innerHTML = rows.map(inv => {
+        const customer = inv.customers ? inv.customers.name : '—';
+        const dir = inv.direction === 'incoming' ? '<span class="badge badge-blue">Entrada</span>' : '<span class="badge badge-green">Saída</span>';
+        return `<tr>
+          <td>${inv.series || '1'}/${inv.invoice_number || '—'}</td>
+          <td>${dir}</td>
+          <td>${customer}</td>
+          <td>${DashboardAPI.fmtDate(inv.issue_date)}</td>
+          <td>${DashboardAPI.fmtBRL(inv.total_amount)}</td>
+          <td>${statusBadge(inv.status)}</td>
+          <td style="white-space:nowrap">
+            ${inv.pdf_url ? `<a href="${inv.pdf_url}" target="_blank" class="act-btn" title="PDF"><i class="fa-solid fa-file-pdf"></i></a>` : ''}
+            <button class="act-btn" onclick="editInvoice('${inv.id}')"><i class="fa-solid fa-pen"></i></button>
+            ${inv.status !== 'cancelled' ? `<button class="act-btn danger" onclick="cancelInvoice('${inv.id}')"><i class="fa-solid fa-ban"></i></button>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px;text-align:center">${e.message}</td></tr>`; }
+  }
+
+  function invoicesPrev() { if (invPage > 1) { invPage--; loadInvoices(); } }
+  function invoicesNext() { invPage++; loadInvoices(); }
+
+  async function loadCustomers() {
+    try {
+      const data = await DashboardAPI.customers.list({ limit: 500 });
+      const sel = document.getElementById('inv-customer-id');
+      const rows = data.data || (Array.isArray(data) ? data : []);
+      rows.forEach(c => sel.add(new Option(c.name, c.id)));
+    } catch (_) {}
+  }
+
+  function openInvoiceModal(inv) {
+    document.getElementById('inv-id').value = inv ? inv.id : '';
+    document.getElementById('inv-modal-title').textContent = inv ? 'Editar Nota Fiscal' : 'Nova Nota Fiscal';
+    document.getElementById('inv-customer-id').value = inv ? (inv.customer_id || '') : '';
+    document.getElementById('inv-direction-field').value = inv ? (inv.direction || 'outgoing') : 'outgoing';
+    document.getElementById('inv-series').value = inv ? (inv.series || 1) : 1;
+    document.getElementById('inv-number').value = inv ? (inv.invoice_number || '') : '';
+    document.getElementById('inv-issue-date').value = inv ? (inv.issue_date || '') : new Date().toISOString().slice(0,10);
+    document.getElementById('inv-nature').value = inv ? (inv.nature_of_operation || '') : 'Venda de mercadoria';
+    document.getElementById('inv-status-field').value = inv ? (inv.status || 'draft') : 'draft';
+    document.getElementById('inv-total-products').value = inv ? (inv.total_products || '') : '';
+    document.getElementById('inv-total-taxes').value = inv ? (inv.total_taxes || '') : '';
+    document.getElementById('inv-total').value = inv ? (inv.total_amount || '') : '';
+    document.getElementById('inv-access-key').value = inv ? (inv.access_key || '') : '';
+    document.getElementById('invoice-modal').classList.add('open');
+  }
+
+  function closeInvoiceModal() { document.getElementById('invoice-modal').classList.remove('open'); }
+
+  async function editInvoice(id) {
+    try { const inv = await DashboardAPI.invoices.get(id); openInvoiceModal(inv); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+
+  async function saveInvoice() {
+    const btn = document.getElementById('inv-save-btn');
+    btn.disabled = true;
+    try {
+      const id = document.getElementById('inv-id').value;
+      const payload = {
+        customer_id:          document.getElementById('inv-customer-id').value || null,
+        direction:            document.getElementById('inv-direction-field').value,
+        series:               parseInt(document.getElementById('inv-series').value) || 1,
+        invoice_number:       document.getElementById('inv-number').value || null,
+        issue_date:           document.getElementById('inv-issue-date').value || null,
+        nature_of_operation:  document.getElementById('inv-nature').value || null,
+        status:               document.getElementById('inv-status-field').value,
+        total_products:       parseFloat(document.getElementById('inv-total-products').value) || null,
+        total_taxes:          parseFloat(document.getElementById('inv-total-taxes').value) || null,
+        total_amount:         parseFloat(document.getElementById('inv-total').value) || null,
+        access_key:           document.getElementById('inv-access-key').value || null,
+      };
+      if (id) { await DashboardAPI.invoices.update(id, payload); toast('Nota atualizada.'); }
+      else    { await DashboardAPI.invoices.create(payload);      toast('Nota criada.'); }
+      closeInvoiceModal();
+      loadInvoices();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  function cancelInvoice(id) {
+    document.getElementById('confirm-title').textContent = 'Cancelar Nota Fiscal';
+    document.getElementById('confirm-msg').textContent = 'Esta ação marcará a NF como cancelada. Não pode ser desfeita.';
+    document.getElementById('confirm-ok').onclick = async () => {
+      closeConfirm();
+      try { await DashboardAPI.invoices.cancel(id); toast('NF cancelada.'); loadInvoices(); }
+      catch (e) { toast(e.message, 'error'); }
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  // Tax Rules
+  function debouceTaxRules() { clearTimeout(taxDebounce); taxDebounce = setTimeout(loadTaxRules, 350); }
+
+  async function loadTaxRules() {
+    const tbody = document.getElementById('taxrules-tbody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+    try {
+      const ncm = document.getElementById('tax-search').value;
+      const data = await DashboardAPI.fiscal.taxRules(ncm ? { ncm } : {});
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-percent"></i>Nenhuma regra cadastrada.</div></td></tr>'; return; }
+      tbody.innerHTML = data.map(r => `<tr>
+        <td><b>${r.ncm}</b></td>
+        <td>${r.description || '—'}</td>
+        <td>${r.cfop || '—'}</td>
+        <td>${r.icms_rate != null ? r.icms_rate + '%' : '—'}</td>
+        <td>${r.pis_rate  != null ? r.pis_rate  + '%' : '—'}</td>
+        <td>${r.cofins_rate != null ? r.cofins_rate + '%' : '—'}</td>
+        <td>${r.ipi_rate != null ? r.ipi_rate + '%' : '—'}</td>
+        <td style="white-space:nowrap">
+          <button class="act-btn" onclick="editTaxRule('${r.id}',${JSON.stringify(r).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+          <button class="act-btn danger" onclick="deleteTaxRule('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:20px;text-align:center">${e.message}</td></tr>`; }
+  }
+
+  function openTaxRuleModal(rule) {
+    document.getElementById('tr-id').value = rule ? rule.id : '';
+    document.getElementById('tr-modal-title').textContent = rule ? 'Editar Regra' : 'Nova Regra de Imposto';
+    document.getElementById('tr-ncm').value = rule ? (rule.ncm || '') : '';
+    document.getElementById('tr-cfop').value = rule ? (rule.cfop || '') : '';
+    document.getElementById('tr-desc').value = rule ? (rule.description || '') : '';
+    document.getElementById('tr-icms').value = rule ? (rule.icms_rate || '') : '';
+    document.getElementById('tr-pis').value = rule ? (rule.pis_rate || '') : '';
+    document.getElementById('tr-cofins').value = rule ? (rule.cofins_rate || '') : '';
+    document.getElementById('tr-ipi').value = rule ? (rule.ipi_rate || '') : '';
+    document.getElementById('taxrule-modal').classList.add('open');
+  }
+  function closeTaxRuleModal() { document.getElementById('taxrule-modal').classList.remove('open'); }
+
+  function editTaxRule(id, rule) { openTaxRuleModal(typeof rule === 'string' ? JSON.parse(rule) : rule); }
+
+  async function saveTaxRule() {
+    const btn = document.getElementById('tr-save-btn');
+    btn.disabled = true;
+    try {
+      const id = document.getElementById('tr-id').value;
+      const payload = {
+        ncm:         document.getElementById('tr-ncm').value,
+        cfop:        document.getElementById('tr-cfop').value,
+        description: document.getElementById('tr-desc').value || null,
+        icms_rate:   parseFloat(document.getElementById('tr-icms').value)   || null,
+        pis_rate:    parseFloat(document.getElementById('tr-pis').value)    || null,
+        cofins_rate: parseFloat(document.getElementById('tr-cofins').value) || null,
+        ipi_rate:    parseFloat(document.getElementById('tr-ipi').value)    || null,
+      };
+      if (!payload.ncm) { toast('NCM obrigatório.', 'error'); return; }
+      if (id) { await DashboardAPI.fiscal.updateTaxRule(id, payload); toast('Regra atualizada.'); }
+      else    { await DashboardAPI.fiscal.createTaxRule(payload);      toast('Regra criada.'); }
+      closeTaxRuleModal();
+      loadTaxRules();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  function deleteTaxRule(id) {
+    document.getElementById('confirm-title').textContent = 'Excluir Regra';
+    document.getElementById('confirm-msg').textContent = 'A regra será desativada.';
+    document.getElementById('confirm-ok').onclick = async () => {
+      closeConfirm();
+      try { await DashboardAPI.fiscal.deleteTaxRule(id); toast('Regra removida.'); loadTaxRules(); }
+      catch (e) { toast(e.message, 'error'); }
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  // Config
+  async function loadFiscalConfig() {
+    try {
+      const cfg = await DashboardAPI.fiscal.getConfig();
+      if (!cfg) return;
+      document.getElementById('cfg-cnpj').value     = cfg.cnpj || '';
+      document.getElementById('cfg-razao').value    = cfg.company_name || '';
+      document.getElementById('cfg-fantasia').value = cfg.trade_name || '';
+      document.getElementById('cfg-ie').value       = cfg.state_registration || '';
+      document.getElementById('cfg-crt').value      = cfg.tax_regime || '1';
+      document.getElementById('cfg-cfop').value     = cfg.default_cfop || '';
+      document.getElementById('cfg-env').value      = cfg.environment || 'homologacao';
+      document.getElementById('cfg-uf').value       = cfg.state_code || '';
+      document.getElementById('cfg-serie').value    = cfg.nfe_series || 1;
+      document.getElementById('cfg-next-nfe').value = cfg.next_nfe_number || 1;
+    } catch (_) {}
+  }
+
+  async function saveFiscalConfig() {
+    try {
+      const payload = {
+        cnpj:               document.getElementById('cfg-cnpj').value,
+        company_name:       document.getElementById('cfg-razao').value,
+        trade_name:         document.getElementById('cfg-fantasia').value,
+        state_registration: document.getElementById('cfg-ie').value,
+        tax_regime:         document.getElementById('cfg-crt').value,
+        default_cfop:       document.getElementById('cfg-cfop').value,
+        environment:        document.getElementById('cfg-env').value,
+        state_code:         document.getElementById('cfg-uf').value.toUpperCase(),
+        nfe_series:         parseInt(document.getElementById('cfg-serie').value) || 1,
+        next_nfe_number:    parseInt(document.getElementById('cfg-next-nfe').value) || 1,
+      };
+      await DashboardAPI.fiscal.saveConfig(payload);
+      toast('Configuração fiscal salva.');
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
+  function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
+
+  // Expose
+  window.switchTab = switchTab;
+  window.debounceInvoices = debounceInvoices;
+  window.loadInvoices = loadInvoices;
+  window.openInvoiceModal = openInvoiceModal;
+  window.closeInvoiceModal = closeInvoiceModal;
+  window.editInvoice = editInvoice;
+  window.saveInvoice = saveInvoice;
+  window.cancelInvoice = cancelInvoice;
+  window.invoicesPrev = invoicesPrev;
+  window.invoicesNext = invoicesNext;
+  window.debouceTaxRules = debouceTaxRules;
+  window.openTaxRuleModal = openTaxRuleModal;
+  window.closeTaxRuleModal = closeTaxRuleModal;
+  window.editTaxRule = editTaxRule;
+  window.saveTaxRule = saveTaxRule;
+  window.deleteTaxRule = deleteTaxRule;
+  window.saveFiscalConfig = saveFiscalConfig;
+  window.closeConfirm = closeConfirm;
+
+  await loadCustomers();
+  loadInvoices();
+})();
+</script>
+</body>
+</html>

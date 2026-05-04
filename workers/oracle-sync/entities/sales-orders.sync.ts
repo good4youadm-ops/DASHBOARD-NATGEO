@@ -57,9 +57,18 @@ export async function syncSalesOrders(fullSync = false): Promise<void> {
   }
 
   const mappedOrders = orderRows.map((r) => mapSalesOrder(r, tenantId, sourceName));
-  if (!config.sync.dryRun) {
-    const result = await batchUpsert(sb, 'sales_orders', mappedOrders);
-    logger.info(`[${ENTITY}] Pedidos upsert concluído`, result);
+
+  if (config.sync.dryRun) {
+    logger.info(`[${ENTITY}] DRY RUN — ${mappedOrders.length} pedidos não gravados`);
+    return;
+  }
+
+  const ordersResult = await batchUpsert(sb, 'sales_orders', mappedOrders);
+  logger.info(`[${ENTITY}] Pedidos upsert concluído`, ordersResult);
+
+  if (ordersResult.failed > 0) {
+    logger.warn(`[${ENTITY}] ${ordersResult.failed} pedidos falharam — checkpoint NÃO avançado para evitar perda de dados`);
+    return;
   }
 
   // Sync itens dos pedidos encontrados — bind variables nomeados para evitar SQL injection
@@ -93,9 +102,11 @@ export async function syncSalesOrders(fullSync = false): Promise<void> {
   const itemRows = await queryOracle(sqlItems, itemBinds);
   if (itemRows.length > 0) {
     const mappedItems = itemRows.map((r) => mapSalesOrderItem(r, tenantId, sourceName));
-    if (!config.sync.dryRun) {
-      const result = await batchUpsert(sb, 'sales_order_items', mappedItems);
-      logger.info(`[${ENTITY_ITEMS}] Itens upsert concluído`, result);
+    const itemsResult = await batchUpsert(sb, 'sales_order_items', mappedItems);
+    logger.info(`[${ENTITY_ITEMS}] Itens upsert concluído`, itemsResult);
+    if (itemsResult.failed > 0) {
+      logger.warn(`[${ENTITY_ITEMS}] ${itemsResult.failed} itens falharam — checkpoint NÃO avançado`);
+      return;
     }
   }
 

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NatGeo — Fluxo de Caixa</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
+      --border: #e5e5ea; --border2: #d1d1d6;
+      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
+      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
+      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff; --green: #34c759;
+      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93;
+      --sidebar-w: 230px; --header-h: 56px;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+    }
+    html { font-size: 14px; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+    .sidebar { width: var(--sidebar-w); background: rgba(255,255,255,.9); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; overflow-y: auto; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; }
+    .logo-name { font-size: 1rem; font-weight: 700; } .logo-name span { color: var(--accent3); }
+    .sidebar-section { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 14px 16px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 14px; margin: 1px 8px; border-radius: var(--radius-sm); color: var(--text2); font-size: .875rem; font-weight: 500; text-decoration: none; transition: background .12s; }
+    .nav-item:hover { background: var(--surface2); } .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+    .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
+    .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-mid); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+    .u-name { font-size: .8rem; font-weight: 600; } .u-role { font-size: .72rem; color: var(--muted); }
+    .logout-btn { margin-left: auto; color: var(--muted); font-size: .9rem; cursor: pointer; } .logout-btn:hover { color: var(--red); }
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { height: var(--header-h); background: rgba(255,255,255,.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .page-title { font-size: 1rem; font-weight: 700; } .page-sub { font-size: .8rem; color: var(--muted); margin-top: 1px; } .spacer { flex: 1; }
+    .tab-bar { display: flex; gap: 4px; padding: 20px 24px 0; }
+    .tab-btn { padding: 8px 20px; border: 1.5px solid var(--border); border-radius: 8px 8px 0 0; background: var(--surface2); color: var(--muted); font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .15s; border-bottom: none; position: relative; top: 1px; }
+    .tab-btn.active { background: var(--surface); color: var(--accent); border-bottom-color: var(--surface); }
+    .tab-btn i { margin-right: 6px; }
+    .content { padding: 0 24px 24px; flex: 1; }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+    .card { background: var(--surface); border-radius: 0 var(--radius) var(--radius) var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .card-plain { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .filter-select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; color: var(--text); background: var(--bg); outline: none; cursor: pointer; }
+    .btn-primary { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .btn-primary:hover { background: var(--accent2); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+    .kpi-label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .kpi-val { font-size: 1.55rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .kpi-val.positive { color: var(--accent3); } .kpi-val.negative { color: var(--red); }
+    .kpi-sub { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+    .chart-title { font-size: .875rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th { padding: 10px 12px; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--accent-bg); }
+    tbody td { padding: 10px 12px; color: var(--text2); vertical-align: middle; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .badge-green { background: #d1fae5; color: #065f46; } .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-blue { background: #dbeafe; color: #1e40af; } .badge-amber { background: #fef3c7; color: #92400e; }
+    .act-btn { padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: transparent; color: var(--text2); font-size: .8rem; cursor: pointer; transition: all .12s; }
+    .act-btn:hover { border-color: var(--accent3); color: var(--accent); }
+    .act-btn.del:hover { border-color: var(--red); color: var(--red); }
+    .amount-in  { color: var(--accent3); font-weight: 600; }
+    .amount-out { color: var(--red); font-weight: 600; }
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    .pag-btns { display: flex; gap: 4px; }
+    .pag-btn { padding: 4px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: transparent; color: var(--text2); font-size: .8rem; cursor: pointer; }
+    .pag-btn:hover:not(:disabled) { border-color: var(--accent3); color: var(--accent); }
+    .pag-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 500; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .form-row { display: grid; gap: 14px; margin-bottom: 14px; }
+    .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field label { display: block; font-size: .75rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; color: var(--text); background: var(--bg); outline: none; }
+    .field input:focus, .field select:focus { border-color: var(--accent3); background: #fff; }
+    .btn-cancel { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: transparent; color: var(--text2); font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .btn-save { padding: 8px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 600; align-items: center; justify-content: center; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 360px; width: 100%; box-shadow: var(--shadow-md); }
+    .confirm-box h3 { font-size: .95rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: .85rem; color: var(--muted); margin-bottom: 20px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-danger { padding: 8px 16px; background: var(--red); color: #fff; border: none; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+    .empty-state { padding: 48px; text-align: center; color: var(--muted); }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    .loading-row td { text-align: center; padding: 32px; color: var(--muted); }
+    .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: .85rem; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 8px; min-width: 220px; opacity: 0; transform: translateY(8px); transition: all .22s; }
+    .toast.in { opacity: 1; transform: translateY(0); } .toast.out { opacity: 0; transform: translateY(8px); }
+    @media(max-width:960px) { .kpi-row { grid-template-columns: repeat(2,1fr); } }
+    @media(max-width:800px) {
+      :root { --sidebar-w: 56px; }
+      .nav-item span, .sidebar-section, .u-name, .u-role, .logo-name { display: none; }
+      .sidebar-logo { justify-content: center; padding: 0; }
+      .nav-item { justify-content: center; padding: 8px; }
+      .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+    <div><div class="logo-name">Nat<span>Geo</span></div></div>
+  </div>
+  <div class="sidebar-section">Principal</div>
+  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
+  <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
+  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
+  <div class="sidebar-section">Operações</div>
+  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
+  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
+  <a class="nav-item" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
+  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
+  <a class="nav-item active" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
+  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
+  <div class="sidebar-section">Cadastros</div>
+  <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
+  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
+  <div class="sidebar-section">Relatórios</div>
+  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
+  <div class="sidebar-footer">
+    <div class="avatar">U</div>
+    <div><div class="u-name">Usuário</div><div class="u-role">Operador</div></div>
+    <i class="fa-solid fa-right-from-bracket logout-btn"></i>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Fluxo de Caixa</div>
+      <div class="page-sub">Contas bancárias, transações e projeção de caixa</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('cashflow')"  id="tab-cashflow"><i class="fa-solid fa-chart-area"></i>Fluxo</button>
+    <button class="tab-btn"        onclick="switchTab('txns')"      id="tab-txns"><i class="fa-solid fa-arrows-up-down"></i>Transações</button>
+    <button class="tab-btn"        onclick="switchTab('accounts')"  id="tab-accounts"><i class="fa-solid fa-building-columns"></i>Contas</button>
+  </div>
+
+  <div class="content">
+
+    <!-- FLUXO DE CAIXA -->
+    <div class="tab-panel active" id="panel-cashflow">
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-label">Saldo Total</div><div class="kpi-val positive" id="kpi-balance">—</div><div class="kpi-sub">todas as contas</div></div>
+        <div class="kpi-card"><div class="kpi-label">Entradas (mês)</div><div class="kpi-val positive" id="kpi-in">—</div><div class="kpi-sub">recebimentos</div></div>
+        <div class="kpi-card"><div class="kpi-label">Saídas (mês)</div><div class="kpi-val negative" id="kpi-out">—</div><div class="kpi-sub">pagamentos</div></div>
+        <div class="kpi-card"><div class="kpi-label">Resultado (mês)</div><div class="kpi-val" id="kpi-net">—</div><div class="kpi-sub">entradas − saídas</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Saldo Acumulado — Últimos 60 dias</div>
+        <canvas id="cashflow-chart" height="80"></canvas>
+      </div>
+      <div class="card-plain">
+        <div class="toolbar">
+          <label style="font-size:.8rem;color:var(--muted);font-weight:600">De</label>
+          <input type="date" class="filter-select" id="cf-from" style="width:140px" onchange="loadCashFlow()" />
+          <label style="font-size:.8rem;color:var(--muted);font-weight:600">Até</label>
+          <input type="date" class="filter-select" id="cf-to" style="width:140px" onchange="loadCashFlow()" />
+          <select class="filter-select" id="cf-account" onchange="loadCashFlow()">
+            <option value="">Todas as contas</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Conta</th>
+                <th>Entradas</th>
+                <th>Saídas</th>
+                <th>Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="cf-tbody">
+              <tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSAÇÕES -->
+    <div class="tab-panel" id="panel-txns">
+      <div class="card">
+        <div class="toolbar">
+          <select class="filter-select" id="tx-account" onchange="loadTransactions()">
+            <option value="">Todas as contas</option>
+          </select>
+          <select class="filter-select" id="tx-type" onchange="loadTransactions()">
+            <option value="">Entradas e Saídas</option>
+            <option value="credit">Entradas</option>
+            <option value="debit">Saídas</option>
+          </select>
+          <input type="date" class="filter-select" id="tx-from" style="width:140px" onchange="loadTransactions()" />
+          <input type="date" class="filter-select" id="tx-to" style="width:140px" onchange="loadTransactions()" />
+          <div class="spacer"></div>
+          <button class="btn-primary" onclick="openTxnModal()"><i class="fa-solid fa-plus"></i> Lançar</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Conta</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="txns-tbody">
+              <tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="tx-count">—</span>
+          <div class="pag-btns">
+            <button class="pag-btn" id="tx-prev" onclick="txnsPrev()" disabled><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="pag-btn" id="tx-next" onclick="txnsNext()"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTAS -->
+    <div class="tab-panel" id="panel-accounts">
+      <div class="card">
+        <div class="toolbar">
+          <div class="spacer"></div>
+          <button class="btn-primary" onclick="openAccountModal()"><i class="fa-solid fa-plus"></i> Nova Conta</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Banco</th>
+                <th>Agência / Conta</th>
+                <th>Tipo</th>
+                <th>Saldo Inicial</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="accounts-tbody">
+              <tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL TRANSAÇÃO -->
+<div class="modal-overlay" id="txn-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="txn-modal-title">Novo Lançamento</span>
+      <button class="modal-close" onclick="closeTxnModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="txn-id" />
+      <div class="form-row cols-2">
+        <div class="field"><label>Tipo *</label>
+          <select id="txn-type">
+            <option value="credit">Entrada (crédito)</option>
+            <option value="debit">Saída (débito)</option>
+            <option value="transfer">Transferência</option>
+          </select>
+        </div>
+        <div class="field"><label>Conta *</label>
+          <select id="txn-account-id"><option value="">Selecione...</option></select>
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Data *</label><input type="date" id="txn-date" /></div>
+        <div class="field"><label>Valor (R$) *</label><input type="number" id="txn-amount" step="0.01" min="0.01" /></div>
+      </div>
+      <div class="field" style="margin-bottom:14px"><label>Descrição *</label><input type="text" id="txn-desc" /></div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Categoria</label>
+          <select id="txn-category-id"><option value="">Sem categoria</option></select>
+        </div>
+        <div class="field"><label>Status</label>
+          <select id="txn-status">
+            <option value="pending">Pendente</option>
+            <option value="cleared">Efetivado</option>
+            <option value="reconciled">Conciliado</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Referência / Documento</label><input type="text" id="txn-ref" placeholder="Nº do documento, cheque..." /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeTxnModal()">Cancelar</button>
+      <button class="btn-save" id="txn-save-btn" onclick="saveTxn()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTA -->
+<div class="modal-overlay" id="account-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="acc-modal-title">Nova Conta Bancária</span>
+      <button class="modal-close" onclick="closeAccountModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="acc-id" />
+      <div class="form-row cols-2">
+        <div class="field"><label>Nome da Conta *</label><input type="text" id="acc-name" placeholder="ex: Conta Corrente BB" /></div>
+        <div class="field"><label>Tipo</label>
+          <select id="acc-type">
+            <option value="checking">Corrente</option>
+            <option value="savings">Poupança</option>
+            <option value="cash">Caixa</option>
+            <option value="investment">Investimento</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Banco</label><input type="text" id="acc-bank" placeholder="Nome do banco" /></div>
+        <div class="field"><label>Agência</label><input type="text" id="acc-agency" /></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Número da Conta</label><input type="text" id="acc-number" /></div>
+        <div class="field"><label>Saldo Inicial (R$)</label><input type="number" id="acc-balance" step="0.01" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAccountModal()">Cancelar</button>
+      <button class="btn-save" id="acc-save-btn" onclick="saveAccount()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Confirmar</h3>
+    <p id="confirm-msg">Deseja continuar?</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-danger" id="confirm-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+(async function () {
+  await NatGeoAuth.requireAuth();
+
+  let txnPage = 1;
+  let cashflowChart = null;
+  let bankAccounts = [], finCategories = [];
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    document.getElementById('panel-' + id).classList.add('active');
+    if (id === 'cashflow') loadCashFlow();
+    else if (id === 'txns') loadTransactions();
+    else loadAccounts();
+  }
+
+  function toast(msg, type) {
+    const c = document.getElementById('toasts');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check'}" style="color:${type === 'error' ? 'var(--red)' : 'var(--accent3)'}"></i>${msg}`;
+    c.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('in'));
+    setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3500);
+  }
+
+  // Set default date range (last 60 days)
+  const today = new Date();
+  const d60   = new Date(today); d60.setDate(d60.getDate() - 60);
+  const toISO = d => d.toISOString().slice(0,10);
+  document.getElementById('cf-from').value = toISO(d60);
+  document.getElementById('cf-to').value   = toISO(today);
+
+  const txFrom = new Date(today); txFrom.setDate(txFrom.getDate() - 30);
+  document.getElementById('tx-from').value = toISO(txFrom);
+  document.getElementById('tx-to').value   = toISO(today);
+
+  // Load master data
+  async function loadMasterData() {
+    try {
+      [bankAccounts, finCategories] = await Promise.all([
+        DashboardAPI.bankAccounts.list().catch(() => []),
+        DashboardAPI.financialCategories.list().catch(() => []),
+      ]);
+      // Populate account selectors
+      ['cf-account', 'tx-account', 'txn-account-id'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = id === 'txn-account-id' ? '<option value="">Selecione...</option>' : '<option value="">Todas as contas</option>';
+        bankAccounts.forEach(a => sel.add(new Option(a.name, a.id)));
+        if (prev) sel.value = prev;
+      });
+      const catSel = document.getElementById('txn-category-id');
+      catSel.innerHTML = '<option value="">Sem categoria</option>';
+      finCategories.forEach(c => catSel.add(new Option(c.name, c.id)));
+    } catch (_) {}
+  }
+
+  // ── Cash Flow ────────────────────────────────────────────────────────────────
+  async function loadCashFlow() {
+    const tbody = document.getElementById('cf-tbody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+    try {
+      const params = {
+        date_from:  document.getElementById('cf-from').value,
+        date_to:    document.getElementById('cf-to').value,
+        account_id: document.getElementById('cf-account').value,
+      };
+      const rows = await DashboardAPI.transactions.cashFlow(params);
+      const data = Array.isArray(rows) ? rows : (rows.data || []);
+
+      // KPIs
+      let totalIn = 0, totalOut = 0;
+      data.forEach(r => {
+        if (r.type === 'credit') totalIn  += Number(r.amount || 0);
+        else                     totalOut += Number(r.amount || 0);
+      });
+      const lastBalance = data.length ? Number(data[data.length - 1].running_balance || 0) : 0;
+      document.getElementById('kpi-balance').textContent = DashboardAPI.fmtBRL(lastBalance);
+      document.getElementById('kpi-in').textContent      = DashboardAPI.fmtBRL(totalIn);
+      document.getElementById('kpi-out').textContent     = DashboardAPI.fmtBRL(totalOut);
+      const net = totalIn - totalOut;
+      const netEl = document.getElementById('kpi-net');
+      netEl.textContent = DashboardAPI.fmtBRL(net);
+      netEl.className = 'kpi-val ' + (net >= 0 ? 'positive' : 'negative');
+
+      // Chart
+      const labels   = data.map(r => DashboardAPI.fmtDate(r.transaction_date));
+      const balances = data.map(r => Number(r.running_balance || 0));
+      if (cashflowChart) cashflowChart.destroy();
+      const ctx = document.getElementById('cashflow-chart').getContext('2d');
+      cashflowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Saldo Acumulado',
+            data: balances,
+            borderColor: '#40916c',
+            backgroundColor: 'rgba(64,145,108,.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 10, font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { callback: v => DashboardAPI.fmtBRL(v), font: { size: 11 } } },
+          },
+        },
+      });
+
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-chart-area"></i>Nenhum lançamento no período.</div></td></tr>'; return; }
+      tbody.innerHTML = data.map(r => {
+        const isIn = r.type === 'credit';
+        return `<tr>
+          <td>${DashboardAPI.fmtDate(r.transaction_date)}</td>
+          <td>${r.description || '—'}</td>
+          <td>${r.financial_categories ? r.financial_categories.name : '—'}</td>
+          <td>${r.bank_accounts ? r.bank_accounts.name : '—'}</td>
+          <td class="amount-in">${isIn ? DashboardAPI.fmtBRL(r.amount) : ''}</td>
+          <td class="amount-out">${!isIn ? DashboardAPI.fmtBRL(r.amount) : ''}</td>
+          <td><b>${DashboardAPI.fmtBRL(r.running_balance)}</b></td>
+        </tr>`;
+      }).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px;text-align:center">${e.message}</td></tr>`; }
+  }
+
+  // ── Transactions ─────────────────────────────────────────────────────────────
+  async function loadTransactions() {
+    const tbody = document.getElementById('txns-tbody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+    try {
+      const data = await DashboardAPI.transactions.list({
+        page:       txnPage,
+        limit:      25,
+        account_id: document.getElementById('tx-account').value,
+        type:       document.getElementById('tx-type').value,
+        date_from:  document.getElementById('tx-from').value,
+        date_to:    document.getElementById('tx-to').value,
+      });
+      const rows = Array.isArray(data) ? data : (data.data || []);
+      document.getElementById('tx-count').textContent = rows.length + ' lançamento(s)';
+      document.getElementById('tx-prev').disabled = txnPage <= 1;
+      document.getElementById('tx-next').disabled = rows.length < 25;
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-arrows-up-down"></i>Nenhum lançamento encontrado.</div></td></tr>'; return; }
+      tbody.innerHTML = rows.map(r => {
+        const isIn = r.type === 'credit';
+        const typeBadge = isIn
+          ? '<span class="badge badge-green">Entrada</span>'
+          : r.type === 'transfer'
+            ? '<span class="badge badge-blue">Transferência</span>'
+            : '<span class="badge badge-red">Saída</span>';
+        return `<tr>
+          <td>${DashboardAPI.fmtDate(r.transaction_date)}</td>
+          <td>${r.description || '—'}</td>
+          <td>${r.financial_categories ? r.financial_categories.name : '—'}</td>
+          <td>${r.bank_accounts ? r.bank_accounts.name : '—'}</td>
+          <td>${typeBadge}</td>
+          <td class="${isIn ? 'amount-in' : 'amount-out'}">${DashboardAPI.fmtBRL(r.amount)}</td>
+          <td style="white-space:nowrap">
+            <button class="act-btn" onclick="editTxn('${r.id}',${JSON.stringify(r).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+            <button class="act-btn del" onclick="deleteTxn('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px;text-align:center">${e.message}</td></tr>`; }
+  }
+
+  function txnsPrev() { if (txnPage > 1) { txnPage--; loadTransactions(); } }
+  function txnsNext() { txnPage++; loadTransactions(); }
+
+  function openTxnModal(t) {
+    document.getElementById('txn-id').value           = t ? t.id : '';
+    document.getElementById('txn-modal-title').textContent = t ? 'Editar Lançamento' : 'Novo Lançamento';
+    document.getElementById('txn-type').value         = t ? (t.type || 'credit') : 'credit';
+    document.getElementById('txn-account-id').value   = t ? (t.bank_account_id || '') : '';
+    document.getElementById('txn-date').value         = t ? (t.transaction_date || toISO(today)) : toISO(today);
+    document.getElementById('txn-amount').value       = t ? (t.amount || '') : '';
+    document.getElementById('txn-desc').value         = t ? (t.description || '') : '';
+    document.getElementById('txn-category-id').value  = t ? (t.financial_category_id || '') : '';
+    document.getElementById('txn-status').value       = t ? (t.status || 'pending') : 'pending';
+    document.getElementById('txn-ref').value          = t ? (t.reference || '') : '';
+    document.getElementById('txn-modal').classList.add('open');
+  }
+  function closeTxnModal() { document.getElementById('txn-modal').classList.remove('open'); }
+  function editTxn(id, t) { openTxnModal(t); }
+
+  async function saveTxn() {
+    const btn = document.getElementById('txn-save-btn');
+    btn.disabled = true;
+    try {
+      const id = document.getElementById('txn-id').value;
+      const payload = {
+        type:                   document.getElementById('txn-type').value,
+        bank_account_id:        document.getElementById('txn-account-id').value || null,
+        transaction_date:       document.getElementById('txn-date').value,
+        amount:                 parseFloat(document.getElementById('txn-amount').value),
+        description:            document.getElementById('txn-desc').value,
+        financial_category_id:  document.getElementById('txn-category-id').value || null,
+        status:                 document.getElementById('txn-status').value,
+        reference:              document.getElementById('txn-ref').value || null,
+      };
+      if (!payload.bank_account_id) { toast('Selecione a conta.', 'error'); return; }
+      if (!payload.amount || payload.amount <= 0) { toast('Informe o valor.', 'error'); return; }
+      if (!payload.description) { toast('Informe a descrição.', 'error'); return; }
+      if (id) { await DashboardAPI.transactions.update(id, payload); toast('Lançamento atualizado.'); }
+      else    { await DashboardAPI.transactions.create(payload);      toast('Lançamento registrado.'); }
+      closeTxnModal();
+      loadTransactions();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  function deleteTxn(id) {
+    document.getElementById('confirm-title').textContent = 'Excluir Lançamento';
+    document.getElementById('confirm-msg').textContent = 'Esta ação não pode ser desfeita.';
+    document.getElementById('confirm-ok').onclick = async () => {
+      closeConfirm();
+      try { await DashboardAPI.transactions.delete(id); toast('Excluído.'); loadTransactions(); }
+      catch (e) { toast(e.message, 'error'); }
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  // ── Bank Accounts ────────────────────────────────────────────────────────────
+  async function loadAccounts() {
+    const tbody = document.getElementById('accounts-tbody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+    try {
+      const data = await DashboardAPI.bankAccounts.list();
+      const rows = Array.isArray(data) ? data : (data.data || []);
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-building-columns"></i>Nenhuma conta cadastrada.</div></td></tr>'; return; }
+      const typeMap = { checking: 'Corrente', savings: 'Poupança', cash: 'Caixa', investment: 'Investimento' };
+      tbody.innerHTML = rows.map(a => `<tr>
+        <td><b>${a.name}</b></td>
+        <td>${a.bank_name || '—'}</td>
+        <td>${a.agency ? a.agency + ' / ' : ''}${a.account_number || '—'}</td>
+        <td>${typeMap[a.account_type] || a.account_type || '—'}</td>
+        <td>${DashboardAPI.fmtBRL(a.initial_balance)}</td>
+        <td>${a.is_active ? '<span class="badge badge-green">Ativa</span>' : '<span class="badge badge-amber">Inativa</span>'}</td>
+        <td style="white-space:nowrap">
+          <button class="act-btn" onclick="editAccount('${a.id}',${JSON.stringify(a).replace(/"/g,'&quot;')})"><i class="fa-solid fa-pen"></i></button>
+          <button class="act-btn del" onclick="deleteAccount('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px;text-align:center">${e.message}</td></tr>`; }
+  }
+
+  function openAccountModal(a) {
+    document.getElementById('acc-id').value          = a ? a.id : '';
+    document.getElementById('acc-modal-title').textContent = a ? 'Editar Conta' : 'Nova Conta Bancária';
+    document.getElementById('acc-name').value        = a ? (a.name || '') : '';
+    document.getElementById('acc-type').value        = a ? (a.account_type || 'checking') : 'checking';
+    document.getElementById('acc-bank').value        = a ? (a.bank_name || '') : '';
+    document.getElementById('acc-agency').value      = a ? (a.agency || '') : '';
+    document.getElementById('acc-number').value      = a ? (a.account_number || '') : '';
+    document.getElementById('acc-balance').value     = a ? (a.initial_balance || '') : '';
+    document.getElementById('account-modal').classList.add('open');
+  }
+  function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); }
+  function editAccount(id, a) { openAccountModal(a); }
+
+  async function saveAccount() {
+    const btn = document.getElementById('acc-save-btn');
+    btn.disabled = true;
+    try {
+      const id = document.getElementById('acc-id').value;
+      const payload = {
+        name:            document.getElementById('acc-name').value,
+        account_type:    document.getElementById('acc-type').value,
+        bank_name:       document.getElementById('acc-bank').value || null,
+        agency:          document.getElementById('acc-agency').value || null,
+        account_number:  document.getElementById('acc-number').value || null,
+        initial_balance: parseFloat(document.getElementById('acc-balance').value) || 0,
+      };
+      if (!payload.name) { toast('Informe o nome da conta.', 'error'); return; }
+      if (id) { await DashboardAPI.bankAccounts.update(id, payload); toast('Conta atualizada.'); }
+      else    { await DashboardAPI.bankAccounts.create(payload);      toast('Conta criada.'); }
+      closeAccountModal();
+      await loadMasterData();
+      loadAccounts();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  function deleteAccount(id) {
+    document.getElementById('confirm-title').textContent = 'Excluir Conta';
+    document.getElementById('confirm-msg').textContent = 'Esta ação não pode ser desfeita.';
+    document.getElementById('confirm-ok').onclick = async () => {
+      closeConfirm();
+      try { await DashboardAPI.bankAccounts.delete(id); toast('Conta removida.'); loadAccounts(); }
+      catch (e) { toast(e.message, 'error'); }
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
+
+  // Expose
+  window.switchTab = switchTab;
+  window.loadCashFlow = loadCashFlow;
+  window.loadTransactions = loadTransactions;
+  window.txnsPrev = txnsPrev;
+  window.txnsNext = txnsNext;
+  window.openTxnModal = openTxnModal;
+  window.closeTxnModal = closeTxnModal;
+  window.editTxn = editTxn;
+  window.saveTxn = saveTxn;
+  window.deleteTxn = deleteTxn;
+  window.loadAccounts = loadAccounts;
+  window.openAccountModal = openAccountModal;
+  window.closeAccountModal = closeAccountModal;
+  window.editAccount = editAccount;
+  window.saveAccount = saveAccount;
+  window.deleteAccount = deleteAccount;
+  window.closeConfirm = closeConfirm;
+
+  await loadMasterData();
+  loadCashFlow();
+})();
+</script>
+</body>
+</html>
