@@ -92,16 +92,16 @@
       var name  = (user.user_metadata && user.user_metadata.full_name) || user.email || '';
       var email = user.email || '';
       var initials = name.split(' ').slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase() || 'U';
-      var avatarEl = document.querySelector('.sidebar .avatar');
-      var nameEl   = document.querySelector('.sidebar .u-name');
-      var roleEl   = document.querySelector('.sidebar .u-role');
+      var avatarEl = document.getElementById('userInitials') || document.querySelector('.sidebar .avatar');
+      var nameEl   = document.getElementById('userName')     || document.querySelector('.sidebar .u-name')    || document.querySelector('.sidebar .user-name');
+      var roleEl   = document.querySelector('.sidebar .u-role') || document.querySelector('.sidebar .user-role');
       if (avatarEl) avatarEl.textContent = initials;
-      if (nameEl)   nameEl.textContent  = name || email;
-      if (roleEl)   roleEl.textContent  = (user.user_metadata && user.user_metadata.role) || 'Usuário';
+      if (nameEl)   nameEl.textContent   = name || email;
+      if (roleEl)   roleEl.textContent   = (user.user_metadata && user.user_metadata.role) || 'Usuário';
     }
 
-    // Conecta botão de logout da sidebar
-    var logoutBtn = document.querySelector('.logout-btn');
+    // Conecta botão de logout da sidebar (suporta <button id="logoutBtn"> e <i class="logout-btn">)
+    var logoutBtn = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
     if (logoutBtn) {
       logoutBtn.style.cursor = 'pointer';
       logoutBtn.addEventListener('click', signOut);

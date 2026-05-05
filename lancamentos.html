@@ -560,14 +560,23 @@
   });
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    const pane = document.getElementById('tab-' + tabId);
+    if (btn) btn.classList.add('active');
+    if (pane) pane.classList.add('active');
+  }
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    });
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
+
+  // Lê parâmetro ?tab=ar|ap da URL (ex: vindo do financeiro)
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  if (urlTab === 'ap') switchTab('ap');
+  else if (urlTab === 'ar') switchTab('ar');
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const fmt = v => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
