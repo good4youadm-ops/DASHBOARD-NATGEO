@@ -61,6 +61,38 @@
     } catch (e) { return null; }
   }
 
+  // Popula nome/iniciais/logout na sidebar — aguarda sidebar estar pronta.
+  function populateSidebarUser(session) {
+    var user = session && session.user;
+    if (!user) return;
+    var name     = (user.user_metadata && user.user_metadata.full_name) || user.email || '';
+    var email    = user.email || '';
+    var initials = name.split(' ').slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase() || 'U';
+
+    function fill() {
+      var avatarEl  = document.getElementById('userInitials') || document.querySelector('.sidebar .avatar');
+      var nameEl    = document.getElementById('userName')     || document.querySelector('.sidebar .u-name') || document.querySelector('.sidebar .user-name');
+      var roleEl    = document.querySelector('.sidebar .u-role') || document.querySelector('.sidebar .user-role');
+      var logoutBtn = document.getElementById('logoutBtn')    || document.querySelector('.logout-btn');
+      if (avatarEl)  avatarEl.textContent  = initials;
+      if (nameEl)    nameEl.textContent    = name || email;
+      if (roleEl)    roleEl.textContent    = (user.user_metadata && user.user_metadata.role) || 'Usuário';
+      if (logoutBtn) { logoutBtn.style.cursor = 'pointer'; logoutBtn.addEventListener('click', signOut); }
+    }
+
+    // sidebar.js dispara 'sidebarReady' depois de injetar o HTML.
+    // Se já foi disparado (ou DOM já está pronto e o aside tem conteúdo), preenche direto.
+    if (document.getElementById('userInitials')) {
+      fill();
+    } else {
+      document.addEventListener('sidebarReady', fill, { once: true });
+      // Fallback: se sidebarReady nunca chegar, tenta no DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function () {
+        if (document.getElementById('userInitials')) fill();
+      }, { once: true });
+    }
+  }
+
   // Chamado em cada dashboard para garantir autenticação.
   // Redireciona para login.html se não houver sessão válida.
   async function requireAuth() {
@@ -85,28 +117,7 @@
     }
 
     global.__authToken = session.access_token;
-
-    // Exibe nome e iniciais do usuário na sidebar
-    var user = session.user;
-    if (user) {
-      var name  = (user.user_metadata && user.user_metadata.full_name) || user.email || '';
-      var email = user.email || '';
-      var initials = name.split(' ').slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase() || 'U';
-      var avatarEl = document.getElementById('userInitials') || document.querySelector('.sidebar .avatar');
-      var nameEl   = document.getElementById('userName')     || document.querySelector('.sidebar .u-name')    || document.querySelector('.sidebar .user-name');
-      var roleEl   = document.querySelector('.sidebar .u-role') || document.querySelector('.sidebar .user-role');
-      if (avatarEl) avatarEl.textContent = initials;
-      if (nameEl)   nameEl.textContent   = name || email;
-      if (roleEl)   roleEl.textContent   = (user.user_metadata && user.user_metadata.role) || 'Usuário';
-    }
-
-    // Conecta botão de logout da sidebar (suporta <button id="logoutBtn"> e <i class="logout-btn">)
-    var logoutBtn = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
-    if (logoutBtn) {
-      logoutBtn.style.cursor = 'pointer';
-      logoutBtn.addEventListener('click', signOut);
-    }
-
+    populateSidebarUser(session);
     return session;
   }
 
