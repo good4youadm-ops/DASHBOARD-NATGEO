@@ -6,6 +6,7 @@
   'use strict';
 
   var SESSION_KEY = 'natgeo_auth';
+  var MASTER_EMAIL = 'ferrerjoao2206@gmail.com';
 
   function getSession() {
     try {
@@ -127,5 +128,11 @@
     window.location.replace('login.html');
   }
 
-  global.NatGeoAuth = { getSession, storeSession, requireAuth, signOut };
+  // Verifica se o usuário logado é o master (acesso total)
+  function isMaster() {
+    var session = getSession();
+    return !!(session && session.user && session.user.email === MASTER_EMAIL);
+  }
+
+  global.NatGeoAuth = { getSession, storeSession, requireAuth, signOut, isMaster, MASTER_EMAIL };
 }(window));

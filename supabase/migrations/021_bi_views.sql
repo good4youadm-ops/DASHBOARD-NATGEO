@@ -34,15 +34,15 @@ SELECT
   p.category_id,
   DATE_TRUNC('month', so.order_date) AS month,
   SUM(soi.quantity)                AS total_qty_sold,
-  SUM(soi.total_price)             AS total_revenue,
+  SUM(soi.total_amount)             AS total_revenue,
   COUNT(DISTINCT so.id)            AS order_count,
   COUNT(DISTINCT so.customer_id)   AS customer_count,
   RANK() OVER (
     PARTITION BY soi.tenant_id, DATE_TRUNC('month', so.order_date)
-    ORDER BY SUM(soi.total_price) DESC
+    ORDER BY SUM(soi.total_amount) DESC
   )                                AS revenue_rank
 FROM sales_order_items soi
-JOIN sales_orders so ON so.id = soi.order_id
+JOIN sales_orders so ON so.id = soi.sales_order_id
 JOIN products p       ON p.id  = soi.product_id
 WHERE so.status NOT IN ('cancelled','draft')
 GROUP BY soi.tenant_id, p.id, p.name, p.sku, p.category_id,
@@ -99,9 +99,9 @@ SELECT
   ar.customer_id,
   c.name                                           AS customer_name,
   ar.document_number,
-  ar.amount,
-  ar.amount_paid,
-  ar.amount - ar.amount_paid                       AS balance,
+  ar.face_value,
+  ar.paid_amount,
+  ar.balance,
   ar.due_date,
   CURRENT_DATE - ar.due_date                       AS days_overdue,
   CASE

@@ -108,11 +108,11 @@ CREATE OR REPLACE VIEW vw_financial_summary AS
 SELECT
   ar.tenant_id,
   DATE_TRUNC('month', ar.due_date)                             AS month,
-  SUM(ar.amount)                                               AS total_receivable,
-  SUM(ar.amount_paid)                                          AS total_received,
-  SUM(ar.amount - ar.amount_paid)                              AS balance_receivable,
+  SUM(ar.face_value)                                           AS total_receivable,
+  SUM(ar.paid_amount)                                          AS total_received,
+  SUM(ar.balance)                                              AS balance_receivable,
   COUNT(*) FILTER (WHERE ar.status = 'overdue')                AS overdue_count,
-  SUM(ar.amount) FILTER (WHERE ar.status = 'overdue')          AS overdue_amount
+  SUM(ar.face_value) FILTER (WHERE ar.status = 'overdue')      AS overdue_amount
 FROM accounts_receivable ar
 GROUP BY ar.tenant_id, DATE_TRUNC('month', ar.due_date);
 
