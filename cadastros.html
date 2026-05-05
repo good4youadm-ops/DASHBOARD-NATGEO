@@ -163,32 +163,6 @@
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
-    <div><div class="logo-name">Nat<span>Geo</span></div></div>
-  </div>
-  <div class="sidebar-section">Principal</div>
-  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
-  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
-  <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
-  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
-  <div class="sidebar-section">Operações</div>
-  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
-  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
-  <a class="nav-item" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
-  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
-  <a class="nav-item" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
-  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
-  <div class="sidebar-section">Cadastros</div>
-  <a class="nav-item active" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
-  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
-  <div class="sidebar-section">Relatórios</div>
-  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
-  <div class="sidebar-footer">
-    <div class="avatar">U</div>
-    <div><div class="u-name">Usuário</div><div class="u-role">Gestor</div></div>
-    <i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i>
-  </div>
 </aside>
 
 <!-- MAIN -->
@@ -197,6 +171,9 @@
     <div>
       <div class="page-title">Cadastros</div>
       <div class="page-sub">Clientes, Produtos e Fornecedores</div>
+    </div>
+    <div style="margin-left:auto">
+      <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
     </div>
   </header>
 
@@ -925,5 +902,7 @@ function confirmDeactivate(type, id, name) {
   await Promise.all([fetchCustomers(), fetchProducts(), fetchSuppliers()]);
 }());
 </script>
+<script src="js/import.js"></script>
+<script src="js/sidebar.js"></script>
 </body>
 </html>

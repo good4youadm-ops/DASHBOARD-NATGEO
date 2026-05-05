@@ -277,41 +277,13 @@
     }
   </style>
   <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/sidebar.js"></script>
+<script src="js/auth.js"></script>
 </head>
 <body>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
-    <div><div class="logo-name">Nat<span>Geo</span></div></div>
-  </div>
-
-  <div class="sidebar-section">Principal</div>
-  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
-  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard Comercial</span></a>
-  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
-  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
-  <div class="sidebar-section">Financeiro</div>
-  <a class="nav-item active" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
-  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
-  <a class="nav-item" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
-  <a class="nav-item" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
-  <div class="sidebar-section">Operações</div>
-  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
-  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
-  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
-  <div class="sidebar-section">Cadastros</div>
-  <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
-  <div class="sidebar-section">Relatórios</div>
-  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
-
-  <div class="sidebar-footer">
-    <div class="avatar">CF</div>
-    <div><div class="u-name">Controller</div><div class="u-role">PERFIL_CFO</div></div>
-    <div class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></div>
-  </div>
 </aside>
 
 <!-- MAIN -->
@@ -319,6 +291,7 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
+    <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
     <div class="page-title"><i class="fa-solid fa-chart-column" style="color:var(--accent);margin-right:7px;font-size:.85rem"></i>Financeiro</div>
     <div class="spacer"></div>
     <div class="upd-info"><div class="upd-dot"></div>Atualizado hoje às 06:00 — ETL concluído</div>
@@ -348,32 +321,32 @@
   <div class="kpi-header" id="kpiHeader">
     <div class="kh-card ok" onclick="goBloco('caixa')">
       <div class="kh-lbl">Saldo Caixa Hoje <div class="semaphore green"></div></div>
-      <div class="kh-val">R$ 342K</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> R$ +28K / +8,9%</div>
     </div>
     <div class="kh-card ok" onclick="window.location='lancamentos.html?tab=ar'" title="Ver contas a receber">
       <div class="kh-lbl">A Receber D+30 <div class="semaphore green"></div></div>
-      <div class="kh-val">R$ 1,24M</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 83K / +7,2%</div>
     </div>
     <div class="kh-card warn" onclick="window.location='lancamentos.html?tab=ap'" title="Ver contas a pagar">
       <div class="kh-lbl">A Pagar D+30 <div class="semaphore amber"></div></div>
-      <div class="kh-val">R$ 890K</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 64K / +7,8%</div>
     </div>
     <div class="kh-card ok" onclick="goBloco('receitas')">
       <div class="kh-lbl">Faturamento Mês <div class="semaphore green"></div></div>
-      <div class="kh-val">R$ 2,81M</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +R$ 128K / +4,8% vs meta</div>
     </div>
     <div class="kh-card ok" onclick="goBloco('rentabilidade')">
       <div class="kh-lbl">Margem Bruta % <div class="semaphore green"></div></div>
-      <div class="kh-val">27,4%</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +0,8pp vs anterior</div>
     </div>
     <div class="kh-card warn" onclick="goBloco('recebiveis')">
       <div class="kh-lbl">Inadimplência % <div class="semaphore amber"></div></div>
-      <div class="kh-val">4,2%</div>
+      <div class="kh-val">—</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.55rem"></i> +0,4pp vs anterior</div>
     </div>
   </div>
@@ -460,7 +433,7 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Fat. Bruto</span><div class="kpi-icon green"><i class="fa-solid fa-money-bill-wave"></i></div></div>
-        <div class="kpi-value">R$ 2,81M</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +R$ 128K</span><span>+4,8% vs meta</span></div>
       </div>
       <div class="kpi-card">
@@ -515,7 +488,7 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Margem Bruta %</span><div class="kpi-icon green"><i class="fa-solid fa-percent"></i></div></div>
-        <div class="kpi-value">27,4%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +0,8pp</span><span>piso: 24% · meta: 29%</span></div>
       </div>
       <div class="kpi-card">
@@ -565,7 +538,7 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Saldo Consolidado</span><div class="kpi-icon green"><i class="fa-solid fa-building-columns"></i></div></div>
-        <div class="kpi-value">R$ 342K</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +R$ 28K</span><span>3 contas · hoje</span></div>
       </div>
       <div class="kpi-card">
@@ -632,16 +605,16 @@
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Vencido</span><div class="kpi-icon red"><i class="fa-solid fa-circle-exclamation"></i></div></div>
         <div class="kpi-value">R$ 78K</div>
-        <div class="kpi-footer"><span class="delta down">▲ +R$ 12K</span><span>4,2% do total AR</span></div>
+        <div class="kpi-footer"><span class="delta down">▲ +R$ 12K</span><span>— do total AR</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">A Vencer D+30</span><div class="kpi-icon blue"><i class="fa-solid fa-calendar-days"></i></div></div>
-        <div class="kpi-value">R$ 1,24M</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +R$ 83K</span><span>66,7% do total</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Inadimplência %</span><div class="kpi-icon amber"><i class="fa-solid fa-triangle-exclamation"></i></div></div>
-        <div class="kpi-value">4,2%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▲ +0,4pp</span><span>threshold: 5% · atenção</span></div>
       </div>
     </div>
@@ -700,7 +673,7 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">A Pagar D+30</span><div class="kpi-icon green"><i class="fa-solid fa-calendar-check"></i></div></div>
-        <div class="kpi-value">R$ 890K</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +R$ 64K</span><span>79,5% do total AP</span></div>
       </div>
     </div>
@@ -829,9 +802,8 @@ const defaultOptions = (extraScales={}) => ({
 /* ====================================================
    MOCK DATA
 ==================================================== */
-const meses = ['Mai','Jun','Jul','Ago','Set','Out','Nov','Dez','Jan','Fev','Mar','Abr'];
-const fatBruto12 = [2340,2180,2520,2640,2490,2720,2850,2610,2400,2560,2680,2810].map(v=>v*1000);
-const margem12   = [25.1,24.8,26.2,27.0,25.8,26.8,27.4,26.1,24.9,26.4,26.6,27.4];
+const meses = [];
+const fatBruto12 = [];
 const meta12     = [2200,2200,2400,2600,2500,2600,2700,2600,2350,2500,2600,2680].map(v=>v*1000);
 
 /* ====================================================
@@ -854,23 +826,8 @@ new Chart(document.getElementById('chartFatMargem'), {
 /* ====================================================
    WATERFALL VISÃO GERAL
 ==================================================== */
-const wfVG = [
-  { lbl:'Receita Bruta',    val: 2810000, tipo:'base', pct:100 },
-  { lbl:'(−) Impostos/Dev', val: -620000, tipo:'neg',  pct:22 },
-  { lbl:'Receita Líquida',  val: 2190000, tipo:'base', pct:77.9 },
-  { lbl:'(−) CMV',          val:-1590000, tipo:'neg',  pct:56.6 },
-  { lbl:'Margem Bruta',     val:  600000, tipo:'pos',  pct:21.4 },
-  { lbl:'(−) Desp. Op.',    val: -316000, tipo:'neg',  pct:11.2 },
-  { lbl:'EBITDA*',          val:  284000, tipo:'pos',  pct:10.1 },
-];
-document.getElementById('waterfallVG').innerHTML = wfVG.map(r => {
-  const w = Math.min(Math.abs(r.pct)*0.9, 90);
-  return `<div class="wf-row">
-    <div class="wf-lbl">${r.lbl}</div>
-    <div class="wf-bar-wrap"><div class="wf-bar ${r.tipo}" style="width:${w}%"></div></div>
-    <div class="wf-val ${r.tipo==='neg'?'neg':r.val>0?'pos':'neu'}">${r.val<0?'('+fmtK(Math.abs(r.val))+')':fmtK(r.val)}</div>
-  </div>`;
-}).join('') + '<div class="wf-sep"></div>';
+const wfVG = [];
+document.getElementById('waterfallVG').innerHTML = '<div style="color:#aaa;font-size:.8rem;padding:16px">Sem dados — aguardando importação.</div>';
 
 /* ====================================================
    CHART COMPARATIVO
@@ -1246,5 +1203,6 @@ document.querySelector('.top-btn:not(.accent)').addEventListener('click', ()=>{
 });
 
 </script>
+<script src="js/import.js"></script>
 </body>
 </html>

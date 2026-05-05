@@ -303,41 +303,13 @@
     @media(max-width:880px)  { .g2 { grid-template-columns: 1fr; } :root { --sidebar-w: 56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display: none; } .sidebar-logo { justify-content: center; padding: 0; } .nav-item { justify-content: center; padding: 8px; } .sidebar-footer { justify-content: center; } }
   </style>
   <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/sidebar.js"></script>
+<script src="js/auth.js"></script>
 </head>
 <body>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
-    <div class="logo-name">Nat<span>Geo</span></div>
-  </div>
-  <div class="sidebar-section">Principal</div>
-  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
-  <a class="nav-item active" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Comercial</span></a>
-  <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
-  <a class="nav-item" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
-  <div class="sidebar-section">Operações</div>
-  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
-  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
-  <a class="nav-item" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
-  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
-  <a class="nav-item" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
-  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
-  <div class="sidebar-section">Cadastros</div>
-  <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
-  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
-  <div class="sidebar-section">Relatórios</div>
-  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
-  <div class="sidebar-footer">
-    <div class="avatar" id="userInitials">--</div>
-    <div class="user-info">
-      <div class="user-name" id="userName">Carregando…</div>
-      <div class="user-role">NatGeo</div>
-    </div>
-    <button class="logout-btn" id="logoutBtn" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
-  </div>
 </aside>
 
 <!-- MAIN -->
@@ -368,6 +340,7 @@
     <div class="yoy-badge"><i class="fa-regular fa-calendar-check"></i> <span id="yoyLabel">vs. Abril 2024</span></div>
     <div class="upd-info no-print"><div class="upd-dot"></div> Atualizado hoje 07:30</div>
     <button class="exp-btn no-print" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Exportar</button>
+    <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
   </header>
 
   <!-- FILTER SUBBAR -->
@@ -1120,6 +1093,23 @@ const DATA = {
     metaEquipe: { c: 90.4, p: 85.2 },
   },
 };
+
+
+/* ── dados zerados — aguardando API real ── */
+(function () {
+  if (typeof DATA !== 'undefined') {
+    Object.keys(DATA).forEach(function (k) {
+      var d = DATA[k];
+      var yoy = d.yoy;
+      Object.keys(d).forEach(function (f) { d[f] = null; });
+      d.yoy = yoy; d.canais = []; d.spark = []; d.vendedores = [];
+      d.chart = { labels: [], cur: [], prev: [] };
+      d.ot = { prazo:{c:null,p:null}, prox:{c:null,p:null}, atr:{c:null,p:null}, vol:{prazo:0,prox:0,atr:0} };
+    });
+  }
+  if (typeof CLIENTS !== 'undefined') CLIENTS.length = 0;
+  if (typeof CAMPAIGNS !== 'undefined') CAMPAIGNS.length = 0;
+})();
 
 /* ─── CAMPAIGN DATA (static) ─── */
 const CAMPAIGNS = [
@@ -1914,5 +1904,6 @@ function exportCSV() {
   DashboardAPI.afterLoad();
 })();
 </script>
+<script src="js/import.js"></script>
 </body>
 </html>

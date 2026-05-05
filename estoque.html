@@ -253,38 +253,13 @@
     @media(max-width:800px)  { :root { --sidebar-w:56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display:none; } .sidebar-logo { justify-content:center; padding:0; } .nav-item { justify-content:center; padding:8px; } }
   </style>
   <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/sidebar.js"></script>
+<script src="js/auth.js"></script>
 </head>
 <body>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
-    <div><div class="logo-name">Nat<span>Geo</span></div></div>
-  </div>
-  <div class="sidebar-section">Principal</div>
-  <a class="nav-item" href="dashboard-distribuidora.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
-  <a class="nav-item" href="dashboard-comercial.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard Comercial</span></a>
-  <a class="nav-item" href="financeiro.html"><i class="fa-solid fa-chart-column"></i><span>Financeiro</span></a>
-  <a class="nav-item active" href="estoque.html"><i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span></a>
-  <a class="nav-item" href="pedidos.html"><i class="fa-solid fa-cart-shopping"></i><span>Pedidos</span></a>
-  <div class="sidebar-section">Operações</div>
-  <a class="nav-item" href="orcamentos.html"><i class="fa-solid fa-file-invoice"></i><span>Orçamentos</span></a>
-  <a class="nav-item" href="fiscal.html"><i class="fa-solid fa-file-contract"></i><span>Fiscal / NF-e</span></a>
-  <a class="nav-item" href="metas.html"><i class="fa-solid fa-bullseye"></i><span>Metas</span></a>
-  <a class="nav-item" href="fluxo-caixa.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Fluxo de Caixa</span></a>
-  <a class="nav-item" href="logistica.html"><i class="fa-solid fa-truck"></i><span>Logística</span></a>
-  <div class="sidebar-section">Cadastros</div>
-  <a class="nav-item" href="cadastros.html"><i class="fa-solid fa-database"></i><span>Cadastros</span></a>
-  <a class="nav-item" href="lancamentos.html"><i class="fa-solid fa-pen-to-square"></i><span>Lançamentos</span></a>
-  <div class="sidebar-section">Relatórios</div>
-  <a class="nav-item" href="estatistica-vendas.html"><i class="fa-solid fa-chart-bar"></i><span>Estatísticas</span></a>
-  <div class="sidebar-footer">
-    <div class="avatar">GE</div>
-    <div><div class="u-name">Gestão Estoque</div><div class="u-role">Coord. Estoque</div></div>
-    <div class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i></div>
-  </div>
 </aside>
 
 <!-- MAIN -->
@@ -292,6 +267,7 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
+    <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
     <div class="page-title"><i class="fa-solid fa-boxes-stacked" style="color:var(--accent);margin-right:7px;font-size:.85rem"></i>Estoque</div>
     <div class="spacer"></div>
     <div class="upd-info"><div class="upd-dot"></div>ETL 06:00 · SNAPSHOT atualizado</div>
@@ -339,7 +315,7 @@
     </div>
     <div class="kh-card info" onclick="goTab('visao-geral')" title="Valor total do estoque físico a custo (todos os status)">
       <div class="kh-lbl">Capital Empatado <div class="semaphore blue"></div></div>
-      <div class="kh-val" id="khCapital">R$ 412K</div>
+      <div class="kh-val" id="khCapital">—</div>
       <div class="kh-delta neu">+R$8K vs mês ant.</div>
     </div>
     <div class="kh-card risk" onclick="goTab('validade-lotes')" title="SKUs com ao menos 1 lote vencendo em 30 dias">
@@ -373,22 +349,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Total SKUs Ativos</span><div class="kpi-icon green"><i class="fa-solid fa-tag"></i></div></div>
-        <div class="kpi-value">284</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ 9 em ruptura</span><span>· 12 abaixo do PP</span></div>
       </div>
       <div class="kpi-card" onclick="window.location='financeiro.html'" title="Ver resumo financeiro">
         <div class="kpi-top"><span class="kpi-label">Capital — Status</span><div class="kpi-icon blue"><i class="fa-solid fa-coins"></i></div></div>
-        <div class="kpi-value">R$ 412K</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span style="color:var(--accent3);font-weight:600">R$308K</span> saud. · <span style="color:var(--amber);font-weight:600">R$52K</span> exc. · <span style="color:var(--red);font-weight:600">R$22K</span> risco</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Fill Rate (hoje)</span><div class="kpi-icon green"><i class="fa-solid fa-percent"></i></div></div>
-        <div class="kpi-value">93,7%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ –1,8pp</span><span>meta: 95%</span></div>
       </div>
       <div class="kpi-card" onclick="window.location='dashboard-comercial.html'" title="Ver dashboard comercial">
         <div class="kpi-top"><span class="kpi-label">Ped. Bloqueados</span><div class="kpi-icon red"><i class="fa-solid fa-lock"></i></div></div>
-        <div class="kpi-value">6</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">por falta de estoque</span><span>· R$ 14,2K impactado</span></div>
       </div>
     </div>
@@ -426,22 +402,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">SKUs em Ruptura</span><div class="kpi-icon red"><i class="fa-solid fa-xmark"></i></div></div>
-        <div class="kpi-value">9</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">3,2% dos ativos</span><span>· 6 bloqueando pedidos</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Ruptura Evitável</span><div class="kpi-icon orange"><i class="fa-solid fa-box-open"></i></div></div>
-        <div class="kpi-value">3</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span style="color:var(--orange);font-weight:600">CX disponível</span><span>— falta abrir caixa</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">SKUs Reservados</span><div class="kpi-icon amber"><i class="fa-solid fa-lock-open"></i></div></div>
-        <div class="kpi-value">41</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>para 38 pedidos</span><span>· R$ 28K reservado</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Fill Rate (hoje)</span><div class="kpi-icon amber"><i class="fa-solid fa-percent"></i></div></div>
-        <div class="kpi-value">93,7%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ –1,3pp</span><span>meta: 95%</span></div>
       </div>
     </div>
@@ -480,22 +456,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Cobertura Média</span><div class="kpi-icon amber"><i class="fa-solid fa-calendar-days"></i></div></div>
-        <div class="kpi-value">22 dias</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ –3d</span><span>piso: 15d · teto: 45d</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">SKUs Cobert. Crítica</span><div class="kpi-icon red"><i class="fa-solid fa-circle-exclamation"></i></div></div>
-        <div class="kpi-value">12</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">&lt;7 dias de cobertura</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">SKUs com Excesso</span><div class="kpi-icon blue"><i class="fa-solid fa-arrow-up-wide-short"></i></div></div>
-        <div class="kpi-value">18</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>&gt;45d de cobertura</span><span>· R$ 52K empatado</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">DIO (dias estoque)</span><div class="kpi-icon green"><i class="fa-solid fa-gauge-simple-high"></i></div></div>
-        <div class="kpi-value">26,8d</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▼ –1,2d</span><span>vs mês anterior</span></div>
       </div>
     </div>
@@ -540,22 +516,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Lotes Vencidos (saldo &gt;0)</span><div class="kpi-icon red"><i class="fa-solid fa-skull-crossbones"></i></div></div>
-        <div class="kpi-value">2</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">R$ 3.840 em risco</span><span>· bloqueio necessário</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Lotes D+7</span><div class="kpi-icon red"><i class="fa-solid fa-fire"></i></div></div>
-        <div class="kpi-value">3</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">R$ 7.120</span><span>· ação imediata</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Lotes D+30</span><div class="kpi-icon orange"><i class="fa-solid fa-calendar-xmark"></i></div></div>
-        <div class="kpi-value">8</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span style="color:var(--orange);font-weight:600">R$ 18.640</span><span>· promoção urgente</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">FEFO Compliance</span><div class="kpi-icon amber"><i class="fa-solid fa-sort-amount-up"></i></div></div>
-        <div class="kpi-value">94,2%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ –2,1pp</span><span>meta: &gt;98%</span></div>
       </div>
     </div>
@@ -594,22 +570,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Itens no Ponto de Pedido</span><div class="kpi-icon red"><i class="fa-solid fa-bell"></i></div></div>
-        <div class="kpi-value">12</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">compra urgente</span><span>· 5 em ruptura sem OC</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">OCs em Aberto</span><div class="kpi-icon amber"><i class="fa-solid fa-truck-fast"></i></div></div>
-        <div class="kpi-value">7</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>R$ 84K</span><span>· 2 atrasadas</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Valor Compra Sugerida</span><div class="kpi-icon blue"><i class="fa-solid fa-cart-flatbed"></i></div></div>
-        <div class="kpi-value">R$ 62K</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>12 SKUs · 4 fornecedores</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">OTIF do Mês</span><div class="kpi-icon amber"><i class="fa-solid fa-star-half-stroke"></i></div></div>
-        <div class="kpi-value">78,4%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">▼ –6,2pp</span><span>meta: 85%</span></div>
       </div>
     </div>
@@ -656,22 +632,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Acuracidade Geral</span><div class="kpi-icon green"><i class="fa-solid fa-bullseye"></i></div></div>
-        <div class="kpi-value">96,4%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">–0,6pp</span><span>meta: 95%</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Acuracidade Curva A</span><div class="kpi-icon green"><i class="fa-solid fa-star"></i></div></div>
-        <div class="kpi-value">98,8%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>meta: 99%</span><span>· 2 divergências</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Divergências Abertas</span><div class="kpi-icon amber"><i class="fa-solid fa-not-equal"></i></div></div>
-        <div class="kpi-value">14</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>R$ 3.280 em difer.</span><span>· 3 pendentes aprovação</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Último Inventário</span><div class="kpi-icon blue"><i class="fa-solid fa-clipboard-check"></i></div></div>
-        <div class="kpi-value">14/04</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>Cíclico · 148 posições</span><span>· acurac. 96,4%</span></div>
       </div>
     </div>
@@ -708,22 +684,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Perdas do Mês (R$)</span><div class="kpi-icon red"><i class="fa-solid fa-trash-can"></i></div></div>
-        <div class="kpi-value">R$ 8.240</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta down">0,48% do CMV</span><span>meta: &lt;0,3%</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Por Validade</span><div class="kpi-icon red"><i class="fa-solid fa-calendar-xmark"></i></div></div>
-        <div class="kpi-value">R$ 4.180</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>50,7% das perdas</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Por Avaria</span><div class="kpi-icon orange"><i class="fa-solid fa-box-archive"></i></div></div>
-        <div class="kpi-value">R$ 2.640</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>32,0% das perdas</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Por Fracionamento</span><div class="kpi-icon amber"><i class="fa-solid fa-scissors"></i></div></div>
-        <div class="kpi-value">R$ 1.420</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>17,2% das perdas</span></div>
       </div>
     </div>
@@ -760,22 +736,22 @@
     <div class="g4 mb">
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Linhas Separadas/dia</span><div class="kpi-icon green"><i class="fa-solid fa-boxes-packing"></i></div></div>
-        <div class="kpi-value">412</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +28 vs ontem</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Produt. Picking</span><div class="kpi-icon green"><i class="fa-solid fa-gauge-high"></i></div></div>
-        <div class="kpi-value">48 l/h</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span class="delta up">▲ +3 l/h</span><span>meta: 45 l/h</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Itens Recebidos/h</span><div class="kpi-icon amber"><i class="fa-solid fa-truck-ramp-box"></i></div></div>
-        <div class="kpi-value">84</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>meta: 90 it/h</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Ocupação CD</span><div class="kpi-icon amber"><i class="fa-solid fa-warehouse"></i></div></div>
-        <div class="kpi-value">74%</div>
+        <div class="kpi-value">—</div>
         <div class="kpi-footer"><span>alerta: &gt;90%</span><span>· 840/1140 posições</span></div>
       </div>
     </div>
@@ -1546,5 +1522,6 @@ document.querySelector('.top-btn:not(.accent):not(.red)').addEventListener('clic
   if(activeTab) activeTab.querySelectorAll('canvas').forEach(c=>{const ch=Chart.getChart(c);if(ch)ch.resize();});
 })();
 </script>
+<script src="js/import.js"></script>
 </body>
 </html>
