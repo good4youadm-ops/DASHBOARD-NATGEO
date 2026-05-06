@@ -256,12 +256,13 @@
   }
 
   // ── Estado ──────────────────────────────────────────────────────────────────
-  var _file    = null;
-  var _csvHdrs = [];
-  var _csvRows = [];
-  var _csvSep  = ',';
-  var _step    = 1;
-  var _isCsv   = false;
+  var _file       = null;
+  var _csvHdrs    = [];
+  var _csvRows    = [];   // primeiras 5 linhas (prévia)
+  var _csvRawText = '';   // texto completo do CSV (enviado ao backend)
+  var _csvSep     = ',';
+  var _step       = 1;
+  var _isCsv      = false;
 
   // ── open() ──────────────────────────────────────────────────────────────────
   function open() {
@@ -269,7 +270,7 @@
     injectCSS();
     var modal = buildModal();
     document.body.appendChild(modal);
-    _file = null; _csvHdrs = []; _csvRows = []; _csvSep = ','; _step = 1; _isCsv = false;
+    _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _csvSep = ','; _step = 1; _isCsv = false;
 
     var drop        = document.getElementById('imDrop');
     var inp         = document.getElementById('imFileInp');
@@ -371,7 +372,8 @@
         var reader = new FileReader();
         reader.onload = function (ev) {
           var text = ev.target.result || '';
-          var lines = text.split('\n').filter(function (l) { return l.trim(); });
+          _csvRawText = text;
+          var lines = text.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
           _csvSep  = (lines[0] || '').indexOf(';') !== -1 ? ';' : ',';
           _csvHdrs = (lines[0] || '').split(_csvSep).map(function (h) { return h.trim().replace(/^"|"$/g, ''); });
           _csvRows = lines.slice(1, 6).map(function (l) {
@@ -384,7 +386,7 @@
           mapRows.innerHTML = '<div style="color:#a8071a;font-size:.8rem">✗ Erro ao ler o arquivo.</div>';
           nextBtn.disabled = false;
         };
-        reader.readAsText(_file.slice(0, 524288));
+        reader.readAsText(_file);  // lê arquivo completo
       } else {
         renderXlsxMapping(fields);
         nextBtn.disabled = false;
@@ -534,6 +536,7 @@
           csv_row_count:   _isCsv ? _csvRows.length : 0,
           csv_separator:   _isCsv ? _csvSep : null,
           mapped_fields:   Object.keys(mapping).length,
+          csv_data:        _isCsv ? _csvRawText : null,
         },
       };
 
@@ -559,7 +562,7 @@
     function close() {
       var m = document.getElementById(MODAL_ID);
       if (m) m.remove();
-      _file = null; _csvHdrs = []; _csvRows = []; _step = 1;
+      _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _step = 1;
     }
     document.getElementById('imClose').addEventListener('click', close);
     document.getElementById('imCancel').addEventListener('click', close);

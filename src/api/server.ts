@@ -69,7 +69,8 @@ app.use(express.static(publicDir, { index: 'dashboard-comercial.html' }));
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.text({ limit: '50mb' }));
 
 // Rate limiting — 120 req/min por IP nas rotas de API
 const apiLimiter = rateLimit({

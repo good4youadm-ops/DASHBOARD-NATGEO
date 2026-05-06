@@ -13,6 +13,8 @@
     "start:worker": "node dist/workers/oracle-sync/index.js all",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src workers --ext .ts",
+    "import:worker": "tsx workers/import-worker/index.ts --once",
+    "import:worker:watch": "tsx workers/import-worker/index.ts",
     "sync:oracle": "tsx workers/oracle-sync/index.ts all",
     "sync:oracle:full": "tsx workers/oracle-sync/index.ts all --full",
     "sync:oracle:dry": "tsx workers/oracle-sync/index.ts all --dry-run",
