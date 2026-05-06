@@ -104,6 +104,24 @@
         '</button>' +
       '</div>';
 
+    // Preenche dados do usuário direto do localStorage — sem depender de eventos cruzados
+    try {
+      var raw = localStorage.getItem('natgeo_auth');
+      var s = raw ? JSON.parse(raw) : null;
+      var u = s && s.user;
+      if (u) {
+        var fullName  = (u.user_metadata && u.user_metadata.full_name) || u.email || '';
+        var initials  = fullName.split(' ').filter(Boolean).slice(0, 2)
+                          .map(function (p) { return p[0]; }).join('').toUpperCase() || 'U';
+        var avatarEl  = document.getElementById('userInitials');
+        var nameEl    = document.getElementById('userName');
+        var roleEl    = document.getElementById('userRole');
+        if (avatarEl) avatarEl.textContent = initials;
+        if (nameEl)   nameEl.textContent   = fullName || u.email || '—';
+        if (roleEl)   roleEl.textContent   = (u.user_metadata && u.user_metadata.role) || 'Administrador';
+      }
+    } catch (e) {}
+
     // Dispara evento para que auth.js saiba que a sidebar está pronta
     document.dispatchEvent(new CustomEvent('sidebarReady'));
   }
