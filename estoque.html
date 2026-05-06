@@ -253,8 +253,9 @@
     @media(max-width:800px)  { :root { --sidebar-w:56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display:none; } .sidebar-logo { justify-content:center; padding:0; } .nav-item { justify-content:center; padding:8px; } }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/access.js"></script>
   <script src="js/sidebar.js"></script>
-<script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -270,9 +271,10 @@
     <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
     <div class="page-title"><i class="fa-solid fa-boxes-stacked" style="color:var(--accent);margin-right:7px;font-size:.85rem"></i>Estoque</div>
     <div class="spacer"></div>
-    <div class="upd-info"><div class="upd-dot"></div>ETL 06:00 · SNAPSHOT atualizado</div>
+    <div class="upd-info" id="updInfo"><div class="upd-dot" id="updDot"></div><span id="updText">Carregando…</span></div>
+    <button class="top-btn" id="btnAtualizar" title="Atualizar dados agora"><i class="fa-solid fa-rotate-right"></i> Atualizar</button>
     <button class="top-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Exportar</button>
-    <button class="top-btn red" onclick="goTab('visao-geral')"><i class="fa-solid fa-bell"></i> 9 alertas</button>
+    <button class="top-btn red" id="alertasBtn" onclick="goTab('visao-geral')"><i class="fa-solid fa-bell"></i> <span id="alertasBadge">—</span> alertas</button>
   </div>
 
   <!-- FILTROS GLOBAIS -->
@@ -300,17 +302,17 @@
   <div class="kpi-header">
     <div class="kh-card ok" onclick="goTab('visao-geral')" title="Capital disponível para venda a custo médio">
       <div class="kh-lbl">Saldo Disponível <div class="semaphore green"></div></div>
-      <div class="kh-val" id="khSaldoDisp">R$ 308K</div>
+      <div class="kh-val" id="khSaldoDisp">—</div>
       <div class="kh-delta up"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +R$14K vs ontem</div>
     </div>
     <div class="kh-card crit" onclick="goTab('disponibilidade')" title="% de SKUs ativos com saldo disponível = 0">
       <div class="kh-lbl">Ruptura <div class="semaphore red"></div></div>
-      <div class="kh-val" id="khRuptura">3,2%</div>
+      <div class="kh-val" id="khRuptura">—</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +0,8pp vs ontem</div>
     </div>
     <div class="kh-card warn" onclick="goTab('giro-cobertura')" title="Dias de estoque disponível pela demanda média 30d">
       <div class="kh-lbl">Cobertura Média <div class="semaphore amber"></div></div>
-      <div class="kh-val" id="khCobertura">22 dias</div>
+      <div class="kh-val" id="khCobertura">—</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-down" style="font-size:.52rem"></i> –3d vs semana</div>
     </div>
     <div class="kh-card info" onclick="goTab('visao-geral')" title="Valor total do estoque físico a custo (todos os status)">
@@ -320,13 +322,13 @@
     </div>
     <div class="kh-card risk" onclick="goTab('validade-lotes')" title="SKUs com ao menos 1 lote vencendo em 30 dias">
       <div class="kh-lbl">Validade Crítica <div class="semaphore orange"></div></div>
-      <div class="kh-val" id="khValidadeCrit">8 itens</div>
+      <div class="kh-val" id="khValidadeCrit">—</div>
       <div class="kh-delta down"><i class="fa-solid fa-arrow-up" style="font-size:.52rem"></i> +2 vs ontem</div>
     </div>
     <div class="kh-card ok" onclick="goTab('acuracidade')" title="% de posições conferidas sem divergência no ciclo atual">
       <div class="kh-lbl">Acuracidade <div class="semaphore green"></div></div>
-      <div class="kh-val">96,4%</div>
-      <div class="kh-delta down">–0,6pp vs ciclo ant.</div>
+      <div class="kh-val" id="khAcuracidade">—</div>
+      <div class="kh-delta neu" id="khAcuracidadeDelta">—</div>
     </div>
   </div>
 
@@ -355,7 +357,7 @@
       <div class="kpi-card" onclick="window.location='financeiro.html'" title="Ver resumo financeiro">
         <div class="kpi-top"><span class="kpi-label">Capital — Status</span><div class="kpi-icon blue"><i class="fa-solid fa-coins"></i></div></div>
         <div class="kpi-value">—</div>
-        <div class="kpi-footer"><span style="color:var(--accent3);font-weight:600">R$308K</span> saud. · <span style="color:var(--amber);font-weight:600">R$52K</span> exc. · <span style="color:var(--red);font-weight:600">R$22K</span> risco</div>
+        <div class="kpi-footer" id="khCapitalFooter"><span style="color:var(--muted)">aguardando dados</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Fill Rate (hoje)</span><div class="kpi-icon green"><i class="fa-solid fa-percent"></i></div></div>
@@ -403,7 +405,7 @@
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">SKUs em Ruptura</span><div class="kpi-icon red"><i class="fa-solid fa-xmark"></i></div></div>
         <div class="kpi-value">—</div>
-        <div class="kpi-footer"><span class="delta down">3,2% dos ativos</span><span>· 6 bloqueando pedidos</span></div>
+        <div class="kpi-footer" id="khRupturaFooter"><span style="color:var(--muted)">aguardando dados</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Ruptura Evitável</span><div class="kpi-icon orange"><i class="fa-solid fa-box-open"></i></div></div>
@@ -437,7 +439,7 @@
       <div class="card-body" style="padding-bottom:0">
         <div class="card-hdr">
           <div><div class="card-title">SKUs em Ruptura</div><div class="card-sub">Saldo disponível = 0 · SKUs com venda nos últimos 30d</div></div>
-          <div style="display:flex;gap:6px"><span class="pill red">9 rupturas</span><span class="pill orange">3 evitáveis</span></div>
+          <div style="display:flex;gap:6px"><span class="pill red" id="pillRuptura">— rupturas</span><span class="pill orange" id="pillEvitavel" style="display:none">— evitáveis</span></div>
         </div>
       </div>
       <table>
@@ -478,7 +480,7 @@
 
     <div class="g21 mb">
       <div class="card card-body">
-        <div class="card-hdr"><div><div class="card-title">Dispersão — Giro × Cobertura</div><div class="card-sub">Cada ponto = 1 SKU · tamanho = capital empatado · cor = curva ABC</div></div><span class="pill green">284 SKUs</span></div>
+        <div class="card-hdr"><div><div class="card-title">Dispersão — Giro × Cobertura</div><div class="card-sub">Cada ponto = 1 SKU · tamanho = capital empatado · cor = curva ABC</div></div><span class="pill green" id="pillTotalSkus">— SKUs</span></div>
         <div style="height:220px;position:relative"><canvas id="chartScatterGiroCob"></canvas></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;font-size:.68rem;color:var(--muted)">
           <span>↗ <strong style="color:var(--accent)">Ideal:</strong> giro alto + cobertura ok</span>
@@ -497,7 +499,7 @@
       <div class="card-body" style="padding-bottom:0">
         <div class="card-hdr">
           <div><div class="card-title">SKUs Cobertura Crítica (&lt;7 dias)</div><div class="card-sub">Prioridade de reposição por curva ABC</div></div>
-          <span class="pill red">12 SKUs</span>
+          <span class="pill red" id="pillCobCrit">— SKUs</span>
         </div>
       </div>
       <table>
@@ -551,7 +553,7 @@
       <div class="card-body" style="padding-bottom:0">
         <div class="card-hdr">
           <div><div class="card-title">Lotes com Validade Crítica</div><div class="card-sub">FEFO · ordenado por data de validade ASC</div></div>
-          <div style="display:flex;gap:6px"><span class="pill red">2 vencidos</span><span class="pill orange">3 D+7</span><span class="pill amber">8 D+30</span></div>
+          <div style="display:flex;gap:6px"><span class="pill red" id="pillVencidos" style="display:none">0 vencidos</span><span class="pill orange" id="pillD7" style="display:none">0 D+7</span><span class="pill amber" id="pillD30" style="display:none">0 D+30</span></div>
         </div>
       </div>
       <table>
@@ -648,7 +650,7 @@
       <div class="kpi-card">
         <div class="kpi-top"><span class="kpi-label">Último Inventário</span><div class="kpi-icon blue"><i class="fa-solid fa-clipboard-check"></i></div></div>
         <div class="kpi-value">—</div>
-        <div class="kpi-footer"><span>Cíclico · 148 posições</span><span>· acurac. 96,4%</span></div>
+        <div class="kpi-footer"><span style="color:var(--muted)">aguardando dados</span></div>
       </div>
     </div>
 
@@ -1229,9 +1231,10 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
   </div>`).join('');
 
 /* ── INIT ESTOQUE (API) ── */
-(async function initEstoque() {
+async function initEstoque() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
+  DashboardAPI.setUpdStatus('loading', 'Atualizando…');
   let summaryArr, products, expiring;
   try {
     [summaryArr, products, expiring] = await Promise.all([
@@ -1240,6 +1243,7 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
       DashboardAPI.inventory.expiring(90),
     ]);
   } catch (e) {
+    DashboardAPI.setUpdStatus('error', 'Erro ao atualizar');
     document.querySelector('.main').insertAdjacentHTML('afterbegin',
       `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
         <i class="fa-solid fa-circle-exclamation"></i>
@@ -1263,11 +1267,15 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
     ? Math.round(summary.avg_coverage_days)
     : (products.length > 0 ? Math.round(products.reduce((s, p) => s + (p.coverage_days || 0), 0) / products.length) : 0);
 
-  if (el('khSaldoDisp'))   el('khSaldoDisp').textContent   = fK(availCost);
-  if (el('khRuptura'))     el('khRuptura').textContent     = ruptPct + '%';
-  if (el('khCobertura'))   el('khCobertura').textContent   = avgCov + ' dias';
-  if (el('khCapital'))     el('khCapital').textContent     = fK(totalCost);
+  if (el('khSaldoDisp'))    el('khSaldoDisp').textContent    = fK(availCost);
+  if (el('khRuptura'))      el('khRuptura').textContent      = ruptPct + '%';
+  if (el('khCobertura'))    el('khCobertura').textContent    = avgCov + ' dias';
+  if (el('khCapital'))      el('khCapital').textContent      = fK(totalCost);
   if (el('khValidadeCrit')) el('khValidadeCrit').textContent = critExpiry.length + ' itens';
+  if (el('khRupturaFooter')) el('khRupturaFooter').innerHTML  = ruptProds.length > 0
+    ? `<span class="delta down">${ruptPct}% dos ativos</span><span>· ${ruptProds.length} SKUs</span>`
+    : '<span style="color:var(--accent3)">sem rupturas</span>';
+  if (el('khCapitalFooter')) el('khCapitalFooter').innerHTML  = fK(totalCost) + ' valor total em estoque';
 
   // ── ALERTAS ──
   const alertas = [];
@@ -1402,8 +1410,48 @@ document.getElementById('caixasAbertas').innerHTML=cxAbertas.map(r=>`
       }).join('')
     : '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Nenhum lote a vencer em 90 dias</td></tr>';
 
+  /* ── Atualiza pills dinâmicas (remove hardcoded) ── */
+  const crit7  = products.filter(p => (p.coverage_days || 0) < 7 && p.stock_alert !== 'sem_estoque');
+  const d7  = expiring.filter(l => { const d = l.days_to_expiry ?? 0; return d > 0 && d <= 7; });
+  const d30v = expiring.filter(l => { const d = l.days_to_expiry ?? 0; return d > 7 && d <= 30; });
+  const evit = ruptProds.filter(p => p.abc_curve === 'A' || p.abc_curve === 'B');
+  const setP = (id, n, txt) => { const e = el(id); if (!e) return; if (n > 0) { e.textContent = n + ' ' + txt; e.style.display = ''; } else { e.style.display = 'none'; } };
+  setP('pillRuptura', ruptProds.length, 'ruptura' + (ruptProds.length !== 1 ? 's' : ''));
+  setP('pillEvitavel', evit.length, 'evitáv' + (evit.length !== 1 ? 'eis' : 'el'));
+  setP('pillTotalSkus', products.length, 'SKUs');
+  setP('pillCobCrit', crit7.length, 'SKUs');
+  setP('pillVencidos', vencidos.length, 'vencido' + (vencidos.length !== 1 ? 's' : ''));
+  setP('pillD7', d7.length, 'D+7');
+  setP('pillD30', d30v.length, 'D+30');
+
   DashboardAPI.afterLoad();
-})();
+  const now = new Date();
+  const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  DashboardAPI.setUpdStatus('ok', 'Atualizado às ' + hhmm);
+  const ab = document.getElementById('alertasBadge');
+  if (ab) ab.textContent = String(alertas.length);
+}
+
+/* === POLLING + BOTÃO ATUALIZAR === */
+initEstoque().then(() => {
+  /* Aplica filtros vindos de querystring (ex: ?filtro=critico&produto=NomeProd) */
+  NatGeoNav.applyFromURL({
+    filtro: function(val) {
+      if (val === 'critico') {
+        goTab('disponibilidade');
+        showToast('warning', 'Filtro ativo', 'Exibindo itens críticos e em ruptura');
+      }
+    },
+    produto: function(val) {
+      const dec = decodeURIComponent(val);
+      showToast('success', 'Filtro ativo', 'Produto: ' + dec);
+      /* scroll para a tab de disponibilidade para encontrar o produto */
+      goTab('disponibilidade');
+    },
+  });
+});
+setInterval(initEstoque, 60000);
+document.getElementById('btnAtualizar').addEventListener('click', initEstoque);
 
 /* ── MOVIMENTOS MANUAIS ── */
 let movPage = 1, movTotal = 0;
@@ -1522,6 +1570,7 @@ document.querySelector('.top-btn:not(.accent):not(.red)').addEventListener('clic
   if(activeTab) activeTab.querySelectorAll('canvas').forEach(c=>{const ch=Chart.getChart(c);if(ch)ch.resize();});
 })();
 </script>
+<script src="js/nav.js"></script>
 <script src="js/import.js"></script>
 </body>
 </html>

@@ -1,20 +1,19 @@
-# Handoff: NatGeo Dashboard — Sidebar unificada, zeros e importação CSV
+# Handoff: NatGeo Dashboard — Controle de Acesso, E2E e API Integration
 
-*Data:* 2026-05-05
-*Status:* Em andamento — 1 bug conhecido restante (`dashboard-distribuidora.html`)
+*Data:* 2026-05-06
+*Status:* Em andamento — API calls ainda não implementadas nas 3 abas estáticas
 
 ---
 
 ## 1. Objetivo
 
 Sistema de gestão para uma distribuidora de alimentos/produtos naturais (NatGeo).
-O frontend são 13 arquivos HTML estáticos com Chart.js e JS vanilla, servidos por um
-Express + Supabase no backend, deployado via Docker no Coolify (auto-deploy ao fazer
-`git push origin main`).
+Frontend: 15 arquivos HTML estáticos + vanilla JS + Chart.js.
+Backend: Express + Supabase (PostgreSQL), deployado via Docker no Coolify.
 
-O trabalho desta sessão foi tornar o sistema visualmente coeso como o Bling ERP:
-sidebar idêntica em todas as páginas, dados fictícios zerados e botão de importação
-CSV/Excel em todas as abas.
+As sessões anteriores focaram em: unificação de sidebar, dados zerados, botão importar.
+Esta sessão focou em: controle de acesso master/usuário, suite E2E Playwright, e início
+da integração de API real nas abas estáticas.
 
 ---
 
@@ -23,237 +22,244 @@ CSV/Excel em todas as abas.
 ### Stack
 - **Frontend:** HTML estático + vanilla JS + Chart.js — SEM React/Next.js
 - **Backend:** Node.js + Express (`src/api/server.ts`)
-- **Banco:** Supabase (PostgreSQL). Migrations em `supabase/migrations/` (8 arquivos SQL)
-- **Sync:** Worker Oracle ERP → Supabase em `workers/oracle-sync/`
+- **Banco:** Supabase (PostgreSQL). Migrations em `supabase/migrations/` — **22 arquivos SQL**
+- **Sync:** Worker Oracle ERP → Supabase em `workers/oracle-sync/` (não conectado ainda)
 - **Deploy:** Coolify self-hosted, Docker multi-stage build. Push ao GitHub aciona rebuild.
 - **URL produção:** `http://byy6u6lkrgic5tca4vlhvgy8.177.7.43.206.sslip.io`
 - **Repo GitHub:** `good4youadm-ops/DASHBOARD-NATGEO` (branch `main`)
 - **Diretório local:** `c:\Users\Natgeo50\Documents\dashboardnatgeo`
 
-### Decisões já tomadas
-- **sidebar.js canônico:** Em vez de manter HTML de sidebar em cada arquivo, criamos
-  `js/sidebar.js` que injeta toda a sidebar via JS. Cada página tem apenas
-  `<aside class="sidebar"></aside>` vazio. A página ativa é detectada pelo
-  `location.pathname`.
-- **DOMContentLoaded obrigatório:** `sidebar.js` usa `DOMContentLoaded` porque em
-  algumas páginas o `<script src="js/sidebar.js">` aparece ANTES do `<aside>` no DOM.
-- **Evento `sidebarReady`:** Após injetar o HTML, `sidebar.js` dispara
-  `document.dispatchEvent(new CustomEvent('sidebarReady'))`. O `auth.js` escuta
-  esse evento para popular `#userInitials` e `#userName` DEPOIS que a sidebar existe.
-- **Dados zerados:** Valores fictícios hardcoded foram removidos; a API retorna os dados
-  reais (quando existirem). Sem fallback para mocks.
-- **Importação CSV:** `js/import.js` criado com modal drag-and-drop. Envia para
-  `/api/import` (endpoint ainda não implementado no backend).
+### Decisões arquiteturais vigentes
+- **sidebar.js canônico:** `js/sidebar.js` injeta toda a sidebar via `DOMContentLoaded`.
+  Cada página tem apenas `<aside class="sidebar"></aside>`. Página ativa detectada pelo URL.
+- **Evento `sidebarReady`:** Disparado após injeção. `auth.js` escuta para popular nome/iniciais.
+- **Módulos abertos vs. bloqueados:** Apenas 4 módulos funcionam para usuários comuns.
+  `js/access.js` bloqueia os 9 restantes com overlay.
+- **isMaster():** Apenas `ferrerjoao2206@gmail.com` tem acesso irrestrito.
+- **Sem fallback para mocks:** Se API falhar (banco vazio ou erro), dashboards mostram `—`.
+  Isso é correto e intencional.
 
-### Restrições
-- Não usar React ou qualquer framework — tudo vanilla JS
-- O Coolify faz build Docker a cada push. Se o TypeScript falhar no build, o app
-  não sobe. Sempre verificar o log de deploy antes de considerar concluído.
-- As migrations do Supabase ainda NÃO foram aplicadas no banco. O banco está vazio.
-  Por isso todas as APIs retornam erros (views não existem) e os dashboards mostram
-  estado vazio — que é o comportamento correto por enquanto.
+### Módulos abertos (todos os usuários)
+`dashboard-distribuidora`, `dashboard-comercial`, `financeiro`, `estoque`
+
+### Módulos bloqueados (só master vê, outros veem cadeado + overlay)
+`orcamentos`, `metas`, `lancamentos`, `fluxo-caixa`, `logistica`, `pedidos`,
+`cadastros`, `fiscal`, `estatistica-vendas`
 
 ---
 
 ## 3. O que já foi feito
 
-### Sessão anterior (antes desta)
-1. Criação de todos os 13 arquivos HTML de dashboard
-2. Correção de build Docker (`workers/oracle-sync/index.ts` — import de `config` ausente)
-3. Primeira tentativa de unificação de sidebar via scripts Python (`fix_sidebar.py`,
-   `fix_sidebar2.py`) — substituição de CSS nas páginas com sidebar clara
-4. Adição de links cruzados entre páginas (financeiro → lancamentos, comercial → estoque, etc.)
-5. URL tab routing em `lancamentos.html` via `?tab=ar` e `?tab=ap`
+### Sessões anteriores
+1. Criação dos 15 arquivos HTML de dashboard
+2. Correção de build Docker (`workers/oracle-sync/index.ts` — import ausente)
+3. `js/sidebar.js` criado — sidebar canônica em todas as páginas
+4. `js/auth.js` refatorado — aguarda `sidebarReady` para popular usuário
+5. `js/import.js` criado — modal drag-and-drop CSV/XLS/XLSX para `/api/import`
+6. Dados zerados em `dashboard-comercial.html`, `financeiro.html`, `estoque.html`
+7. Links cruzados entre KPI cards (financeiro ↔ lancamentos, comercial ↔ estoque)
+8. URL tab routing em `lancamentos.html` (`?tab=ar`, `?tab=ap`)
 
-### Esta sessão
-6. **`js/sidebar.js` criado** — injeta sidebar canônica em todas as 13 páginas via
-   DOMContentLoaded. Detecta página ativa pelo URL. Dispara evento `sidebarReady`.
-7. **`js/auth.js` refatorado** — `populateSidebarUser()` separado, aguarda
-   `sidebarReady` antes de preencher nome/iniciais/logout.
-8. **`fix_all.py` executado** — limpou o HTML interno de `<aside class="sidebar">`
-   em todas as 13 páginas, injetou `<script src="js/sidebar.js">` em cada arquivo,
-   adicionou botão "Importar" em todas as páginas.
-9. **`js/import.js` criado** — modal drag-and-drop completo para CSV/XLS/XLSX.
-   Inclui seleção de tipo de dado (clientes, produtos, pedidos, lançamentos, etc.).
-10. **Dados zerados:**
-    - `dashboard-comercial.html`: mock `DATA` object zerado com nulls após bloco JS
-    - `financeiro.html`: KPIs hardcoded (`R$ 342K`, etc.) → `—`; arrays de gráfico
-      (`fatBruto12`, `margem12`, `meta12`, `wfVG`) esvaziados
-    - `estoque.html`: todos `kpi-value` hardcoded → `—`
-11. **sidebar.js movido do `<head>` para `</body>`** em: `fiscal.html`,
-    `fluxo-caixa.html`, `metas.html`, `orcamentos.html`, `cadastros.html`
-    (estavam no head antes, o que fazia o script rodar antes do DOM existir)
+### Esta sessão (2026-05-06)
+9. **Bug de CSS da sidebar** em `dashboard-distribuidora.html` **CORRIGIDO:**
+   - `.sidebar { background: rgba(255,255,255,.85) }` → `background: var(--accent)`
+   - `.u-name`, `.u-role`, `.logout-btn`, `.avatar` convertidos para cores de sidebar escura
 
-### Descartado / falhou
-- **Tentativa de sidebar.js síncrono:** Primeiro tentamos sem DOMContentLoaded,
-  esperando que o script sempre estivesse depois do `<aside>`. Falhou porque em
-  `dashboard-comercial.html` o `sidebar.js` está na linha 306 e o `<aside>` na 312.
-  Revertemos para DOMContentLoaded.
+10. **Sistema de controle de acesso implementado:**
+    - `js/auth.js`: adicionados `MASTER_EMAIL` e `isMaster()`:
+      ```javascript
+      var MASTER_EMAIL = 'ferrerjoao2206@gmail.com';
+      function isMaster() {
+        var session = getSession();
+        return !!(session && session.user && session.user.email === MASTER_EMAIL);
+      }
+      ```
+    - `js/sidebar.js` reescrito: módulos bloqueados renderizam `<span class="nav-locked">`
+      com ícone de cadeado (`fa-lock`) e opacity 0.38 para usuários comuns.
+    - `js/access.js` CRIADO: overlay bloqueador em páginas restritas. Injeta
+      `#natgeo-access-overlay` (position:fixed, left:var(--sidebar-w), z-index:9990).
+      Também intercepta `window.fetch` para bloquear chamadas `/api/*` (exceto `/api/config`).
+
+11. **Correções de scripts faltando em páginas bloqueadas:**
+    - `pedidos.html`: adicionados `auth.js` e `access.js` (estava chamando `NatGeoAuth.requireAuth()` sem ter auth.js)
+    - `logistica.html`: adicionados `auth.js` e `access.js` (não tinha nenhum dos dois)
+    - `orcamentos.html`, `fiscal.html`, `metas.html`, `fluxo-caixa.html`, `cadastros.html`,
+      `lancamentos.html`, `estatistica-vendas.html`: adicionado `access.js`
+
+12. **21 de 22 migrations aplicadas no Supabase pelo usuário.**
+    Migration 022 é apenas índices de performance — não crítica para funcionamento.
+
+13. **`supabase/setup_master_user.sql` CRIADO:**
+    Script completo para configurar o usuário master após criar o auth user.
+    Inclui: INSERT em `user_profiles` (role `owner`), 18 permissions, role `owner`,
+    `role_permissions` e `user_roles`. Inclui blocos `DO $$` de diagnóstico que falham
+    explicitamente se o auth user não existir.
+
+14. **Suite E2E Playwright CRIADA — 43/43 testes passando:**
+    - `playwright.config.ts` — configuração (porta 8788, chromium, screenshots on failure)
+    - `e2e/static-server.mjs` — servidor HTTP estático para os testes
+    - `e2e/helpers.ts` — utilitários: `MASTER_SESSION`, `COMMON_SESSION`, `injectSession`,
+      `attachAuditListeners`, `shot`, `waitSidebar`, `checkClickable`, `tryClick`
+    - `e2e/dashboard.spec.ts`, `e2e/comercial.spec.ts`, `e2e/financeiro.spec.ts`,
+      `e2e/estoque.spec.ts` — 4 arquivos de spec
+
+15. **Diagnóstico crítico confirmado por Playwright:**
+    `dashboard-distribuidora.html`, `dashboard-comercial.html` e `financeiro.html`
+    fazem **ZERO chamadas de API**. Todos os KPIs mostram `—` ou valores hardcoded
+    porque nunca há `fetch()` para os endpoints. A integração de API real ainda
+    **não foi implementada** nessas 3 páginas.
 
 ---
 
 ## 4. Estado atual
 
 ### O que funciona ✅
-- **12 de 13 páginas** com sidebar idêntica, verde escura, com todos os itens na
-  mesma ordem (Principal → Operações → Cadastros → Relatórios)
-- `sidebar.js` detecta a página ativa corretamente pelo URL em todas as páginas
-- Dados fictícios zerados em `dashboard-comercial.html`, `financeiro.html`, `estoque.html`
-- Botão "Importar" visível em todas as páginas
-- Modal de importação abre com drag-and-drop e seleção de tipo de dado
-- Links cruzados entre KPI cards (financeiro ↔ lancamentos, comercial ↔ estoque, etc.)
-- URL tab routing em `lancamentos.html` (`?tab=ar`, `?tab=ap`)
-- `auth.js` popula nome/iniciais do usuário após sidebar estar pronta
+- **15 páginas** com sidebar verde escura idêntica
+- Controle de acesso: master vê tudo, usuários comuns veem cadeado em 9 módulos
+- Overlay bloqueador em todas as páginas restritas (JS + CSS)
+- 21 migrations aplicadas no Supabase — tabelas e views existem
+- Suite E2E: 43/43 testes passando localmente
+- `supabase/setup_master_user.sql` pronto para rodar
+- `auth.js` popula nome/iniciais após sidebarReady
+- Modal de importação (frontend) funciona visualmente
 
-### O que está quebrado ❌
-- **`dashboard-distribuidora.html`** — sidebar visualmente incorreta.
+### Login (requer ação manual do usuário)
+O usuário precisa:
+1. Supabase Dashboard → Authentication → Users → **Add user**
+   - Email: `ferrerjoao2206@gmail.com`
+   - Senha: ex. `NatGeo@2026!`
+2. Depois rodar `supabase/setup_master_user.sql` no SQL Editor
 
-  **Causa raiz identificada:** O CSS nesse arquivo nunca foi convertido para o tema
-  escuro. O `.sidebar` ainda tem `background: rgba(255,255,255,.85)` (branco/translúcido)
-  em vez de `background: var(--accent)` (verde escuro). Como resultado:
-  - `.sidebar-section { color: rgba(255,255,255,.45) }` → texto branco em fundo branco → **invisível**
-  - `.nav-item.active { color: #fff }` → texto branco em fundo branco → **invisível**
-  - "Dashboard" (item ativo) e "PRINCIPAL" (header de seção) somem
-  - `.nav-item { color: var(--muted) }` → texto cinza visível mas com cor errada
-  - `.logo-name { color: var(--text) }` → texto escuro (cor errada para sidebar escura)
-  - `.u-name { color: var(--text) }` → texto escuro (cor errada)
-
-  Os scripts `fix_sidebar.py` e `fix_sidebar2.py` da sessão anterior falharam neste
-  arquivo porque o regex buscava `rgba(255,255,255,.9)` mas o arquivo usa `.85`.
-  Além disso, havia uma linha extra `-webkit-backdrop-filter: blur(20px);` que
-  quebrou o match.
-
-### Dados fictícios remanescentes (não foram zerados ainda)
-As páginas abaixo ainda podem ter valores hardcoded no HTML ou JS que precisam ser
-zerrados. Não foram verificadas nesta sessão:
-- `metas.html`
-- `orcamentos.html`
-- `fiscal.html`
-- `fluxo-caixa.html`
-- `logistica.html`
-- `pedidos.html`
-- `cadastros.html`
-- `lancamentos.html`
-- `estatistica-vendas.html`
-- `dashboard-distribuidora.html` (além do bug de CSS)
+### O que está incompleto ❌
+- **`dashboard-distribuidora.html`** — KPIs mostram `—` ou valores fixos. Zero chamadas
+  de API. Precisa chamar: `/api/dashboard/sales/summary`, `/api/dashboard/inventory/summary`,
+  `/api/dashboard/finance/summary`, `/api/dashboard/sales/by-day`, `/api/sync/status`
+- **`dashboard-comercial.html`** — Mesmo problema. Precisa chamar:
+  `/api/dashboard/sales/summary`, `/api/dashboard/sales/by-day`,
+  `/api/dashboard/sales/customers`, `/api/dashboard/sales/products`
+- **`financeiro.html`** — Mesmo problema. Precisa chamar:
+  `/api/dashboard/finance/summary`, `/api/dashboard/finance/receivable`,
+  `/api/dashboard/finance/payable`
+- **`estoque.html`** — Maioria integrada, mas ainda há valores hardcoded:
+  KPIs header (`khSaldoDisp`, `khRuptura`, `khCobertura`, `khValidadeCrit`),
+  "acurácia 96,4%" (sem ID), footer com valores em R$
+- **`/api/import`** — Endpoint não implementado no backend (modal existe no frontend)
+- **SQL Injection** em `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85
+  (template string com variáveis Oracle diretamente em SQL). Corrigir antes de conectar Oracle.
+- **SSL/Domínio:** Ainda em `sslip.io`, browser exibe "Inseguro"
 
 ---
 
 ## 5. Próximos passos
 
-### Passo 1 — Fix urgente: CSS da sidebar em `dashboard-distribuidora.html`
-Substituir o bloco CSS do sidebar no arquivo. O bloco começa em torno da linha 47
-com `/* ===== SIDEBAR ===== */`. As substituições exatas são:
+### Prioridade 1 — API integration (3 abas estáticas)
+Esta é a tarefa principal que ficou pendente nesta sessão.
 
-```python
-# Script Python para rodar em c:\Users\Natgeo50\Documents\dashboardnatgeo
-import re
+**Abordagem:** Adicionar um bloco `<script>` em cada página que, após `sidebarReady`,
+chama `NatGeoApi.get(...)` e popula os elementos pelo ID com os dados reais.
+Usar `try/catch` com fallback para `—` se a API falhar.
 
-path = r'c:\Users\Natgeo50\Documents\dashboardnatgeo\dashboard-distribuidora.html'
-with open(path, 'r', encoding='utf-8') as f:
-    c = f.read()
-
-fixes = [
-    # Sidebar background
-    ('background: rgba(255,255,255,.85);\n      backdrop-filter: blur(20px);\n      -webkit-backdrop-filter: blur(20px);\n      border-right: 1px solid var(--border);',
-     'background: var(--accent);'),
-    # logo-name color
-    ('color: var(--text); }     .logo-name span', 'color: #fff; }     .logo-name span'),
-    ('.logo-name { font-size: 1rem; font-weight: 700; letter-spacing: -.4px; color: var(--text); }',
-     '.logo-name { font-size: 1rem; font-weight: 700; letter-spacing: -.4px; color: #fff; }'),
-    # nav-item color
-    ('color: var(--muted);\n      font-size: .86rem;',
-     'color: rgba(255,255,255,.75);\n      font-size: .86rem;'),
-    # u-name color
-    ('.u-name { font-size: .82rem; font-weight: 600; color: var(--text); }',
-     '.u-name { font-size: .82rem; font-weight: 600; color: #fff; }'),
-    # u-role color
-    ('.u-role { font-size: .72rem; color: var(--muted); }',
-     '.u-role { font-size: .72rem; color: rgba(255,255,255,.55); }'),
-    # logout-btn color
-    ('.logout-btn { margin-left: auto; color: var(--muted2);',
-     '.logout-btn { margin-left: auto; color: rgba(255,255,255,.55);'),
-    # avatar background
-    ('background: var(--accent); display: flex; align-items: center;\n      justify-content: center; font-weight: 600; font-size: .78rem;\n      color: #fff;',
-     'background: rgba(255,255,255,.2); display: flex; align-items: center;\n      justify-content: center; font-weight: 600; font-size: .78rem;\n      color: #fff;'),
-]
-
-for old, new in fixes:
-    if old in c:
-        c = c.replace(old, new)
-        print(f'FIXED: {old[:50]}...')
-    else:
-        print(f'NOT FOUND: {old[:50]}...')
-
-with open(path, 'w', encoding='utf-8') as f:
-    f.write(c)
-print('Done.')
+**Endpoints disponíveis (todos precisam de Bearer token do `localStorage`):**
+```
+GET /api/dashboard/sales/summary?months=12
+GET /api/dashboard/sales/by-day
+GET /api/dashboard/sales/customers?limit=20
+GET /api/dashboard/sales/products?limit=20
+GET /api/dashboard/finance/summary
+GET /api/dashboard/finance/receivable
+GET /api/dashboard/finance/payable
+GET /api/dashboard/inventory/summary
+GET /api/dashboard/inventory/products
+GET /api/dashboard/inventory/expiring?daysAhead=90
+GET /api/sync/status
 ```
 
-> **Alternativa mais simples:** Substituir todo o bloco CSS do sidebar no arquivo
-> por um CSS canônico igual ao de `financeiro.html` (que está correto). Fazer um
-> copy-paste do bloco `.sidebar { ... }` até `.logout-btn:hover { ... }`.
+**Shapes de dados por endpoint:**
+```javascript
+// /api/dashboard/sales/summary → array de meses
+{ month, total_orders, unique_customers, gross_revenue, net_revenue,
+  avg_ticket, delivered_orders, cancelled_orders, pending_orders }
 
-### Passo 2 — Verificar e zerar dados fictícios nas demais páginas
-Para cada página da lista de "remanescentes" acima, verificar se há:
-- Valores hardcoded em elementos HTML (procurar por `kpi-value`, `kh-val`, `kpi-val`)
-- Arrays de mock data em JS (procurar por `const DATA`, `const MOCK`, números grandes)
-- Se encontrar, substituir valores HTML por `—` e arrays JS por `[]`
+// /api/dashboard/sales/by-day → array de dias
+{ order_date, orders_count, revenue, discounts, avg_ticket }
 
-### Passo 3 — Aplicar migrations no Supabase
-Todas as 8 migrations em `supabase/migrations/` precisam ser aplicadas no
-Supabase Studio para que as tabelas e views existam. Só depois as APIs retornam
-dados reais.
+// /api/dashboard/sales/customers
+{ customer_name, total_orders, total_revenue, avg_ticket,
+  last_order_date, abc_curve, segment }
 
-Ordem: `001_initial_schema.sql` → `002_...` → ... → `008_...`
-Acessar: Supabase Studio → SQL Editor → rodar cada migration em ordem.
+// /api/dashboard/sales/products
+{ product_name, sku, category, brand, abc_curve,
+  total_qty_sold, total_revenue, avg_unit_price }
 
-### Passo 4 — Implementar `/api/import` no backend
-O modal de importação CSV já existe no frontend mas o endpoint não existe.
-Criar em `src/api/server.ts`:
+// /api/dashboard/finance/summary → objeto único
+{ ar_open_balance, ar_overdue_balance, ar_received_this_month, ar_due_next_30,
+  ap_open_balance, ap_overdue_balance, ap_paid_this_month, ap_due_next_30, net_position }
+
+// /api/dashboard/inventory/summary → array por depósito
+{ warehouse, sku_count, total_qty_available, total_inventory_value,
+  ruptura_count, sku_a_count, sku_b_count, sku_c_count, avg_coverage_days }
+
+// /api/dashboard/inventory/expiring → array de lotes
+{ product_name, lot_number, expiry_date, days_to_expiry, qty_current, expiry_alert }
+```
+
+**Padrão de implementação (usar em todas as 3 páginas):**
+```javascript
+document.addEventListener('sidebarReady', async function() {
+  var token = (NatGeoAuth.getSession() || {}).access_token;
+  if (!token) return;
+  var headers = { 'Authorization': 'Bearer ' + token };
+
+  try {
+    var r = await fetch('/api/dashboard/sales/summary?months=12', { headers });
+    if (!r.ok) throw new Error(r.status);
+    var rows = await r.json(); // array, índice 0 = mês mais recente
+    var cur = rows[0] || {};
+    var prev = rows[1] || {};
+    document.getElementById('kpiGrossRevenue').textContent = fmt(cur.gross_revenue);
+    // ... popular todos os KPIs
+  } catch(e) {
+    console.warn('sales/summary:', e);
+  }
+});
+```
+
+**Antes de implementar:** Ler cada página para mapear os IDs dos elementos KPI.
+O Playwright identificou que os IDs dos KPIs existem mas estão com valores estáticos.
+
+### Prioridade 2 — Login do usuário master
+Passos manuais (usuário deve fazer):
+1. Supabase → Authentication → Users → Add user → `ferrerjoao2206@gmail.com`
+2. SQL Editor → rodar `supabase/setup_master_user.sql` completo
+
+### Prioridade 3 — estoque.html KPIs restantes
+Mapear e popular: `khSaldoDisp`, `khRuptura`, `khCobertura`, `khValidadeCrit`,
+"acurácia 96,4%" e footer. Chamar `/api/dashboard/inventory/summary`.
+
+### Prioridade 4 — Fix SQL Injection no Oracle worker
+Em `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85:
+substituir template strings SQL por consultas parametrizadas antes de conectar Oracle.
+
+### Prioridade 5 — Implementar `/api/import` no backend
 ```typescript
 app.post('/api/import', upload.single('file'), async (req, res) => {
-  const { module } = req.body;
+  const { module } = req.body; // 'customers' | 'products' | 'orders' | etc.
   const file = req.file;
-  // parse CSV/XLSX, upsert no Supabase conforme o módulo
+  // parse CSV/XLSX → upsert no Supabase
 });
 ```
 Usar `multer` para upload e `xlsx` ou `csv-parse` para leitura.
-
-### Passo 5 — Commit e deploy após cada grupo de correções
-```bash
-cd "c:\Users\Natgeo50\Documents\dashboardnatgeo"
-git add -A
-git commit -m "fix: descrição do que foi corrigido"
-git push origin main
-# Aguardar build no Coolify (~3 min)
-# Verificar em: http://byy6u6lkrgic5tca4vlhvgy8.177.7.43.206.sslip.io
-# Usar Ctrl+Shift+R para forçar reload sem cache
-```
 
 ---
 
 ## 6. Perguntas em aberto
 
-1. **Quando as migrations serão aplicadas?** Sem isso, nenhuma API retorna dados reais
-   e todos os dashboards ficam zerados (o que é o comportamento correto, mas não há
-   como validar se os endpoints funcionam).
+1. **Credenciais do Oracle ERP disponíveis?** O worker está implementado mas nunca
+   rodou com dados reais. Há SQL Injection que precisa ser corrigido antes.
 
-2. **As credenciais do Oracle ERP estão disponíveis?** O worker de sync está
-   implementado mas não testado com dados reais. Há também um SQL Injection confirmado
-   em `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85 que precisa
-   ser corrigido antes de conectar o Oracle.
+2. **Formato de CSV para importação?** Template fixo por módulo ou formato livre?
 
-3. **O endpoint `/api/import` deve aceitar qual formato de CSV?** Existe um template
-   para cada tipo de dado (clientes, produtos, etc.) ou o usuário importa no formato
-   que tiver?
-
-4. **Autenticação:** O sistema tem `login.html` funcional mas nenhum usuário cadastrado
-   no Supabase. Será necessário criar um usuário manualmente no Supabase Auth para
-   testar o fluxo completo.
-
-5. **Domínio próprio?** Atualmente o app roda em `sslip.io` (IP dinâmico). O browser
-   exibe "Inseguro". Se houver um domínio próprio, configurar SSL no Coolify.
+3. **Domínio próprio?** Atualmente em `sslip.io` sem SSL. Browser exibe "Inseguro".
 
 ---
 
@@ -262,74 +268,80 @@ git push origin main
 ### Arquivos-chave
 | Arquivo | Descrição |
 |---|---|
-| `js/sidebar.js` | Sidebar canônica — injeta HTML em todas as páginas via DOMContentLoaded |
-| `js/auth.js` | Gerenciamento de sessão — aguarda `sidebarReady` para popular usuário |
-| `js/import.js` | Modal de importação CSV/Excel — drag-and-drop, envia para `/api/import` |
-| `js/api.js` | Cliente HTTP para API Express — sem fallback para mocks |
-| `src/api/server.ts` | Servidor Express — 14 endpoints, todos sem auth ainda |
-| `supabase/migrations/` | 8 migrations SQL — NÃO aplicadas no banco ainda |
-| `workers/oracle-sync/` | Worker de sync Oracle → Supabase |
+| `js/sidebar.js` | Sidebar canônica — injeta HTML, controla módulos bloqueados |
+| `js/auth.js` | Sessão, `isMaster()`, `MASTER_EMAIL`, aguarda `sidebarReady` |
+| `js/access.js` | Overlay bloqueador para módulos restritos |
+| `js/import.js` | Modal drag-and-drop CSV/XLS/XLSX |
+| `js/api.js` | Cliente HTTP para API Express |
+| `src/api/server.ts` | Express — todos os endpoints `/api/*` |
+| `src/repositories/sales.ts` | Queries de vendas → views Supabase |
+| `src/repositories/finance.ts` | Queries financeiras → views Supabase |
+| `supabase/migrations/` | 22 migrations SQL — 21 aplicadas, 022 é só índices |
+| `supabase/migrations/007_views.sql` | Views de dashboard (sales, finance, inventory) |
+| `supabase/setup_master_user.sql` | Script de setup do usuário master |
+| `playwright.config.ts` | Config Playwright E2E |
+| `e2e/` | Suite de testes — 4 specs, 43 testes, todos passando |
+| `workers/oracle-sync/` | Worker Oracle → Supabase (não conectado, SQL Injection presente) |
 
-### CSS canônico da sidebar (correto — usado em `financeiro.html`)
-```css
-.sidebar { width: var(--sidebar-w); background: var(--accent); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; overflow-y: auto; }
-.sidebar-logo { height: var(--header-h); display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,.1); flex-shrink: 0; }
-.logo-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; }
-.logo-name { font-size: 1rem; font-weight: 700; color: #fff; }
-.logo-name span { color: #95d5b2; }
-.sidebar-section { padding: 16px 16px 4px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.45); }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-sm); margin: 1px 8px; cursor: pointer; color: rgba(255,255,255,.75); font-size: .86rem; text-decoration: none; transition: all .15s; font-weight: 500; }
-.nav-item i { width: 16px; text-align: center; font-size: .82rem; flex-shrink: 0; }
-.nav-item:hover { background: rgba(255,255,255,.12); color: #fff; }
-.nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
-.nav-item.active i { color: #fff; }
-.sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding: 14px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: .78rem; color: #fff; flex-shrink: 0; }
-.u-name { font-size: .82rem; font-weight: 600; color: #fff; }
-.u-role { font-size: .72rem; color: rgba(255,255,255,.55); }
-.logout-btn { margin-left: auto; color: rgba(255,255,255,.55); cursor: pointer; font-size: .82rem; transition: color .15s; }
-.logout-btn:hover { color: #fff; }
+### Endpoints de API — referência rápida
+```
+GET  /api/config                        → sem auth, retorna URL do Supabase
+GET  /api/dashboard/sales/summary       → ?months=N
+GET  /api/dashboard/sales/by-day        →
+GET  /api/dashboard/sales/customers     → ?limit=N
+GET  /api/dashboard/sales/products      → ?limit=N
+GET  /api/dashboard/finance/summary     →
+GET  /api/dashboard/finance/receivable  →
+GET  /api/dashboard/finance/payable     →
+GET  /api/dashboard/inventory/summary   →
+GET  /api/dashboard/inventory/products  →
+GET  /api/dashboard/inventory/expiring  → ?daysAhead=N
+GET  /api/sync/status                   →
+POST /api/import                        → NÃO IMPLEMENTADO
+```
+Todos (exceto `/api/config`) exigem `Authorization: Bearer <token>`.
+Token vem de `NatGeoAuth.getSession().access_token`.
+
+### Sessão fake para Playwright (injetada via addInitScript)
+```javascript
+// MASTER_SESSION em e2e/helpers.ts
+{
+  access_token: 'fake-master-token',
+  expires_at: Date.now() + 3600000,
+  user: { id: 'master-uuid', email: 'ferrerjoao2206@gmail.com' }
+}
+// COMMON_SESSION — mesmo mas com email diferente
+{ user: { email: 'user@example.com' } }
 ```
 
-### Sidebar HTML placeholder (igual em todas as páginas)
+### Ordem correta de scripts em cada página
 ```html
-<aside class="sidebar"></aside>
-```
-O `sidebar.js` injeta todo o conteúdo via JS. Não colocar nada dentro do `<aside>`.
-
-### Ordem correta dos scripts em cada página
-```html
-<!-- No final do <body>, nesta ordem: -->
+<!-- No <head> ou antes do </body>: -->
 <script src="js/api.js"></script>
-<script src="js/sidebar.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/access.js"></script>
+<script src="js/sidebar.js"></script>
 <!-- scripts específicos da página... -->
 <script src="js/import.js"></script>
 ```
-
-### Evento `sidebarReady`
-`sidebar.js` dispara `document.dispatchEvent(new CustomEvent('sidebarReady'))` ao terminar.
-`auth.js` escuta esse evento antes de preencher `#userInitials` e `#userName`.
-Se precisar fazer algo após a sidebar estar pronta, use:
-```javascript
-document.addEventListener('sidebarReady', function() { /* seu código */ }, { once: true });
-```
-
-### Verificar sidebar CSS de um arquivo
-```python
-import re
-with open('nome-do-arquivo.html', encoding='utf-8') as f: c = f.read()
-m = re.search(r'\.sidebar\s*\{[^}]+\}', c)
-print(m.group() if m else 'not found')
-```
+`access.js` deve vir antes de `sidebar.js` (ambos dependem de `auth.js`).
 
 ### Deploy
 ```bash
 cd "c:\Users\Natgeo50\Documents\dashboardnatgeo"
 git add arquivo.html js/arquivo.js
-git commit -m "fix: descrição"
+git commit -m "feat: descrição"
 git push origin main
-# Coolify rebuilda automaticamente — verificar aba Deployments no painel
+# Coolify rebuilda (~3 min). Verificar aba Deployments.
+# Ctrl+Shift+R para reload sem cache no browser.
+```
+
+### Rodar E2E localmente
+```bash
+cd "c:\Users\Natgeo50\Documents\dashboardnatgeo"
+npx playwright test          # todos os testes
+npx playwright test e2e/dashboard.spec.ts  # só o dashboard
+npx playwright test --ui     # interface visual
 ```
 
 ---
@@ -337,40 +349,34 @@ git push origin main
 ## 8. Instruções para a próxima sessão
 
 ### Tom e abordagem
-- O usuário quer um produto que pareça o **Bling ERP** — coeso, profissional, todos os
-  módulos conectados. Priorize aparência e consistência visual antes de funcionalidade.
 - Respostas em **português**.
-- Seja direto: execute e mostre, não explique demais antes de fazer.
-- O usuário aprova planos antes da execução em casos de mudanças grandes, mas para
-  bugs óbvios pode ir direto.
+- Execute e mostre — não explique demais antes de fazer.
+- Para bugs óbvios, vai direto. Para mudanças grandes, confirme o plano primeiro.
+- O objetivo visual é parecer com o **Bling ERP**: coeso, profissional, dados reais.
 
 ### Armadilhas a evitar
-1. **Não use scripts Python com `print()` contendo caracteres Unicode especiais** (→, ←,
-   emojis) no Windows — causa `UnicodeEncodeError` no PowerShell com encoding cp1252.
-   Use `Write-Host` no PowerShell ou escape os caracteres.
 
-2. **Verificar SEMPRE a posição do `sidebar.js` relativa ao `<aside>`** antes de
-   assumir que vai funcionar. Se sidebar.js vier antes do `<aside>` no HTML, vai
-   retornar `null` e não injetar nada. Use `DOMContentLoaded` (já está implementado).
+1. **TypeScript break no build Docker.** Antes de qualquer push que toque `.ts`,
+   rodar `npx tsc --noEmit`. Se falhar, o app não sobe no Coolify.
 
-3. **O Docker build falha se o TypeScript tiver erro.** Antes de qualquer push que
-   toque arquivos `.ts`, rodar `npx tsc --noEmit` no diretório para verificar.
+2. **O `NatGeoApi` de `js/api.js` já cuida do Bearer token?** Verificar antes de
+   duplicar a lógica de autenticação nas páginas. Se `NatGeoApi.get(path)` já injeta
+   o header, usar ele em vez de `fetch()` manual.
 
-4. **Não há fallback para mocks na API.** Se a API falhar (banco vazio), os dashboards
-   mostram estado vazio — isso é correto e intencional. Não confundir com bug.
+3. **Não use `git add -A`** — pode incluir arquivos temporários, `.env`, etc.
+   Sempre adicionar arquivos específicos.
 
-5. **As migrations do Supabase ainda não foram aplicadas.** Não tente testar endpoints
-   de dados reais sem primeiro aplicar as migrations. O banco está vazio.
+4. **Não há fallback para mocks.** Se a API falhar (banco sem dados), os dashboards
+   mostram `—`. Isso é correto — não confundir com bug.
 
-6. **`dashboard-distribuidora.html` tem CSS de sidebar diferente das outras páginas.**
-   Especificamente o `.sidebar { background }` ainda é `rgba(255,255,255,.85)`.
-   O primeiro passo da próxima sessão é corrigir isso.
+5. **`sidebar.js` usa `DOMContentLoaded`.** Se adicionar código que depende da sidebar,
+   escute o evento `sidebarReady`, não `DOMContentLoaded`.
 
-7. **`git add -A` pode incluir os scripts Python temporários** (`fix_all.py`,
-   `fix_zeros.py`, etc.). Adicionar apenas os arquivos necessários ou garantir que
-   os `.py` não sejam commitados.
+6. **Migration 022** é apenas índices de performance. Pode ser aplicada a qualquer
+   momento sem risco. As 21 aplicadas cobrem toda a funcionalidade.
 
-### Prioridade imediata
-O único bug crítico visual restante é o CSS da sidebar em `dashboard-distribuidora.html`.
-Começar por aí, verificar no Coolify, depois prosseguir com o zero de dados fictícios
-nas demais páginas.
+7. **Supabase Auth ≠ migrations.** As migrations criam tabelas e views, mas não criam
+   usuários no Auth. O usuário precisa ser criado manualmente no Supabase Dashboard.
+
+8. **SQL Injection no Oracle worker.** Não conectar o Oracle antes de corrigir.
+   O arquivo é `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85.

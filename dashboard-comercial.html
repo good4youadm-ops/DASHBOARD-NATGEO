@@ -303,8 +303,9 @@
     @media(max-width:880px)  { .g2 { grid-template-columns: 1fr; } :root { --sidebar-w: 56px; } .nav-item span,.sidebar-section,.u-name,.u-role,.logo-name { display: none; } .sidebar-logo { justify-content: center; padding: 0; } .nav-item { justify-content: center; padding: 8px; } .sidebar-footer { justify-content: center; } }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/access.js"></script>
   <script src="js/sidebar.js"></script>
-<script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -338,7 +339,8 @@
       </div>
     </div>
     <div class="yoy-badge"><i class="fa-regular fa-calendar-check"></i> <span id="yoyLabel">vs. Abril 2024</span></div>
-    <div class="upd-info no-print"><div class="upd-dot"></div> Atualizado hoje 07:30</div>
+    <div class="upd-info no-print" id="updInfo"><div class="upd-dot" id="updDot"></div><span id="updText">Carregando…</span></div>
+    <button class="top-btn no-print" id="btnAtualizar" style="padding:5px 11px" title="Atualizar dados agora"><i class="fa-solid fa-rotate-right"></i> Atualizar</button>
     <button class="exp-btn no-print" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Exportar</button>
     <button class="btn-import" onclick="NatGeoImport.open()" title="Importar CSV / Excel"><i class="fa-solid fa-file-arrow-up"></i> Importar</button>
   </header>
@@ -825,20 +827,22 @@ function toast(type, msg) {
 }
 
 /* ─── FORMAT HELPERS ─── */
-function fmtR(v)  { return 'R$\u00a0' + Math.round(Math.abs(v)).toLocaleString('pt-BR'); }
+function fmtR(v)  { if (v == null || isNaN(v)) return '\u2014'; return 'R$\u00a0' + Math.round(Math.abs(v)).toLocaleString('pt-BR'); }
 function fmtRS(v) {
+  if (v == null || isNaN(v)) return '\u2014';
   const a = Math.abs(v);
   if (a >= 1000000) return 'R$\u00a0' + (a/1000000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'M';
   if (a >= 1000)    return 'R$\u00a0' + Math.round(a/1000) + 'K';
   return fmtR(v);
 }
-function fmtP(v)  { return v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%'; }
-function fmtPP(v) { const s = v >= 0 ? '+' : ''; return s + v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' p.p.'; }
-function fmtN(v)  { return Math.round(v).toLocaleString('pt-BR'); }
+function fmtP(v)  { if (v == null || isNaN(v)) return '—'; return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%'; }
+function fmtPP(v) { if (v == null || isNaN(v)) return '—'; const s = v >= 0 ? '+' : ''; return s + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' p.p.'; }
+function fmtN(v)  { if (v == null || isNaN(v)) return '—'; return Math.round(v).toLocaleString('pt-BR'); }
 
 /* ─── YOY CHIP ─── */
 // inverse=true: going down is good (devoluções, ruptura)
 function chip(cur, prev, fmt='money', inverse=false) {
+  if (cur == null || prev == null || isNaN(cur) || isNaN(prev)) return ['neu', '—'];
   const diff = cur - prev;
   const pct  = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
   const good = inverse ? diff <= 0 : diff >= 0;
@@ -862,9 +866,9 @@ function setText(id, txt) { document.getElementById(id).textContent = txt; }
 /* ─── PERIOD DATA ─── */
 const DATA = {
   'hoje': {
-    yoy: 'vs. hoje em 2025 (08/04)',
-    fat:   { c:  93000,  p:  80500  },
-    tick:  { c:   1190,  p:   1045  },
+    yoy: 'vs. mesmo dia (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c:   15.5,  p:    6.4  },
     canais:[
       { name:'Varejo',       col:'#1a4731', c: 46500, p: 40250, pct: 50.0 },
@@ -895,9 +899,9 @@ const DATA = {
     metaEquipe: { c: 83.4, p: 80.1 },
   },
   '7d': {
-    yoy: 'vs. mesmos 7 dias de 2024',
-    fat:   { c: 652000,   p: 563500  },
-    tick:  { c: 1215,     p: 1062    },
+    yoy: 'vs. mesmos 7 dias (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c: 15.7,     p: 6.8     },
     canais:[
       { name:'Varejo',       col:'#1a4731', c: 326000, p: 281750, pct: 50.0 },
@@ -928,9 +932,9 @@ const DATA = {
     metaEquipe: { c: 87.2, p: 82.6 },
   },
   '15d': {
-    yoy: 'vs. mesmos 15 dias de 2024',
-    fat:   { c: 1477000,  p: 1273000 },
-    tick:  { c: 1228,     p: 1071    },
+    yoy: 'vs. mesmos 15 dias (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c: 16.0,     p: 7.1     },
     canais:[
       { name:'Varejo',       col:'#1a4731', c: 739000, p: 636000, pct: 50.0 },
@@ -961,42 +965,29 @@ const DATA = {
     metaEquipe: { c: 88.4, p: 83.5 },
   },
   '1m': {
-    yoy: 'vs. Abril 2024',
-    fat:   { c: 2840000,  p: 2450000 },
-    tick:  { c: 1247,     p: 1089    },
-    cres:  { c: 15.9,     p: 7.2     },
-    canais:[
-      { name:'Varejo',       col:'#1a4731', c:1420000, p:1225000, pct:50.0 },
-      { name:'Food Service', col:'#007aff', c: 710000, p: 588000, pct:25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c: 710000, p: 637000, pct:25.0 },
-    ],
-    cli:    { c: 847,  p: 721  },
-    novo:   { c: 43,   p: 31   },
-    reativ: { c: 12.4, p: 8.9  },
-    freq:   { c: 2.3,  p: 2.1  },
-    meta:   { c: 94.7, p: 89.2, realV: 2840000, goalV: 3000000 },
-    fill:   { c: 96.2, p: 93.7 },
-    ot:     { prazo:{ c:88.3,p:84.1 }, prox:{ c:7.2,p:9.8 }, atr:{ c:4.5,p:6.1 }, vol:{ prazo:1243,prox:101,atr:63 } },
-    dev:    { c: 1.8,  p: 2.4  },
-    rupt:   { c: 23,   p: 31   },
-    spark:  [8.1,10.4,12.3,13.5,14.8,15.2,15.9],
-    chart:  { labels:['S1 Mar','S2 Mar','S3 Mar','S4 Mar','S1 Abr','S2 Abr'], cur:[620000,680000,710000,690000,730000,710000], prev:[540000,590000,610000,600000,640000,470000] },
-    vendedores: [
-      { initials:'JS', name:'João Santos',        fat:487000, prev:392000, meta:500000 },
-      { initials:'ML', name:'Maria Lima',          fat:423000, prev:445000, meta:500000 },
-      { initials:'PA', name:'Pedro Alves',         fat:401000, prev:321000, meta:400000 },
-      { initials:'AC', name:'Ana Costa',           fat:374000, prev:298000, meta:400000 },
-      { initials:'CM', name:'Carlos Melo',         fat:356000, prev:380000, meta:500000 },
-      { initials:'BF', name:'Beatriz Faria',       fat:312000, prev:287000, meta:350000 },
-      { initials:'RT', name:'Ricardo Torres',      fat:289000, prev:264000, meta:350000 },
-      { initials:'FO', name:'Fernanda Oliveira',   fat:198000, prev:163000, meta:300000 },
-    ],
-    metaEquipe: { c: 89.6, p: 84.3 },
+    yoy: 'vs. mesmo período (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
+    cres:  { c: null, p: null },
+    canais: [],
+    cli:    { c: null, p: null },
+    novo:   { c: null, p: null },
+    reativ: { c: null, p: null },
+    freq:   { c: null, p: null },
+    meta:   { c: null, p: null, realV: null, goalV: null },
+    fill:   { c: null, p: null },
+    ot:     { prazo:{ c:null,p:null }, prox:{ c:null,p:null }, atr:{ c:null,p:null }, vol:{ prazo:0,prox:0,atr:0 } },
+    dev:    { c: null, p: null },
+    rupt:   { c: null, p: null },
+    spark:  [],
+    chart:  { labels:[], cur:[], prev:[] },
+    vendedores: [],
+    metaEquipe: { c: null, p: null },
   },
   'tri': {
-    yoy: 'vs. Q2 2024 (Fev–Abr)',
-    fat:   { c: 8040000,  p: 6870000 },
-    tick:  { c: 1261,     p: 1104    },
+    yoy: 'vs. mesmo trimestre (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c: 17.0,     p: 8.4     },
     canais:[
       { name:'Varejo',       col:'#1a4731', c:4020000, p:3435000, pct:50.0 },
@@ -1027,9 +1018,9 @@ const DATA = {
     metaEquipe: { c: 91.3, p: 86.1 },
   },
   'sem': {
-    yoy: 'vs. 1º Sem. 2024 (Nov–Abr)',
-    fat:   { c:15840000,  p:13860000 },
-    tick:  { c: 1238,     p: 1082    },
+    yoy: 'vs. mesmo semestre (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c: 14.3,     p: 6.9     },
     canais:[
       { name:'Varejo',       col:'#1a4731', c:7920000, p:6930000, pct:50.0 },
@@ -1060,9 +1051,9 @@ const DATA = {
     metaEquipe: { c: 88.2, p: 83.4 },
   },
   'ano': {
-    yoy: 'vs. Jan–Abr 2024',
-    fat:   { c:10240000,  p: 8850000 },
-    tick:  { c: 1243,     p: 1086    },
+    yoy: 'vs. mesmo período (ano anterior)',
+    fat:   { c: null, p: null },
+    tick:  { c: null, p: null },
     cres:  { c: 15.7,     p: 7.8     },
     canais:[
       { name:'Varejo',       col:'#1a4731', c:5120000, p:4425000, pct:50.0 },
@@ -1096,22 +1087,11 @@ const DATA = {
 
 
 
-/* ─── CAMPAIGN DATA (static) ─── */
-const CAMPAIGNS = [
-  { name:'Semana do Cereal',    tipo:'int', pct:112, status:'ok',  stLabel:'Superado' },
-  { name:'Promoção Bebidas',    tipo:'ext', pct: 78, status:'low', stLabel:'Abaixo' },
-  { name:'Especial Laticínios', tipo:'int', pct: 95, status:'bom', stLabel:'Na meta' },
-];
+/* ─── CAMPAIGN DATA — populado via API futuramente ─── */
+const CAMPAIGNS = [];
 
-/* ─── CLIENT DRILL-DOWN DATA ─── */
-const CLIENTS = [
-  { name:'Supermercado São Paulo', freq:3.2, ticket:4820, ultima:'08/04/2025', hist:[2.1,2.4,2.8,3.0,3.1,3.2] },
-  { name:'Mercadinho do Bairro',   freq:1.8, ticket:1240, ultima:'05/04/2025', hist:[2.0,1.9,1.7,1.6,1.8,1.8] },
-  { name:'Restaurante Central',    freq:4.5, ticket:2340, ultima:'07/04/2025', hist:[3.8,4.0,4.1,4.3,4.4,4.5] },
-  { name:'Atacadão Norte',         freq:2.1, ticket:8920, ultima:'03/04/2025', hist:[1.8,2.0,2.0,2.1,2.1,2.1] },
-  { name:'Mercearia Família',      freq:1.5, ticket: 780, ultima:'02/04/2025', hist:[1.8,1.7,1.6,1.5,1.5,1.5] },
-  { name:'Distribuidora Central',  freq:2.8, ticket:6120, ultima:'06/04/2025', hist:[2.2,2.4,2.5,2.7,2.7,2.8] },
-];
+/* ─── CLIENT DRILL-DOWN DATA — populado via API futuramente ─── */
+const CLIENTS = [];
 
 /* ─── CHARTS ─── */
 let fatChart = null, sparkChart = null, drillChartInst = null;
@@ -1203,19 +1183,23 @@ function renderCanais(canais) {
 }
 
 function renderMelhorCanal(canais) {
+  if (!canais || canais.length === 0) {
+    setText('kv-canalTop', '—'); setChip('kc-canalTop','neu','—'); setText('kp-canalTop','');
+    return;
+  }
   let best = canais[0];
-  canais.forEach(c => { if ((c.c-c.p)/c.p > (best.c-best.p)/best.p) best = c; });
+  canais.forEach(c => { if (c.p && best.p && (c.c-c.p)/c.p > (best.c-best.p)/best.p) best = c; });
   const [cls, lbl] = chip(best.c, best.p, 'money');
   setText('kv-canalTop', best.name);
   setChip('kc-canalTop', cls, lbl);
-  setText('kp-canalTop', `${fmtP(((best.c-best.p)/best.p)*100)} de crescimento`);
+  setText('kp-canalTop', best.p ? `${fmtP(((best.c-best.p)/best.p)*100)} de crescimento` : '');
 }
 
 function renderOT(ot) {
   const total = ot.vol.prazo + ot.vol.prox + ot.vol.atr;
-  document.getElementById('otPrazo').style.width    = ot.prazo.c + '%';
-  document.getElementById('otProximo').style.width  = ot.prox.c + '%';
-  document.getElementById('otAtrasado').style.width = ot.atr.c + '%';
+  document.getElementById('otPrazo').style.width    = (ot.prazo.c ?? 0) + '%';
+  document.getElementById('otProximo').style.width  = (ot.prox.c  ?? 0) + '%';
+  document.getElementById('otAtrasado').style.width = (ot.atr.c   ?? 0) + '%';
   const [clsP, lblP] = chip(ot.prazo.c, ot.prazo.p, 'pp');
   const [clsX, lblX] = chip(ot.prox.c,  ot.prox.p,  'pp', true);
   const [clsA, lblA] = chip(ot.atr.c,   ot.atr.p,   'pp', true);
@@ -1294,15 +1278,37 @@ function updateDashboard(period) {
   curPeriod = period;
   setText('yoyLabel', d.yoy);
 
+  // Sem dados da API ainda — exibe estado vazio profissional
+  if (!d.fat || d.fat.c == null) {
+    const dash = '—';
+    const neu  = 'aguardando dados';
+    ['kv-fat','kv-cres','kv-tick','kv-canalTop','kv-cli','kv-novo','kv-reativ',
+     'kv-freq','kv-meta','kv-fill','kv-ot','kv-dev','kv-rupt'].forEach(id => setText(id, dash));
+    ['kc-fat','kc-cres','kc-tick','kc-canalTop','kc-cli','kc-novo','kc-reativ',
+     'kc-freq','kc-meta','kc-fill','kc-ot','kc-dev','kc-rupt'].forEach(id => setChip(id,'neu',neu));
+    ['kp-fat','kp-cres','kp-tick','kp-canalTop','kp-cli','kp-novo','kp-reativ',
+     'kp-freq','kp-meta','kp-fill','kp-ot','kp-dev','kp-rupt'].forEach(id => setText(id,''));
+    ['canalList','campList'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+    const rb = document.getElementById('rankBody');
+    if (rb) rb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;font-size:.83rem">Aguardando dados da API</td></tr>';
+    const mb = document.getElementById('metaBody'); if(mb) mb.innerHTML='';
+    const fe = document.getElementById('campEmpty'); if(fe) fe.style.display='block';
+    const fa = document.getElementById('campActiveCount'); if(fa) fa.textContent='0 ativas';
+    const metaEl = document.getElementById('metaBar'); if(metaEl) metaEl.style.width='0%';
+    setText('metaReal','—'); setText('metaGoal','Meta: —'); setText('metaRest','');
+    if (d.chart) initFatChart(d.chart);
+    if (d.spark) initSparkline(d.spark.length ? d.spark : [0]);
+    return;
+  }
+
   /* 1.1 Faturamento */
   setText('kv-fat', fmtR(d.fat.c));
   { const [c,l]=chip(d.fat.c,d.fat.p,'money'); setChip('kc-fat',c,l); setText('kp-fat',`vs. ${fmtR(d.fat.p)}`); }
 
   /* 1.2 Crescimento */
-  setText('kv-cres', `+${fmtP(d.cres.c)}`);
-  { const diff=d.cres.c-d.cres.p; const cls=diff>=0?'up':'dn'; const arr=diff>=0?'▲':'▼';
-    setChip('kc-cres',cls,`${arr} ${diff>=0?'+':''}${diff.toFixed(1).replace('.',',')} p.p.`);
-    setText('kp-cres',`vs. +${fmtP(d.cres.p)} em 2024`); }
+  setText('kv-cres', d.cres.c != null ? `+${fmtP(d.cres.c)}` : '—');
+  { const [cc,cl]=chip(d.cres.c, d.cres.p, 'pp'); setChip('kc-cres',cc,cl);
+    setText('kp-cres', d.cres.p != null ? `vs. +${fmtP(d.cres.p)} em 2024` : ''); }
   initSparkline(d.spark);
 
   /* 1.3 Ticket médio */
@@ -1331,23 +1337,25 @@ function updateDashboard(period) {
     setChip('kc-reativ',cls,`${arr} ${fmtPP(diff)}`); setText('kp-reativ',`vs. ${fmtP(d.reativ.p)} em 2024`); }
 
   /* 3.1 Frequência */
-  setText('kv-freq', d.freq.c.toFixed(1).replace('.',',') + 'x');
-  { const diff=d.freq.c-d.freq.p; const pct=((diff/d.freq.p)*100); const cls=diff>=0?'up':'dn'; const arr=diff>=0?'▲':'▼';
-    setChip('kc-freq',cls,`${arr} ${diff>=0?'+':''}${diff.toFixed(1).replace('.',',')} (${diff>=0?'+':''}${fmtP(Math.abs(pct))})`);
-    setText('kp-freq',`vs. ${d.freq.p.toFixed(1).replace('.',',')}x em 2024`); }
+  setText('kv-freq', d.freq.c != null ? d.freq.c.toFixed(1).replace('.',',') + 'x' : '—');
+  { const [fc,fl] = chip(d.freq.c, d.freq.p, 'plain'); setChip('kc-freq',fc,fl);
+    setText('kp-freq', d.freq.p != null ? `vs. ${d.freq.p.toFixed(1).replace('.',',')}x em 2024` : ''); }
 
   /* 3.2 Meta Global */
   setText('kv-meta', fmtP(d.meta.c));
   { const diff=d.meta.c-d.meta.p; const cls=diff>=0?'up':'dn'; const arr=diff>=0?'▲':'▼';
     setChip('kc-meta',cls,`${arr} ${fmtPP(diff)}`); setText('kp-meta',`vs. ${fmtP(d.meta.p)} em 2024`); }
-  { const pct=Math.min((d.meta.realV/d.meta.goalV)*100,100);
+  { const rv = d.meta.realV, gv = d.meta.goalV;
+    const pct = (rv != null && gv) ? Math.min((rv/gv)*100,100) : 0;
     const barEl=document.getElementById('metaBar');
     barEl.style.width=pct+'%';
     barEl.className='pbar-fill '+(pct>=100?'green':pct>=80?'amber':'red');
-    setText('metaReal', fmtR(d.meta.realV));
-    setText('metaGoal', `Meta: ${fmtR(d.meta.goalV)}`);
-    const rest = d.meta.goalV - d.meta.realV;
-    setText('metaRest', rest>0?`Faltam ${fmtR(rest)} para atingir a meta`:`Meta atingida — superado em ${fmtR(Math.abs(rest))}`); }
+    setText('metaReal', fmtR(rv));
+    setText('metaGoal', `Meta: ${fmtR(gv)}`);
+    if (rv != null && gv != null) {
+      const rest = gv - rv;
+      setText('metaRest', rest>0?`Faltam ${fmtR(rest)} para atingir a meta`:`Meta atingida — superado em ${fmtR(Math.abs(rest))}`);
+    } else { setText('metaRest',''); } }
 
   /* Campanhas */
   renderCampanhas();
@@ -1356,7 +1364,7 @@ function updateDashboard(period) {
   setText('kv-fill', fmtP(d.fill.c));
   { const diff=d.fill.c-d.fill.p; const cls=diff>=0?'up':'dn'; const arr=diff>=0?'▲':'▼';
     setChip('kc-fill',cls,`${arr} ${fmtPP(diff)}`); setText('kp-fill',`vs. ${fmtP(d.fill.p)} em 2024`); }
-  document.getElementById('fillBar').style.width = d.fill.c + '%';
+  document.getElementById('fillBar').style.width = (d.fill.c ?? 0) + '%';
 
   /* 4.2 On-time */
   setText('kv-ot', fmtP(d.ot.prazo.c));
@@ -1739,7 +1747,7 @@ function exportPDF() {
 
 function exportCSV() {
   const d = DATA[curPeriod];
-  if (!d) return;
+  if (!d || !d.fat || d.fat.c == null) { alert('Aguardando dados da API para exportar.'); return; }
   const rows = [];
   const periodLabels = { hoje:'Hoje', '7d':'Últimos 7 dias', '15d':'Últimos 15 dias', '1m':'Último mês', tri:'Trimestre', sem:'Semestre', ano:'Ano' };
   const personFilter = document.getElementById('afChipLabel').textContent || 'Todos (geral)';
@@ -1828,9 +1836,10 @@ function exportCSV() {
 }
 
 /* ─── INIT COMERCIAL (API) ─── */
-(async function initComercial() {
+async function initComercial() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
+  DashboardAPI.setUpdStatus('loading', 'Atualizando…');
   let summary, byDay;
   try {
     [summary, byDay] = await Promise.all([
@@ -1838,6 +1847,7 @@ function exportCSV() {
       DashboardAPI.sales.byDay(),
     ]);
   } catch (e) {
+    DashboardAPI.setUpdStatus('error', 'Erro ao atualizar');
     document.querySelector('.main').insertAdjacentHTML('afterbegin',
       `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
         <i class="fa-solid fa-circle-exclamation"></i>
@@ -1887,8 +1897,31 @@ function exportCSV() {
   if (curPeriod === '1m') updateDashboard('1m');
 
   DashboardAPI.afterLoad();
-})();
+  const now = new Date();
+  const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  DashboardAPI.setUpdStatus('ok', 'Atualizado às ' + hhmm);
+}
+
+/* === POLLING + BOTÃO ATUALIZAR === */
+initComercial().then(() => {
+  /* Aplica filtros vindos de querystring (ex: ?periodo=mes_atual, ?cliente=NomeCliente) */
+  NatGeoNav.applyFromURL({
+    periodo: function(val) {
+      const mapa = { mes_atual: '1m', trimestre: 'tri', semestre: 'sem', ano: 'ano' };
+      const key = mapa[val] || val;
+      if (DATA[key]) updateDashboard(key);
+    },
+    cliente: function(val) {
+      const dec = decodeURIComponent(val);
+      const inp = document.getElementById('drillInp');
+      if (inp) { inp.value = dec; inp.dispatchEvent(new Event('input')); }
+    },
+  });
+});
+setInterval(initComercial, 60000);
+document.getElementById('btnAtualizar').addEventListener('click', initComercial);
 </script>
+<script src="js/nav.js"></script>
 <script src="js/import.js"></script>
 </body>
 </html>

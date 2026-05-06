@@ -446,8 +446,9 @@
     }
   </style>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/access.js"></script>
   <script src="js/sidebar.js"></script>
-<script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -480,13 +481,18 @@
       <span class="api-dot" id="apiDot"></span>
       <span id="apiLabel">API</span>
     </div>
+    <div class="upd-info" id="updInfo" style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0" id="updDot"></div>
+      <span id="updText">Carregando…</span>
+    </div>
+    <button class="top-btn" id="btnAtualizar" title="Atualizar dados agora"><i class="fa-solid fa-rotate-right"></i> Atualizar</button>
   </header>
 
   <!-- ========== DASHBOARD ========== -->
   <div class="page active content" id="page-dashboard">
 
     <div class="kpi-grid">
-      <div class="kpi-card">
+      <div class="kpi-card" style="cursor:pointer" onclick="NatGeoNav.navTo('dashboard-comercial.html',{periodo:'mes_atual'})" title="Ver detalhe comercial do mês">
         <div class="kpi-top">
           <span class="kpi-label">Faturamento</span>
           <div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div>
@@ -497,7 +503,7 @@
           <span>vs. mes anterior</span>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" style="cursor:pointer" onclick="NatGeoNav.navTo('pedidos.html')" title="Ver todos os pedidos">
         <div class="kpi-top">
           <span class="kpi-label">Pedidos</span>
           <div class="kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
@@ -508,7 +514,7 @@
           <span>vs. mes anterior</span>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" style="cursor:pointer" onclick="NatGeoNav.navTo('dashboard-comercial.html',{periodo:'mes_atual'})" title="Ver análise comercial">
         <div class="kpi-top">
           <span class="kpi-label">Ticket Medio</span>
           <div class="kpi-icon"><i class="fa-solid fa-tags"></i></div>
@@ -519,7 +525,7 @@
           <span>vs. mes anterior</span>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" style="cursor:pointer" onclick="NatGeoNav.navTo('cadastros.html')" title="Ver clientes ativos">
         <div class="kpi-top">
           <span class="kpi-label">Clientes Ativos</span>
           <div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div>
@@ -573,7 +579,10 @@
       <div class="card card-body">
         <div class="card-header">
           <div><div class="card-title">Alertas</div><div class="card-sub">Estoque critico</div></div>
-          <span class="pill red">6</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="pill red" id="alertasPill" style="display:none">0</span>
+            <a href="estoque.html?filtro=critico" class="card-lnk" style="font-size:.74rem">Ver todos →</a>
+          </div>
         </div>
         <div id="alertasEstoque"></div>
       </div>
@@ -584,9 +593,9 @@
         <div class="card-header">
           <div><div class="card-title">Pedidos Recentes</div><div class="card-sub">Ultimos 8 pedidos</div></div>
           <div style="display:flex;gap:7px">
-            <span class="pill green">3 entregues</span>
-            <span class="pill blue">5 em transito</span>
-            <span class="pill gray">6 separacao</span>
+            <span class="pill green" id="ordPillEntregue" style="display:none">0 entregues</span>
+            <span class="pill blue" id="ordPillTransito" style="display:none">0 em trânsito</span>
+            <span class="pill gray" id="ordPillSepara" style="display:none">0 separação</span>
           </div>
         </div>
       </div>
@@ -726,7 +735,7 @@
       <div class="card card-body">
         <div class="card-header">
           <div><div class="card-title">Alertas de Validade</div><div class="card-sub">Lotes proximos ao vencimento</div></div>
-          <span class="pill amber">14 lotes</span>
+          <span class="pill amber" id="validadePill" style="display:none">0 lotes</span>
         </div>
         <div id="alertasValidade"></div>
       </div>
@@ -1121,12 +1130,13 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
 /* ═══════════════════════════════════════════════════════
    INIT ASYNC — carrega todos os dados da API (ou mock)
 ═══════════════════════════════════════════════════════ */
-(async function initDashboard() {
+async function initDashboard() {
   const session = await NatGeoAuth.requireAuth();
   if (!session) return;
-  let salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring;
+  DashboardAPI.setUpdStatus('loading', 'Atualizando…');
+  let salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring, recentOrders;
   try {
-    [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring] = await Promise.all([
+    [salesArr, byDay, topProds, topClis, invSumArr, stockProds, expiring, recentOrders] = await Promise.all([
       DashboardAPI.sales.summary(3),
       DashboardAPI.sales.byDay(),
       DashboardAPI.sales.products(6),
@@ -1134,8 +1144,10 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
       DashboardAPI.inventory.summary(),
       DashboardAPI.inventory.products(),
       DashboardAPI.inventory.expiring(30),
+      DashboardAPI.orders.list({ limit: 8, sort: 'created_at:desc' }).catch(() => []),
     ]);
   } catch (e) {
+    DashboardAPI.setUpdStatus('error', 'Erro ao atualizar');
     document.querySelector('.main').insertAdjacentHTML('afterbegin',
       `<div style="margin:20px;padding:14px 18px;background:#fff1f0;border:1px solid #ffccc7;border-radius:12px;color:#a8071a;font-size:.84rem;display:flex;align-items:center;gap:10px">
         <i class="fa-solid fa-circle-exclamation"></i>
@@ -1191,17 +1203,20 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
   // ── Top Produtos ───────────────────────────────────────
   const maxRev = topProds[0]?.total_revenue || 1;
   const colors = [C.accent, C.accent2, C.accent3, '#52b788', '#74c69d', '#95d5b2'];
-  document.getElementById('topProdutos').innerHTML = topProds.slice(0, 6).map((p, i) => `
-    <div class="prog-row">
+  document.getElementById('topProdutos').innerHTML = topProds.slice(0, 6).map((p, i) => {
+    const nome = encodeURIComponent(p.product_name||p.sku||'');
+    return `<div class="prog-row" style="cursor:pointer" onclick="NatGeoNav.navTo('estoque.html',{produto:'${nome}'})" title="Ver no Estoque">
       <span class="prog-label">${p.product_name||p.sku||'—'}</span>
       <div class="prog-track"><div class="prog-fill" style="width:${Math.round((p.total_revenue||0)/maxRev*100)}%;background:${colors[i]||C.accent}"></div></div>
       <span class="prog-val">${DashboardAPI.fmtBRL(p.total_revenue)}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // ── Top Clientes ───────────────────────────────────────
   document.getElementById('topClientes').innerHTML = topClis.slice(0, 5).map((c, i) => {
     const av = (c.customer_name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    return `<div class="list-item">
+    const nome = encodeURIComponent(c.customer_name||'');
+    return `<div class="list-item" style="cursor:pointer" onclick="NatGeoNav.navTo('dashboard-comercial.html',{cliente:'${nome}',periodo:'mes_atual'})" title="Ver no Comercial">
       <span class="rank-num">${i+1}</span>
       <div class="cli-av">${av}</div>
       <div class="li-info"><strong>${c.customer_name||'—'}</strong><span>${c.segment||'—'}</span></div>
@@ -1211,35 +1226,58 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
 
   // ── Alertas Estoque ────────────────────────────────────
   const alerts = stockProds.filter(p => p.stock_alert !== 'normal').slice(0, 6);
+  const alertPill = document.getElementById('alertasPill');
+  if (alertPill) { alertPill.textContent = alerts.length; alertPill.style.display = alerts.length ? '' : 'none'; }
   document.getElementById('alertasEstoque').innerHTML = alerts.length === 0
     ? '<div style="padding:16px;color:var(--muted);font-size:.82rem;text-align:center">Sem alertas críticos</div>'
     : alerts.map(a => {
         const isCrit = a.stock_alert === 'sem_estoque' || a.ruptura;
-        return `<div class="list-item">
+        const nome = encodeURIComponent(a.product_name||a.sku||'');
+        return `<div class="list-item" style="cursor:pointer" onclick="NatGeoNav.navTo('estoque.html',{filtro:'critico',produto:'${nome}'})" title="Ver no Estoque">
           <div class="li-icon ${isCrit?'red':'amber'}"><i class="fa-solid ${isCrit?'fa-circle-exclamation':'fa-triangle-exclamation'}"></i></div>
           <div class="li-info"><strong>${a.product_name||a.sku}</strong><span>${a.qty_available||0} un — Min: ${a.min_stock||'?'}</span></div>
           <div class="li-right"><span class="pill ${isCrit?'red':'amber'}">${isCrit?'CRITICO':'BAIXO'}</span></div>
         </div>`;
       }).join('');
 
-  // ── Pedidos Table (top clientes como proxy de pedidos recentes) ────────
-  document.getElementById('ordersBody').innerHTML = topClis.slice(0, 6).map((c, i) => `<tr>
-    <td style="padding-left:22px"><span class="td-code">#26-${4420-i}</span></td>
-    <td class="td-strong">${c.customer_name||'—'}</td>
-    <td style="color:var(--text2)">—</td>
-    <td><span class="pill green" style="font-size:.65rem">${c.segment||'Geral'}</span></td>
-    <td style="text-align:center;color:var(--muted)">${c.total_orders||'—'}</td>
-    <td class="td-strong">${DashboardAPI.fmtBRL(c.total_revenue)}</td>
-    <td style="color:var(--muted)">—</td>
-    <td><span class="pill green">Entregue</span></td>
-    <td style="color:var(--muted);padding-right:22px">${DashboardAPI.fmtDate(c.last_order_date)}</td>
-  </tr>`).join('');
+  // ── Pedidos Recentes (dados reais de /api/orders) ────────
+  const orders = Array.isArray(recentOrders) ? recentOrders : (recentOrders?.data || []);
+  const stMap = { entregue: 'green', enviado: 'blue', em_transito: 'blue', separacao: 'gray',
+                  cancelado: 'red', pendente: 'amber', aprovado: 'blue' };
+  const stLbl = { entregue:'Entregue', enviado:'Enviado', em_transito:'Em Trânsito',
+                  separacao:'Separação', cancelado:'Cancelado', pendente:'Pendente', aprovado:'Aprovado' };
+  if (orders.length === 0) {
+    document.getElementById('ordersBody').innerHTML =
+      `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--muted);font-size:.82rem"><i class="fa-solid fa-cart-shopping" style="font-size:1.4rem;display:block;margin-bottom:8px;opacity:.35"></i>Nenhum pedido recente</td></tr>`;
+  } else {
+    document.getElementById('ordersBody').innerHTML = orders.map(o => {
+      const st = (o.status || 'pendente').toLowerCase().replace(/\s+/g, '_');
+      return `<tr>
+        <td style="padding-left:22px"><span class="td-code">${o.order_number||o.id||'—'}</span></td>
+        <td class="td-strong">${o.customer_name||o.customer?.name||'—'}</td>
+        <td style="color:var(--text2)">${o.sales_rep_name||o.sales_rep?.name||'—'}</td>
+        <td><span class="pill green" style="font-size:.65rem">${o.category||o.segment||'—'}</span></td>
+        <td style="text-align:center;color:var(--muted)">${o.item_count||o.items?.length||'—'}</td>
+        <td class="td-strong">${DashboardAPI.fmtBRL(o.total_amount||o.total||0)}</td>
+        <td style="color:var(--muted)">${o.payment_method||'—'}</td>
+        <td><span class="pill ${stMap[st]||'gray'}">${stLbl[st]||o.status||'—'}</span></td>
+        <td style="color:var(--muted);padding-right:22px">${DashboardAPI.fmtDate(o.created_at||o.order_date)}</td>
+      </tr>`;
+    }).join('');
+    /* Atualiza pills de contagem de status */
+    const cnt = orders.reduce((acc, o) => { const k = (o.status||'').toLowerCase().replace(/\s+/g,'_'); acc[k] = (acc[k]||0)+1; return acc; }, {});
+    const pe = document.getElementById('ordPillEntregue'); if (pe && cnt.entregue) { pe.textContent = cnt.entregue + ' entregue' + (cnt.entregue>1?'s':''); pe.style.display = ''; }
+    const pt = document.getElementById('ordPillTransito'); if (pt && (cnt.em_transito||cnt.enviado)) { pt.textContent = ((cnt.em_transito||0)+(cnt.enviado||0)) + ' em trânsito'; pt.style.display = ''; }
+    const ps = document.getElementById('ordPillSepara'); if (ps && cnt.separacao) { ps.textContent = cnt.separacao + ' separação'; ps.style.display = ''; }
+  }
 
   // ── Tabela Estoque ─────────────────────────────────────
   estoqueData = stockProds;
   renderEstoque(estoqueData);
 
   // ── Alertas Validade ───────────────────────────────────
+  const vp = document.getElementById('validadePill');
+  if (vp && expiring.length) { vp.textContent = expiring.length + ' lote' + (expiring.length>1?'s':''); vp.style.display = ''; }
   document.getElementById('alertasValidade').innerHTML = expiring.slice(0, 6).map(a => {
     const cls = a.expiry_alert === 'critico' ? 'red' : a.expiry_alert === 'urgente' ? 'red' : 'amber';
     return `<div class="list-item">
@@ -1265,7 +1303,15 @@ document.getElementById('movimentacoes').innerHTML = `<div style="padding:16px;c
   </div>`).join('');
 
   DashboardAPI.afterLoad();
-})();
+  const now = new Date();
+  const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  DashboardAPI.setUpdStatus('ok', 'Atualizado às ' + hhmm);
+}
+
+/* === POLLING + BOTÃO ATUALIZAR === */
+initDashboard();
+setInterval(initDashboard, 60000);
+document.getElementById('btnAtualizar').addEventListener('click', initDashboard);
 
 /* === BOTOES === */
 document.getElementById('btnNovoItem').addEventListener('click', () => showToast('success','Em breve','Formulario de cadastro em desenvolvimento.'));
@@ -1279,6 +1325,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
   showToast('success','CSV exportado','estoque-natgeo.csv');
 });
 </script>
+<script src="js/nav.js"></script>
 <script src="js/import.js"></script>
 </body>
 </html>

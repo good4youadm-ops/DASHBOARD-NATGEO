@@ -141,29 +141,45 @@
     drop.addEventListener('click', function () { inp.click(); });
     inp.addEventListener('change', function () { if (inp.files[0]) showFile(inp.files[0]); });
 
+    // Mapeamento de módulo → entity aceita pelo backend
+    var MODULE_MAP = {
+      clientes:     'customers',
+      produtos:     'products',
+      fornecedores: 'suppliers',
+      pedidos:      'orders',
+      lancamentos:  'receivable',
+    };
+
     // send
     sendBtn.addEventListener('click', function () {
       if (!_file) return;
+      var module = document.getElementById('imModule').value;
+      var entity = MODULE_MAP[module];
+
+      if (!entity) {
+        msg.className = 'im-msg err';
+        msg.textContent = '✗ Módulo "' + module + '" ainda não suportado pela API de importação. Aguardando implementação.';
+        return;
+      }
+
       sendBtn.disabled = true;
       sendBtn.textContent = 'Enviando…';
       msg.className = 'im-msg';
 
-      var module = document.getElementById('imModule').value;
-      var fd = new FormData();
-      fd.append('file', _file);
-      fd.append('module', module);
-
-      var headers = {};
+      var headers = { 'Content-Type': 'application/json' };
       if (global.__authToken) headers['Authorization'] = 'Bearer ' + global.__authToken;
 
-      fetch('/api/import', { method: 'POST', headers: headers, body: fd })
+      var body = JSON.stringify({ entity: entity, file_name: _file.name, options: { original_module: module, file_size: _file.size } });
+
+      fetch('/api/import/csv', { method: 'POST', headers: headers, body: body })
         .then(function (r) {
           if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || 'Erro HTTP ' + r.status); });
           return r.json();
         })
         .then(function (data) {
           msg.className = 'im-msg ok';
-          msg.textContent = '✓ ' + (data.message || (data.inserted + ' registros importados com sucesso!'));
+          var jobId = data.job && data.job.id ? ' (Job #' + data.job.id + ')' : '';
+          msg.textContent = '✓ Job de importação criado' + jobId + '. O arquivo será processado em segundo plano.';
           sendBtn.textContent = 'Importar';
           sendBtn.disabled = false;
         })

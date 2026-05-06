@@ -348,5 +348,21 @@
     },
   };
 
+  // No-op chamado em handlers de erro das páginas — evita TypeError
+  DashboardAPI.afterLoad = function () {};
+
+  /**
+   * setUpdStatus(state) — atualiza o indicador visual de última atualização.
+   * state: 'ok' | 'error' | 'loading'
+   * Procura #updDot e #updText no DOM da página atual.
+   */
+  DashboardAPI.setUpdStatus = function (state, text) {
+    const dot  = document.getElementById('updDot');
+    const label = document.getElementById('updText');
+    const colors = { ok: '#34c759', error: '#ff3b30', loading: '#ff9f0a' };
+    if (dot) dot.style.background = colors[state] || colors.ok;
+    if (label && text) label.textContent = text;
+  };
+
   global.DashboardAPI = DashboardAPI;
 })(window);
