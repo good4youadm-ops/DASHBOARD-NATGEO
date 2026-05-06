@@ -1,382 +1,265 @@
-# Handoff: NatGeo Dashboard — Controle de Acesso, E2E e API Integration
+# Handoff: NatGeo Dashboard — Cockpit Gerencial Distribuidora
 
 *Data:* 2026-05-06
-*Status:* Em andamento — API calls ainda não implementadas nas 3 abas estáticas
+*Status:* Em andamento — cockpit gerencial 10 fases concluídas; próxima etapa é conectar dados reais da API e expandir módulos bloqueados
 
 ---
 
 ## 1. Objetivo
 
-Sistema de gestão para uma distribuidora de alimentos/produtos naturais (NatGeo).
-Frontend: 15 arquivos HTML estáticos + vanilla JS + Chart.js.
-Backend: Express + Supabase (PostgreSQL), deployado via Docker no Coolify.
-
-As sessões anteriores focaram em: unificação de sidebar, dados zerados, botão importar.
-Esta sessão focou em: controle de acesso master/usuário, suite E2E Playwright, e início
-da integração de API real nas abas estáticas.
+Transformar o NatGeo Dashboard (ERP estático de distribuidora de alimentos) num cockpit gerencial profissional com 4 áreas: **Dashboard**, **Financeiro**, **Comercial** e **Estoque**. O trabalho está organizado em 10 fases, todas concluídas. O frontend é vanilla HTML/JS/CSS (sem framework) rodando sobre um backend Node.js + Express + Supabase/PostgreSQL que sincroniza dados do Oracle ERP via workers TypeScript.
 
 ---
 
 ## 2. Contexto essencial
 
 ### Stack
-- **Frontend:** HTML estático + vanilla JS + Chart.js — SEM React/Next.js
-- **Backend:** Node.js + Express (`src/api/server.ts`)
-- **Banco:** Supabase (PostgreSQL). Migrations em `supabase/migrations/` — **22 arquivos SQL**
-- **Sync:** Worker Oracle ERP → Supabase em `workers/oracle-sync/` (não conectado ainda)
-- **Deploy:** Coolify self-hosted, Docker multi-stage build. Push ao GitHub aciona rebuild.
-- **URL produção:** `http://byy6u6lkrgic5tca4vlhvgy8.177.7.43.206.sslip.io`
-- **Repo GitHub:** `good4youadm-ops/DASHBOARD-NATGEO` (branch `main`)
-- **Diretório local:** `c:\Users\Natgeo50\Documents\dashboardnatgeo`
+| Camada | Tecnologia |
+|---|---|
+| Frontend | HTML5 + CSS3 + vanilla JS (Chart.js para gráficos) |
+| Backend | Node.js + Express — `src/api/server.ts` |
+| Banco | Supabase / PostgreSQL |
+| ERP fonte | Oracle — sincronizado via `workers/oracle-sync/` |
+| Deploy | Docker + Coolify (auto-deploy por push no `main`) |
+| Repositório | `https://github.com/good4youadm-ops/DASHBOARD-NATGEO.git` |
 
-### Decisões arquiteturais vigentes
-- **sidebar.js canônico:** `js/sidebar.js` injeta toda a sidebar via `DOMContentLoaded`.
-  Cada página tem apenas `<aside class="sidebar"></aside>`. Página ativa detectada pelo URL.
-- **Evento `sidebarReady`:** Disparado após injeção. `auth.js` escuta para popular nome/iniciais.
-- **Módulos abertos vs. bloqueados:** Apenas 4 módulos funcionam para usuários comuns.
-  `js/access.js` bloqueia os 9 restantes com overlay.
-- **isMaster():** Apenas `ferrerjoao2206@gmail.com` tem acesso irrestrito.
-- **Sem fallback para mocks:** Se API falhar (banco vazio ou erro), dashboards mostram `—`.
-  Isso é correto e intencional.
+### Diretório local
+```
+c:\Users\Natgeo50\Documents\dashboardnatgeo\
+```
 
-### Módulos abertos (todos os usuários)
-`dashboard-distribuidora`, `dashboard-comercial`, `financeiro`, `estoque`
+### Restrições inegociáveis
+- **Nunca deletar** páginas existentes (pedidos, orcamentos, fiscal, metas, fluxo-caixa, logistica, cadastros, lancamentos, estatistica-vendas)
+- **Sem frameworks** — vanilla JS puro em todo o frontend
+- **Sem multer** instalado — importação via JSON no body, nunca FormData
+- O usuário master é `ferrerjoao2206@gmail.com` — tem acesso irrestrito a todas as páginas
 
-### Módulos bloqueados (só master vê, outros veem cadeado + overlay)
-`orcamentos`, `metas`, `lancamentos`, `fluxo-caixa`, `logistica`, `pedidos`,
-`cadastros`, `fiscal`, `estatistica-vendas`
+### Decisões arquiteturais tomadas
+- Navegação entre páginas via querystring (`NatGeoNav` em `js/nav.js`)
+- Polling de dados a cada 60 segundos (`setInterval`) em todas as 4 áreas abertas
+- `DashboardAPI.setUpdStatus(state, text)` como padrão único de feedback visual (verde/âmbar/vermelho)
+- Dados fictícios eliminados: KPIs mostram estado vazio (`null`) enquanto API não retorna valores reais
+- Controle de acesso: páginas "bloqueadas" mostram overlay + cadeado para usuários comuns; `sidebar.js` gera o cadeado dinamicamente
+- Sessão armazenada em `localStorage` sob a chave `natgeo_auth` (objeto com `access_token`, `refresh_token`, `expires_at`, `user`)
 
 ---
 
 ## 3. O que já foi feito
 
-### Sessões anteriores
-1. Criação dos 15 arquivos HTML de dashboard
-2. Correção de build Docker (`workers/oracle-sync/index.ts` — import ausente)
-3. `js/sidebar.js` criado — sidebar canônica em todas as páginas
-4. `js/auth.js` refatorado — aguarda `sidebarReady` para popular usuário
-5. `js/import.js` criado — modal drag-and-drop CSV/XLS/XLSX para `/api/import`
-6. Dados zerados em `dashboard-comercial.html`, `financeiro.html`, `estoque.html`
-7. Links cruzados entre KPI cards (financeiro ↔ lancamentos, comercial ↔ estoque)
-8. URL tab routing em `lancamentos.html` (`?tab=ar`, `?tab=ap`)
+### FASE 1 — Navegação por querystring
+- Criado `js/nav.js` com o helper `NatGeoNav` (funções: `getParam`, `navTo`, `updateParam`, `applyFromURL`)
+- Adicionado como `<script src="js/nav.js">` em todas as 4 páginas abertas, antes de `import.js`
 
-### Esta sessão (2026-05-06)
-9. **Bug de CSS da sidebar** em `dashboard-distribuidora.html` **CORRIGIDO:**
-   - `.sidebar { background: rgba(255,255,255,.85) }` → `background: var(--accent)`
-   - `.u-name`, `.u-role`, `.logout-btn`, `.avatar` convertidos para cores de sidebar escura
+### FASE 2 — Alinhamento do endpoint de importação
+- Corrigido `js/import.js`: chamava `/api/import` com FormData; agora chama `/api/import/csv` com JSON
+- Adicionado `MODULE_MAP` para converter nomes de módulo frontend (`clientes`) em entidades backend (`customers`)
+- Mensagem honesta ao usuário: "Job criado — será processado em segundo plano"
+- Módulos sem suporte no backend mostram erro claro ao invés de falhar silenciosamente
 
-10. **Sistema de controle de acesso implementado:**
-    - `js/auth.js`: adicionados `MASTER_EMAIL` e `isMaster()`:
-      ```javascript
-      var MASTER_EMAIL = 'ferrerjoao2206@gmail.com';
-      function isMaster() {
-        var session = getSession();
-        return !!(session && session.user && session.user.email === MASTER_EMAIL);
-      }
-      ```
-    - `js/sidebar.js` reescrito: módulos bloqueados renderizam `<span class="nav-locked">`
-      com ícone de cadeado (`fa-lock`) e opacity 0.38 para usuários comuns.
-    - `js/access.js` CRIADO: overlay bloqueador em páginas restritas. Injeta
-      `#natgeo-access-overlay` (position:fixed, left:var(--sidebar-w), z-index:9990).
-      Também intercepta `window.fetch` para bloquear chamadas `/api/*` (exceto `/api/config`).
+### FASE 3 — Status visual unificado
+- Adicionado `DashboardAPI.setUpdStatus(state, text)` em `js/api.js`
+- Três estados: `ok` (#34c759 verde), `loading` (#ff9f0a âmbar), `error` (#ff3b30 vermelho)
+- Funciona via `id="updDot"` e `id="updText"` presentes em todas as páginas
 
-11. **Correções de scripts faltando em páginas bloqueadas:**
-    - `pedidos.html`: adicionados `auth.js` e `access.js` (estava chamando `NatGeoAuth.requireAuth()` sem ter auth.js)
-    - `logistica.html`: adicionados `auth.js` e `access.js` (não tinha nenhum dos dois)
-    - `orcamentos.html`, `fiscal.html`, `metas.html`, `fluxo-caixa.html`, `cadastros.html`,
-      `lancamentos.html`, `estatistica-vendas.html`: adicionado `access.js`
+### FASE 4 — Dashboard principal (`dashboard-distribuidora.html`)
+- KPI cards clicáveis com querystring contextual:
+  - Faturamento / Ticket Médio → `dashboard-comercial.html?periodo=mes_atual`
+  - Pedidos → `pedidos.html`
+  - Clientes Ativos → `cadastros.html`
+- Pills dinâmicos: alertas de estoque (`id="alertasPill"`), validade (`id="validadePill"`), status de pedidos (`id="ordPillEntregue"`, `id="ordPillTransito"`, `id="ordPillSepara"`)
+- Top Produtos clicável → `estoque.html?produto=NAME`
+- Top Clientes clicável → `dashboard-comercial.html?cliente=NAME&periodo=mes_atual`
+- Alertas de estoque clicáveis → `estoque.html?filtro=critico&produto=NAME`
+- Fetch real de `/api/orders` substituindo proxy de clientes para tabela de pedidos recentes
+- Polling 60s + `setUpdStatus` integrado
 
-12. **21 de 22 migrations aplicadas no Supabase pelo usuário.**
-    Migration 022 é apenas índices de performance — não crítica para funcionamento.
+### FASE 5 — Dashboard Comercial (`dashboard-comercial.html`)
+- Convertido de IIFE anônima para função nomeada `initComercial()` + polling
+- `NatGeoNav.applyFromURL`: `?periodo=mes_atual` → seleciona período; `?cliente=NAME` → preenche campo de drill-down
+- Todos os dados hardcoded limpos: `fat.c = null` em todos os períodos (hoje, 7d, 15d, 1m, tri, sem, ano)
+- Arrays de vendedores e canais esvaziados para não exibir nomes inventados
+- `setUpdStatus` integrado
 
-13. **`supabase/setup_master_user.sql` CRIADO:**
-    Script completo para configurar o usuário master após criar o auth user.
-    Inclui: INSERT em `user_profiles` (role `owner`), 18 permissions, role `owner`,
-    `role_permissions` e `user_roles`. Inclui blocos `DO $$` de diagnóstico que falham
-    explicitamente se o auth user não existir.
+### FASE 6 — Financeiro (`financeiro.html`)
+- Badges dinâmicos nas abas Recebíveis e Pagamentos (contagem de títulos vencidos)
+- `NatGeoNav.applyFromURL`: `?status=vencido` → abre aba recebíveis; `?bloco=X` → navega para bloco X
+- `setUpdStatus` integrado
 
-14. **Suite E2E Playwright CRIADA — 43/43 testes passando:**
-    - `playwright.config.ts` — configuração (porta 8788, chromium, screenshots on failure)
-    - `e2e/static-server.mjs` — servidor HTTP estático para os testes
-    - `e2e/helpers.ts` — utilitários: `MASTER_SESSION`, `COMMON_SESSION`, `injectSession`,
-      `attachAuditListeners`, `shot`, `waitSidebar`, `checkClickable`, `tryClick`
-    - `e2e/dashboard.spec.ts`, `e2e/comercial.spec.ts`, `e2e/financeiro.spec.ts`,
-      `e2e/estoque.spec.ts` — 4 arquivos de spec
+### FASE 7 — Estoque (`estoque.html`)
+- Pills todos dinâmicos substituindo hardcode: `pillRuptura`, `pillEvitavel`, `pillTotalSkus`, `pillCobCrit`, `pillVencidos`, `pillD7`, `pillD30`
+- `NatGeoNav.applyFromURL`: `?filtro=critico` → aba disponibilidade; `?produto=NAME` → toast + aba
+- `setUpdStatus` integrado
 
-15. **Diagnóstico crítico confirmado por Playwright:**
-    `dashboard-distribuidora.html`, `dashboard-comercial.html` e `financeiro.html`
-    fazem **ZERO chamadas de API**. Todos os KPIs mostram `—` ou valores hardcoded
-    porque nunca há `fetch()` para os endpoints. A integração de API real ainda
-    **não foi implementada** nessas 3 páginas.
+### FASE 8 — Dados honestos (transversal)
+- Nenhum número inventado visível ao usuário; tudo em estado vazio até API retornar dados reais
+- Removido o "proxy" onde dados de clientes eram usados como dados de pedidos
+
+### FASE 9 — Interligação entre áreas (transversal)
+- Links contextuais entre todas as 4 páginas com querystring preservada
+
+### FASE 10 — Auditoria de segurança SQL
+- Auditados: `customers.sync.ts`, `products.sync.ts`, `finance.sync.ts`, `inventory.sync.ts`, `sales-orders.sync.ts`, `oracle/client.ts`
+- **Resultado: nenhuma vulnerabilidade** — todos usam bind variables nativas do oracledb (`:since`, `:batchSize`, `:id0..idN`)
+- O aviso anterior sobre "linha 66-85" referia-se ao bloco de placeholders dinâmicos em `sales-orders.sync.ts`, que já estava corretamente parametrizado
+
+### Bug fix pós-fases — Sidebar usuário stuck em "Carregando..."
+- **Problema:** race condition entre `sidebar.js` (dispara `sidebarReady` no DOMContentLoaded) e `auth.js` (adiciona listener dentro de `requireAuth()`, chamado por `initDashboard()`). O evento podia ser perdido se disparado antes do listener ser registrado.
+- **Solução:** `sidebar.js` lê `localStorage.getItem('natgeo_auth')` diretamente após injetar o HTML e preenche nome/iniciais/role sem depender de evento cruzado com `auth.js`.
+- **Commit:** `3a736ce` — já em produção
 
 ---
 
 ## 4. Estado atual
 
-### O que funciona ✅
-- **15 páginas** com sidebar verde escura idêntica
-- Controle de acesso: master vê tudo, usuários comuns veem cadeado em 9 módulos
-- Overlay bloqueador em todas as páginas restritas (JS + CSS)
-- 21 migrations aplicadas no Supabase — tabelas e views existem
-- Suite E2E: 43/43 testes passando localmente
-- `supabase/setup_master_user.sql` pronto para rodar
-- `auth.js` popula nome/iniciais após sidebarReady
-- Modal de importação (frontend) funciona visualmente
+### O que funciona
+- As 4 páginas abertas (Dashboard, Comercial, Financeiro, Estoque) com navegação por querystring, polling 60s, status visual e dados honestos
+- Controle de acesso: 4 abertas para todos; 9 bloqueadas com overlay para usuários comuns
+- Sidebar unificada com usuário preenchido corretamente (fix do race condition em produção)
+- Import CSV/Excel alinhado com endpoint correto do backend
+- Oracle sync workers sem vulnerabilidades SQL
+- GitHub e Coolify atualizados (último commit: `3a736ce`)
 
-### Login (requer ação manual do usuário)
-O usuário precisa:
-1. Supabase Dashboard → Authentication → Users → **Add user**
-   - Email: `ferrerjoao2206@gmail.com`
-   - Senha: ex. `NatGeo@2026!`
-2. Depois rodar `supabase/setup_master_user.sql` no SQL Editor
-
-### O que está incompleto ❌
-- **`dashboard-distribuidora.html`** — KPIs mostram `—` ou valores fixos. Zero chamadas
-  de API. Precisa chamar: `/api/dashboard/sales/summary`, `/api/dashboard/inventory/summary`,
-  `/api/dashboard/finance/summary`, `/api/dashboard/sales/by-day`, `/api/sync/status`
-- **`dashboard-comercial.html`** — Mesmo problema. Precisa chamar:
-  `/api/dashboard/sales/summary`, `/api/dashboard/sales/by-day`,
-  `/api/dashboard/sales/customers`, `/api/dashboard/sales/products`
-- **`financeiro.html`** — Mesmo problema. Precisa chamar:
-  `/api/dashboard/finance/summary`, `/api/dashboard/finance/receivable`,
-  `/api/dashboard/finance/payable`
-- **`estoque.html`** — Maioria integrada, mas ainda há valores hardcoded:
-  KPIs header (`khSaldoDisp`, `khRuptura`, `khCobertura`, `khValidadeCrit`),
-  "acurácia 96,4%" (sem ID), footer com valores em R$
-- **`/api/import`** — Endpoint não implementado no backend (modal existe no frontend)
-- **SQL Injection** em `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85
-  (template string com variáveis Oracle diretamente em SQL). Corrigir antes de conectar Oracle.
-- **SSL/Domínio:** Ainda em `sslip.io`, browser exibe "Inseguro"
+### O que está pendente / incompleto
+- **Dados reais não chegam:** Oracle sync não está conectado a um Oracle real — páginas mostram estado vazio (pills zerados, tabelas sem linhas). Intencional, mas precisa de conexão Oracle para produção.
+- **9 módulos bloqueados** são ainda placeholders com overlay.
+- **Arquivos Python lixo na raiz** (nunca commitados): `fix_all.py`, `fix_sidebar.py`, `fix_sidebar2.py`, `fix_zeros.py`
+- **Diretórios de teste não commitados:** `e2e/report/`, `e2e/screenshots/`, `test-results/`
 
 ---
 
 ## 5. Próximos passos
 
-### Prioridade 1 — API integration (3 abas estáticas)
-Esta é a tarefa principal que ficou pendente nesta sessão.
-
-**Abordagem:** Adicionar um bloco `<script>` em cada página que, após `sidebarReady`,
-chama `NatGeoApi.get(...)` e popula os elementos pelo ID com os dados reais.
-Usar `try/catch` com fallback para `—` se a API falhar.
-
-**Endpoints disponíveis (todos precisam de Bearer token do `localStorage`):**
-```
-GET /api/dashboard/sales/summary?months=12
-GET /api/dashboard/sales/by-day
-GET /api/dashboard/sales/customers?limit=20
-GET /api/dashboard/sales/products?limit=20
-GET /api/dashboard/finance/summary
-GET /api/dashboard/finance/receivable
-GET /api/dashboard/finance/payable
-GET /api/dashboard/inventory/summary
-GET /api/dashboard/inventory/products
-GET /api/dashboard/inventory/expiring?daysAhead=90
-GET /api/sync/status
-```
-
-**Shapes de dados por endpoint:**
-```javascript
-// /api/dashboard/sales/summary → array de meses
-{ month, total_orders, unique_customers, gross_revenue, net_revenue,
-  avg_ticket, delivered_orders, cancelled_orders, pending_orders }
-
-// /api/dashboard/sales/by-day → array de dias
-{ order_date, orders_count, revenue, discounts, avg_ticket }
-
-// /api/dashboard/sales/customers
-{ customer_name, total_orders, total_revenue, avg_ticket,
-  last_order_date, abc_curve, segment }
-
-// /api/dashboard/sales/products
-{ product_name, sku, category, brand, abc_curve,
-  total_qty_sold, total_revenue, avg_unit_price }
-
-// /api/dashboard/finance/summary → objeto único
-{ ar_open_balance, ar_overdue_balance, ar_received_this_month, ar_due_next_30,
-  ap_open_balance, ap_overdue_balance, ap_paid_this_month, ap_due_next_30, net_position }
-
-// /api/dashboard/inventory/summary → array por depósito
-{ warehouse, sku_count, total_qty_available, total_inventory_value,
-  ruptura_count, sku_a_count, sku_b_count, sku_c_count, avg_coverage_days }
-
-// /api/dashboard/inventory/expiring → array de lotes
-{ product_name, lot_number, expiry_date, days_to_expiry, qty_current, expiry_alert }
-```
-
-**Padrão de implementação (usar em todas as 3 páginas):**
-```javascript
-document.addEventListener('sidebarReady', async function() {
-  var token = (NatGeoAuth.getSession() || {}).access_token;
-  if (!token) return;
-  var headers = { 'Authorization': 'Bearer ' + token };
-
-  try {
-    var r = await fetch('/api/dashboard/sales/summary?months=12', { headers });
-    if (!r.ok) throw new Error(r.status);
-    var rows = await r.json(); // array, índice 0 = mês mais recente
-    var cur = rows[0] || {};
-    var prev = rows[1] || {};
-    document.getElementById('kpiGrossRevenue').textContent = fmt(cur.gross_revenue);
-    // ... popular todos os KPIs
-  } catch(e) {
-    console.warn('sales/summary:', e);
-  }
-});
-```
-
-**Antes de implementar:** Ler cada página para mapear os IDs dos elementos KPI.
-O Playwright identificou que os IDs dos KPIs existem mas estão com valores estáticos.
-
-### Prioridade 2 — Login do usuário master
-Passos manuais (usuário deve fazer):
-1. Supabase → Authentication → Users → Add user → `ferrerjoao2206@gmail.com`
-2. SQL Editor → rodar `supabase/setup_master_user.sql` completo
-
-### Prioridade 3 — estoque.html KPIs restantes
-Mapear e popular: `khSaldoDisp`, `khRuptura`, `khCobertura`, `khValidadeCrit`,
-"acurácia 96,4%" e footer. Chamar `/api/dashboard/inventory/summary`.
-
-### Prioridade 4 — Fix SQL Injection no Oracle worker
-Em `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85:
-substituir template strings SQL por consultas parametrizadas antes de conectar Oracle.
-
-### Prioridade 5 — Implementar `/api/import` no backend
-```typescript
-app.post('/api/import', upload.single('file'), async (req, res) => {
-  const { module } = req.body; // 'customers' | 'products' | 'orders' | etc.
-  const file = req.file;
-  // parse CSV/XLSX → upsert no Supabase
-});
-```
-Usar `multer` para upload e `xlsx` ou `csv-parse` para leitura.
+1. **Conectar Oracle ERP:** configurar variáveis de ambiente `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_CONNECT_STRING` no Coolify e rodar o sync worker com `fullSync: true`
+2. **Verificar `/api/config`:** confirmar que o endpoint retorna `supabaseUrl` e `supabaseAnonKey` corretamente em produção (usado por `auth.js` para refresh de token)
+3. **Confirmar rota `/api/orders`:** checar em `src/api/server.ts` se `GET /api/orders` está roteado (repositório `src/repositories/orders.ts` existe, rota não verificada)
+4. **Testar as 4 áreas com dados reais** após primeiro sync — verificar pills, gráficos e tabelas
+5. **Implementar módulos bloqueados** em ordem de prioridade (sugestão: pedidos → cadastros → lancamentos → logistica)
+6. **Limpar lixo:** deletar `fix_all.py`, `fix_sidebar.py`, `fix_sidebar2.py`, `fix_zeros.py` e adicionar `e2e/`, `test-results/` ao `.gitignore`
 
 ---
 
 ## 6. Perguntas em aberto
 
-1. **Credenciais do Oracle ERP disponíveis?** O worker está implementado mas nunca
-   rodou com dados reais. Há SQL Injection que precisa ser corrigido antes.
-
-2. **Formato de CSV para importação?** Template fixo por módulo ou formato livre?
-
-3. **Domínio próprio?** Atualmente em `sslip.io` sem SSL. Browser exibe "Inseguro".
+- **Oracle connection string:** qual é o `ORACLE_CONNECT_STRING` de produção? Está configurado no Coolify?
+- **Supabase user metadata:** os usuários têm `full_name` e `role` em `user_metadata`? Se não, a sidebar sempre mostrará "Administrador" como role padrão. Avaliar se mudar o default ou configurar no painel Supabase.
+- **Coolify webhook:** confirmado que está em auto-deploy por push no `main`? (Aparenta que sim, mas não foi testado explicitamente)
+- **Rota `/api/orders`:** está exposta no server.ts? Não foi verificada nesta sessão.
+- **Prioridade dos módulos bloqueados:** qual o próximo a implementar?
 
 ---
 
 ## 7. Artefatos relevantes
 
-### Arquivos-chave
-| Arquivo | Descrição |
-|---|---|
-| `js/sidebar.js` | Sidebar canônica — injeta HTML, controla módulos bloqueados |
-| `js/auth.js` | Sessão, `isMaster()`, `MASTER_EMAIL`, aguarda `sidebarReady` |
-| `js/access.js` | Overlay bloqueador para módulos restritos |
-| `js/import.js` | Modal drag-and-drop CSV/XLS/XLSX |
-| `js/api.js` | Cliente HTTP para API Express |
-| `src/api/server.ts` | Express — todos os endpoints `/api/*` |
-| `src/repositories/sales.ts` | Queries de vendas → views Supabase |
-| `src/repositories/finance.ts` | Queries financeiras → views Supabase |
-| `supabase/migrations/` | 22 migrations SQL — 21 aplicadas, 022 é só índices |
-| `supabase/migrations/007_views.sql` | Views de dashboard (sales, finance, inventory) |
-| `supabase/setup_master_user.sql` | Script de setup do usuário master |
-| `playwright.config.ts` | Config Playwright E2E |
-| `e2e/` | Suite de testes — 4 specs, 43 testes, todos passando |
-| `workers/oracle-sync/` | Worker Oracle → Supabase (não conectado, SQL Injection presente) |
-
-### Endpoints de API — referência rápida
+### Arquivos-chave do frontend
 ```
-GET  /api/config                        → sem auth, retorna URL do Supabase
-GET  /api/dashboard/sales/summary       → ?months=N
-GET  /api/dashboard/sales/by-day        →
-GET  /api/dashboard/sales/customers     → ?limit=N
-GET  /api/dashboard/sales/products      → ?limit=N
-GET  /api/dashboard/finance/summary     →
-GET  /api/dashboard/finance/receivable  →
-GET  /api/dashboard/finance/payable     →
-GET  /api/dashboard/inventory/summary   →
-GET  /api/dashboard/inventory/products  →
-GET  /api/dashboard/inventory/expiring  → ?daysAhead=N
-GET  /api/sync/status                   →
-POST /api/import                        → NÃO IMPLEMENTADO
+c:\Users\Natgeo50\Documents\dashboardnatgeo\
+├── dashboard-distribuidora.html   # Dashboard principal
+├── dashboard-comercial.html       # Área comercial
+├── financeiro.html                # Financeiro (AR/AP)
+├── estoque.html                   # Gestão de estoque
+└── js/
+    ├── api.js          # DashboardAPI + setUpdStatus
+    ├── auth.js         # NatGeoAuth (sessão, requireAuth, signOut)
+    ├── sidebar.js      # Sidebar injetada + preenchimento de usuário (fix race condition)
+    ├── access.js       # Overlay de acesso para páginas bloqueadas
+    ├── nav.js          # NatGeoNav (querystring helper) — NOVO nesta sessão
+    └── import.js       # Upload CSV/Excel → /api/import/csv (corrigido nesta sessão)
 ```
-Todos (exceto `/api/config`) exigem `Authorization: Bearer <token>`.
-Token vem de `NatGeoAuth.getSession().access_token`.
 
-### Sessão fake para Playwright (injetada via addInitScript)
-```javascript
-// MASTER_SESSION em e2e/helpers.ts
+### Arquivos-chave do backend
+```
+src/api/server.ts                          # Express server + todas as rotas
+src/repositories/                          # Repositórios Supabase por entidade
+workers/oracle-sync/entities/              # Sync workers Oracle → Supabase
+  ├── customers.sync.ts
+  ├── products.sync.ts
+  ├── sales-orders.sync.ts
+  ├── finance.sync.ts
+  └── inventory.sync.ts
+workers/oracle-sync/oracle/client.ts       # Pool Oracle + queryOracle()
+```
+
+### Padrão de sessão (`localStorage` key: `natgeo_auth`)
+```json
 {
-  access_token: 'fake-master-token',
-  expires_at: Date.now() + 3600000,
-  user: { id: 'master-uuid', email: 'ferrerjoao2206@gmail.com' }
+  "access_token": "...",
+  "refresh_token": "...",
+  "expires_at": 1234567890,
+  "user": {
+    "email": "usuario@empresa.com",
+    "user_metadata": {
+      "full_name": "Nome Completo",
+      "role": "Gerente"
+    }
+  }
 }
-// COMMON_SESSION — mesmo mas com email diferente
-{ user: { email: 'user@example.com' } }
 ```
 
-### Ordem correta de scripts em cada página
+### Padrão de navegação por querystring
+```javascript
+// Navegar para outra área com contexto
+NatGeoNav.navTo('dashboard-comercial.html', { periodo: 'mes_atual', cliente: 'NomeCliente' });
+
+// Ler parâmetros na página de destino
+NatGeoNav.applyFromURL({
+  periodo: function(v) { updateDashboard(v); },
+  cliente: function(v) { document.getElementById('drillInp').value = v; }
+});
+```
+
+### Padrão de status visual
+```javascript
+DashboardAPI.setUpdStatus('loading', 'Atualizando…');   // âmbar
+DashboardAPI.setUpdStatus('ok', 'Atualizado às 14:32'); // verde
+DashboardAPI.setUpdStatus('error', 'Erro ao atualizar'); // vermelho
+```
+
+### Ordem dos scripts no `<head>` de todas as páginas
 ```html
-<!-- No <head> ou antes do </body>: -->
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/access.js"></script>
 <script src="js/sidebar.js"></script>
-<!-- scripts específicos da página... -->
+```
+E no final do `<body>`, antes de `</body>`:
+```html
+<script src="js/nav.js"></script>
 <script src="js/import.js"></script>
 ```
-`access.js` deve vir antes de `sidebar.js` (ambos dependem de `auth.js`).
 
-### Deploy
-```bash
-cd "c:\Users\Natgeo50\Documents\dashboardnatgeo"
-git add arquivo.html js/arquivo.js
-git commit -m "feat: descrição"
-git push origin main
-# Coolify rebuilda (~3 min). Verificar aba Deployments.
-# Ctrl+Shift+R para reload sem cache no browser.
+### Commits recentes
+```
+3a736ce fix: sidebar preenche usuário direto do localStorage sem race condition
+717efa8 feat: cockpit gerencial completo — fases 1 a 10
+d071a77 fix: period-bar comercial — remove zeroing block que quebrava troca de período
+3465e5e feat: testes E2E Playwright + script de setup do usuário master
+1c93dd1 feat: controle de acesso master/usuário + fix sidebar distribuidora
 ```
 
-### Rodar E2E localmente
-```bash
+### Comandos úteis
+```powershell
+# Backend local
 cd "c:\Users\Natgeo50\Documents\dashboardnatgeo"
-npx playwright test          # todos os testes
-npx playwright test e2e/dashboard.spec.ts  # só o dashboard
-npx playwright test --ui     # interface visual
+npm run dev
+
+# Oracle sync full
+npx ts-node workers/oracle-sync/index.ts --full
+
+# Ver status git
+git log --oneline -10
+git status
 ```
 
 ---
 
-## 8. Instruções para a próxima sessão
+## 8. Instruções pra próxima sessão
 
-### Tom e abordagem
-- Respostas em **português**.
-- Execute e mostre — não explique demais antes de fazer.
-- Para bugs óbvios, vai direto. Para mudanças grandes, confirme o plano primeiro.
-- O objetivo visual é parecer com o **Bling ERP**: coeso, profissional, dados reais.
-
-### Armadilhas a evitar
-
-1. **TypeScript break no build Docker.** Antes de qualquer push que toque `.ts`,
-   rodar `npx tsc --noEmit`. Se falhar, o app não sobe no Coolify.
-
-2. **O `NatGeoApi` de `js/api.js` já cuida do Bearer token?** Verificar antes de
-   duplicar a lógica de autenticação nas páginas. Se `NatGeoApi.get(path)` já injeta
-   o header, usar ele em vez de `fetch()` manual.
-
-3. **Não use `git add -A`** — pode incluir arquivos temporários, `.env`, etc.
-   Sempre adicionar arquivos específicos.
-
-4. **Não há fallback para mocks.** Se a API falhar (banco sem dados), os dashboards
-   mostram `—`. Isso é correto — não confundir com bug.
-
-5. **`sidebar.js` usa `DOMContentLoaded`.** Se adicionar código que depende da sidebar,
-   escute o evento `sidebarReady`, não `DOMContentLoaded`.
-
-6. **Migration 022** é apenas índices de performance. Pode ser aplicada a qualquer
-   momento sem risco. As 21 aplicadas cobrem toda a funcionalidade.
-
-7. **Supabase Auth ≠ migrations.** As migrations criam tabelas e views, mas não criam
-   usuários no Auth. O usuário precisa ser criado manualmente no Supabase Dashboard.
-
-8. **SQL Injection no Oracle worker.** Não conectar o Oracle antes de corrigir.
-   O arquivo é `workers/oracle-sync/entities/sales-orders.sync.ts` linha ~66-85.
+- **Responder sempre em português** — o usuário é brasileiro
+- **Não introduzir frameworks** — vanilla JS puro, sem React/Vue/Alpine/Svelte
+- **Não deletar páginas existentes** — mesmo as 9 bloqueadas ficam intactas
+- **Ler o arquivo antes de editar** — sempre usar Read antes de Edit (evita erro "File has not been read yet")
+- **Commits descritivos** — padrão `feat:`, `fix:`, `style:`, `chore:`; push direto no `main`
+- **Não inventar dados** — se API não retornar, mostrar estado vazio; zero tolerância a números fictícios no frontend
+- **Arquivos Python na raiz** (`fix_all.py` etc.) são lixo de sessões antigas — podem ser deletados
+- **`nav.js` vem antes de `import.js`** no final do body — manter essa ordem
+- **Respostas curtas** — o usuário prefere ações concretas sem explicações longas
