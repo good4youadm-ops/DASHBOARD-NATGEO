@@ -1095,21 +1095,6 @@ const DATA = {
 };
 
 
-/* ── dados zerados — aguardando API real ── */
-(function () {
-  if (typeof DATA !== 'undefined') {
-    Object.keys(DATA).forEach(function (k) {
-      var d = DATA[k];
-      var yoy = d.yoy;
-      Object.keys(d).forEach(function (f) { d[f] = null; });
-      d.yoy = yoy; d.canais = []; d.spark = []; d.vendedores = [];
-      d.chart = { labels: [], cur: [], prev: [] };
-      d.ot = { prazo:{c:null,p:null}, prox:{c:null,p:null}, atr:{c:null,p:null}, vol:{prazo:0,prox:0,atr:0} };
-    });
-  }
-  if (typeof CLIENTS !== 'undefined') CLIENTS.length = 0;
-  if (typeof CAMPAIGNS !== 'undefined') CAMPAIGNS.length = 0;
-})();
 
 /* ─── CAMPAIGN DATA (static) ─── */
 const CAMPAIGNS = [
