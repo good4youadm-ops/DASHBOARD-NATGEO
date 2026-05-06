@@ -163,32 +163,61 @@
       }
 
       sendBtn.disabled = true;
-      sendBtn.textContent = 'Enviando…';
+      sendBtn.textContent = 'Lendo arquivo…';
       msg.className = 'im-msg';
 
       var headers = { 'Content-Type': 'application/json' };
       if (global.__authToken) headers['Authorization'] = 'Bearer ' + global.__authToken;
 
-      var body = JSON.stringify({ entity: entity, file_name: _file.name, options: { original_module: module, file_size: _file.size } });
+      var isCsv = /\.(csv|txt)$/i.test(_file.name);
 
-      fetch('/api/import/csv', { method: 'POST', headers: headers, body: body })
-        .then(function (r) {
-          if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || 'Erro HTTP ' + r.status); });
-          return r.json();
-        })
-        .then(function (data) {
-          msg.className = 'im-msg ok';
-          var jobId = data.job && data.job.id ? ' (Job #' + data.job.id + ')' : '';
-          msg.textContent = '✓ Job de importação criado' + jobId + '. O arquivo será processado em segundo plano.';
-          sendBtn.textContent = 'Importar';
-          sendBtn.disabled = false;
-        })
-        .catch(function (e) {
-          msg.className = 'im-msg err';
-          msg.textContent = '✗ ' + e.message;
-          sendBtn.textContent = 'Tentar novamente';
-          sendBtn.disabled = false;
-        });
+      function doPost(fileInfo) {
+        var payload = {
+          entity:    entity,
+          file_name: _file.name,
+          file_type: isCsv ? 'csv' : 'xlsx',
+          options:   Object.assign({ original_module: module, file_size: _file.size }, fileInfo),
+        };
+        sendBtn.textContent = 'Enviando…';
+        fetch('/api/import/csv', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+          .then(function (r) {
+            if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || 'Erro HTTP ' + r.status); });
+            return r.json();
+          })
+          .then(function (data) {
+            msg.className = 'im-msg ok';
+            var jobId = data.job && data.job.id ? ' (Job #' + data.job.id + ')' : '';
+            var colsNote = data.detected_columns && data.detected_columns.length
+              ? ' Colunas detectadas: ' + data.detected_columns.join(', ') + '.'
+              : '';
+            msg.textContent = '✓ Job de importação criado' + jobId + '.' + colsNote + ' O mapeamento de colunas será validado antes do processamento.';
+            sendBtn.textContent = 'Importar';
+            sendBtn.disabled = false;
+          })
+          .catch(function (e) {
+            msg.className = 'im-msg err';
+            msg.textContent = '✗ ' + e.message;
+            sendBtn.textContent = 'Tentar novamente';
+            sendBtn.disabled = false;
+          });
+      }
+
+      // Para CSV: extrai cabeçalhos e conta linhas antes de enviar
+      if (isCsv) {
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var text = ev.target.result || '';
+          var lines = text.split('\n').filter(function (l) { return l.trim(); });
+          var rawHeaders = lines[0] ? lines[0].split(/[;,\t]/).map(function (h) { return h.trim().replace(/^"|"$/g, ''); }) : [];
+          doPost({ csv_headers: rawHeaders, csv_row_count: Math.max(0, lines.length - 1), csv_separator_guess: lines[0] && lines[0].includes(';') ? ';' : ',' });
+        };
+        reader.onerror = function () { doPost({}); };
+        // Lê apenas os primeiros 512 KB para extração de cabeçalhos (evita JSON enorme)
+        reader.readAsText(_file.slice(0, 524288));
+      } else {
+        // XLSX: apenas metadados — conteúdo binário requer worker dedicado
+        doPost({ xlsx_note: 'Conteúdo binário XLSX — processamento requer worker dedicado com biblioteca de leitura' });
+      }
     });
 
     // close

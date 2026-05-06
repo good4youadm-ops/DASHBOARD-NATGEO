@@ -1356,20 +1356,33 @@ app.get('/api/import-jobs/:id', async (req, res) => {
   catch (e) { logger.error('GET /api/import-jobs/:id', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
-// CSV import — cria job e enfileira (processamento real seria em worker separado)
+// CSV import — cria job e enfileira (processamento real requer worker separado com mapeamento real)
 app.post('/api/import/csv', async (req, res) => {
   const b = z.object({
     entity:    z.enum(['customers','products','suppliers','orders','receivable','payable']),
     file_name: z.string().max(255).optional(),
+    file_type: z.enum(['csv','xlsx']).optional(),
     options:   z.record(z.unknown()).optional(),
   }).safeParse(req.body);
   if (!b.success) { res.status(400).json({ error: 'Dados inválidos', details: b.error.flatten() }); return; }
   const authUser = (req as Request & { user?: { id: string } }).user;
   try {
+    const opts = b.data.options ?? {};
+    const csvHeaders = Array.isArray(opts['csv_headers']) ? (opts['csv_headers'] as string[]) : [];
+    const enrichedOpts = {
+      ...opts,
+      file_type: b.data.file_type ?? 'csv',
+      detected_at: new Date().toISOString(),
+    };
+    const source = b.data.file_type === 'xlsx' ? 'xlsx' : 'csv';
     const job = await integrationsRepo.createImportJob(
-      supabaseAdmin, TENANT_ID, b.data.entity, 'csv', authUser?.id ?? '', b.data.options ?? {}
+      supabaseAdmin, TENANT_ID, b.data.entity, source, authUser?.id ?? '', enrichedOpts
     );
-    res.status(202).json({ message: 'Job de importação criado', job });
+    res.status(202).json({
+      message: 'Job de importação criado. O mapeamento de colunas será validado antes do processamento.',
+      job,
+      detected_columns: csvHeaders,
+    });
   } catch (e) { logger.error('POST /api/import/csv', { error: e }); res.status(500).json({ error: errMsg(e) }); }
 });
 
