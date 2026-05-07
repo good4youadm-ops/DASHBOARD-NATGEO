@@ -34,6 +34,20 @@ services:
       api:
         condition: service_healthy
 
+  import-worker:
+    build:
+      context: .
+      target: production
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - logs_data:/app/logs
+    command: ["node", "dist/workers/import-worker/index.js"]
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   logs_data:
     driver: local
