@@ -37,8 +37,8 @@ if (!TENANT_ID) {
   process.exit(1);
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[FATAL] Variáveis Supabase (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) não definidas.');
+if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[FATAL] Variáveis Supabase (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) não definidas.');
   process.exit(1);
 }
 

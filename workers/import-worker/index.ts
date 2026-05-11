@@ -184,10 +184,12 @@ async function processCustomers(tenantId: string, rows: Array<Record<string, str
       document_type: doc ? (doc.replace(/\D/g, '').length > 11 ? 'cnpj' : 'cpf') : null,
       email:         r.email           || null,
       phone:         r.telefone        || null,
-      address_street:r.endereco        || null,
-      address_city:  r.cidade          || null,
-      address_state: r.estado          || null,
-      address_zip:   r.cep             || null,
+      address: {
+        street: r.endereco || null,
+        city:   r.cidade   || null,
+        state:  r.estado   || null,
+        zip:    r.cep      || null,
+      },
       is_active:     true,
     };
   }).filter(Boolean) as Array<Record<string, unknown>>;
@@ -218,9 +220,9 @@ async function processProducts(tenantId: string, rows: Array<Record<string, stri
       name,
       category:      r.categoria      || null,
       unit:          r.unidade        || 'UN',
-      sale_price:    toFloat(r.preco) ,
-      stock_quantity:toFloat(r.estoque),
+      sale_price:    toFloat(r.preco),
       ncm:           r.ncm            || null,
+      extra:         r.estoque ? { stock_quantity: toFloat(r.estoque) } : {},
       is_active:     true,
     };
   }).filter(Boolean) as Array<Record<string, unknown>>;
@@ -250,10 +252,12 @@ async function processSuppliers(tenantId: string, rows: Array<Record<string, str
       name,
       document:      doc || null,
       document_type: doc ? (doc.replace(/\D/g, '').length > 11 ? 'cnpj' : 'cpf') : null,
-      email:         r.email   || null,
-      phone:         r.telefone|| null,
-      address_city:  r.cidade  || null,
-      address_state: r.estado  || null,
+      email:         r.email    || null,
+      phone:         r.telefone || null,
+      address: {
+        city:  r.cidade || null,
+        state: r.estado || null,
+      },
       is_active:     true,
     };
   }).filter(Boolean) as Array<Record<string, unknown>>;
@@ -283,10 +287,11 @@ async function processOrders(tenantId: string, rows: Array<Record<string, string
       source_id:      sourceId(tenantId, num),
       order_number:   num,
       order_date:     date,
-      customer_name:  r.cliente   || null,
       total_amount:   total       ?? 0,
-      status:         r.status    || 'importado',
+      status:         (['pending','approved','processing','shipped','delivered','cancelled','partial'].includes(r.status ?? '')
+                        ? r.status : 'pending'),
       salesperson:    r.vendedor  || null,
+      extra:          r.cliente   ? { customer_name: r.cliente } : {},
     };
   }).filter(Boolean) as Array<Record<string, unknown>>;
 
@@ -296,35 +301,53 @@ async function processOrders(tenantId: string, rows: Array<Record<string, string
   return result;
 }
 
+const AR_STATUS_MAP: Record<string, string> = {
+  aberto: 'open', open: 'open',
+  pago: 'paid', paid: 'paid',
+  parcial: 'partial', partial: 'partial',
+  vencido: 'overdue', overdue: 'overdue',
+  cancelado: 'written_off', baixado: 'written_off', written_off: 'written_off',
+  negociando: 'negotiating', negotiating: 'negotiating',
+};
+
 async function processReceivable(tenantId: string, rows: Array<Record<string, string>>): Promise<ImportResult> {
   const result: ImportResult = { inserted: 0, updated: 0, failed: 0, errors: [] };
   const CHUNK = 500;
+  const today = new Date().toISOString().slice(0, 10);
 
   const mapped = rows.map((r, i) => {
-    const desc = r.descricao || r.description || '';
-    const amt  = toFloat(r.valor || r.amount);
-    const due  = toDate(r.vencimento || r.due_date);
-    if (!desc || amt == null || !due) {
+    const faceValue = toFloat(r.valor || r.amount || r.face_value);
+    const due       = toDate(r.vencimento || r.due_date);
+    if (faceValue == null || !due) {
       result.failed++;
-      result.errors.push({ row: i + 2, error: 'Campos "Descrição", "Valor" e "Vencimento" são obrigatórios' });
+      result.errors.push({ row: i + 2, error: 'Campos "Valor" e "Vencimento" são obrigatórios' });
       return null;
     }
+    const issueDate = toDate(r.emissao || r.issue_date) ?? today;
+    const rawStatus = (r.status ?? '').toLowerCase();
+    const status    = AR_STATUS_MAP[rawStatus] ?? 'open';
+    const notes     = r.descricao || r.description || r.documento || null;
     return {
-      tenant_id:     tenantId,
-      source_system: 'csv_import',
-      source_id:     sourceId(tenantId, desc, due, String(amt)),
-      description:   desc,
-      amount:        amt,
-      due_date:      due,
-      customer_name: r.cliente   || null,
-      category:      r.categoria || null,
-      status:        r.status    || 'aberto',
-      type:          'receivable',
+      tenant_id:       tenantId,
+      source_system:   'csv_import',
+      source_id:       sourceId(tenantId, notes ?? '', due, String(faceValue)),
+      issue_date:      issueDate,
+      due_date:        due,
+      face_value:      faceValue,
+      paid_amount:     toFloat(r.valor_pago || r.paid_amount) ?? 0,
+      interest_amount: 0,
+      discount_amount: 0,
+      status,
+      notes,
+      extra:           {
+        ...(r.cliente   ? { customer_name: r.cliente }   : {}),
+        ...(r.categoria ? { category:      r.categoria } : {}),
+      },
     };
   }).filter(Boolean) as Array<Record<string, unknown>>;
 
   for (let i = 0; i < mapped.length; i += CHUNK) {
-    await upsertBatch('receivables', mapped.slice(i, i + CHUNK), 'tenant_id,source_system,source_id', result, i);
+    await upsertBatch('accounts_receivable', mapped.slice(i, i + CHUNK), 'tenant_id,source_system,source_id', result, i);
   }
   return result;
 }
