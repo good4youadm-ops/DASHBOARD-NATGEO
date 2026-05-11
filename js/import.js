@@ -255,14 +255,26 @@
     return el;
   }
 
+  // ── SheetJS — carregado dinamicamente só quando necessário ─────────────────
+  var SHEETJS_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+  function loadSheetJS(cb) {
+    if (global.XLSX) { cb(); return; }
+    var s = document.createElement('script');
+    s.src     = SHEETJS_URL;
+    s.onload  = function () { cb(); };
+    s.onerror = function () { cb(new Error('CDN indisponível')); };
+    document.head.appendChild(s);
+  }
+
   // ── Estado ──────────────────────────────────────────────────────────────────
-  var _file       = null;
-  var _csvHdrs    = [];
-  var _csvRows    = [];   // primeiras 5 linhas (prévia)
-  var _csvRawText = '';   // texto completo do CSV (enviado ao backend)
-  var _csvSep     = ',';
-  var _step       = 1;
-  var _isCsv      = false;
+  var _file        = null;
+  var _csvHdrs     = [];
+  var _csvRows     = [];   // primeiras 5 linhas (prévia)
+  var _csvRawText  = '';   // texto completo em formato CSV (enviado ao backend)
+  var _csvSep      = ',';
+  var _step        = 1;
+  var _isCsv       = false;  // tipo original do arquivo
+  var _xlsxReady   = false;  // true após SheetJS converter o XLSX
 
   // ── open() ──────────────────────────────────────────────────────────────────
   function open() {
@@ -270,7 +282,7 @@
     injectCSS();
     var modal = buildModal();
     document.body.appendChild(modal);
-    _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _csvSep = ','; _step = 1; _isCsv = false;
+    _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _csvSep = ','; _step = 1; _isCsv = false; _xlsxReady = false;
 
     var drop        = document.getElementById('imDrop');
     var inp         = document.getElementById('imFileInp');
@@ -319,10 +331,9 @@
       titleEl.innerHTML = '<i class="fa-solid fa-file-arrow-up" style="color:#1a4731;margin-right:6px"></i>' + escHtml(t[0]);
       subEl.textContent = t[1];
 
-      s1.style.display     = n === 1 ? '' : 'none';
-      s2csv.style.display  = n === 2 && _isCsv  ? '' : 'none';
-      s2xlsx.style.display = n === 2 && !_isCsv ? '' : 'none';
-      s3.style.display     = n === 3 ? '' : 'none';
+      s1.style.display    = n === 1 ? '' : 'none';
+      if (n !== 2) { s2csv.style.display = 'none'; s2xlsx.style.display = 'none'; }
+      s3.style.display    = n === 3 ? '' : 'none';
 
       backBtn.style.display = n > 1 ? '' : 'none';
       nextBtn.style.display = n < 3 ? '' : 'none';
@@ -363,33 +374,87 @@
     inp.addEventListener('change', function () { if (inp.files[0]) onFileSelected(inp.files[0]); });
 
     // ── Passo 2 — mapeamento ──────────────────────────────────────────────────
+    function showCsvMappingPanel(fields) {
+      s2xlsx.style.display = 'none';
+      s2csv.style.display  = '';
+      renderCsvMapping(fields);
+      nextBtn.disabled = false;
+    }
+
+    function showXlsxFallback(fields) {
+      s2csv.style.display  = 'none';
+      s2xlsx.style.display = '';
+      renderXlsxMapping(fields);
+      nextBtn.disabled = false;
+    }
+
+    function parseCsvText(text, fields) {
+      _csvRawText = text;
+      var lines = text.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
+      _csvSep  = (lines[0] || '').indexOf(';') !== -1 ? ';' : ',';
+      _csvHdrs = (lines[0] || '').split(_csvSep).map(function (h) { return h.trim().replace(/^"|"$/g, ''); });
+      _csvRows = lines.slice(1, 6).map(function (l) {
+        return l.split(_csvSep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); });
+      });
+      showCsvMappingPanel(fields);
+    }
+
     function buildMappingUI() {
       var entity = MODULE_MAP[moduleEl.value];
       var fields = ENTITY_FIELDS[entity] || [];
+
       if (_isCsv) {
+        // ── CSV: ler arquivo como texto ───────────────────────────────────────
+        s2csv.style.display  = '';
+        s2xlsx.style.display = 'none';
         mapRows.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;font-size:.8rem"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px"></i>Lendo colunas…</div>';
         nextBtn.disabled = true;
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-          var text = ev.target.result || '';
-          _csvRawText = text;
-          var lines = text.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
-          _csvSep  = (lines[0] || '').indexOf(';') !== -1 ? ';' : ',';
-          _csvHdrs = (lines[0] || '').split(_csvSep).map(function (h) { return h.trim().replace(/^"|"$/g, ''); });
-          _csvRows = lines.slice(1, 6).map(function (l) {
-            return l.split(_csvSep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); });
-          });
-          renderCsvMapping(fields);
-          nextBtn.disabled = false;
-        };
-        reader.onerror = function () {
+        var rdr = new FileReader();
+        rdr.onload  = function (ev) { parseCsvText(ev.target.result || '', fields); };
+        rdr.onerror = function () {
           mapRows.innerHTML = '<div style="color:#a8071a;font-size:.8rem">✗ Erro ao ler o arquivo.</div>';
           nextBtn.disabled = false;
         };
-        reader.readAsText(_file);  // lê arquivo completo
+        rdr.readAsText(_file);
+
+      } else if (_xlsxReady) {
+        // ── XLSX já convertido (voltou ao passo 2) ────────────────────────────
+        showCsvMappingPanel(fields);
+
       } else {
-        renderXlsxMapping(fields);
-        nextBtn.disabled = false;
+        // ── XLSX: converter com SheetJS ───────────────────────────────────────
+        s2csv.style.display  = 'none';
+        s2xlsx.style.display = '';
+        xlsxRows.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;font-size:.8rem"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px"></i>Carregando leitor de Excel…</div>';
+        nextBtn.disabled = true;
+
+        loadSheetJS(function (loadErr) {
+          if (loadErr || !global.XLSX) {
+            // Fallback manual se CDN falhar
+            showXlsxFallback(fields);
+            return;
+          }
+          var rdr2 = new FileReader();
+          rdr2.onload = function (ev) {
+            try {
+              var wb  = global.XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+              var ws  = wb.Sheets[wb.SheetNames[0]];
+              var csv = global.XLSX.utils.sheet_to_csv(ws);
+              _xlsxReady = true;
+              parseCsvText(csv, fields);
+            } catch (e) {
+              xlsxRows.innerHTML =
+                '<div style="color:#a8071a;font-size:.8rem">✗ Erro ao ler Excel: ' + escHtml(e.message) +
+                '. Tente salvar como CSV (Arquivo → Salvar como → CSV UTF-8).</div>';
+              nextBtn.disabled = false;
+            }
+          };
+          rdr2.onerror = function () {
+            xlsxRows.innerHTML = '<div style="color:#a8071a;font-size:.8rem">✗ Erro ao ler o arquivo.</div>';
+            nextBtn.disabled = false;
+          };
+          rdr2.readAsArrayBuffer(_file);
+        });
       }
     }
 
@@ -562,7 +627,7 @@
     function close() {
       var m = document.getElementById(MODAL_ID);
       if (m) m.remove();
-      _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _step = 1;
+      _file = null; _csvHdrs = []; _csvRows = []; _csvRawText = ''; _xlsxReady = false; _step = 1;
     }
     document.getElementById('imClose').addEventListener('click', close);
     document.getElementById('imCancel').addEventListener('click', close);
