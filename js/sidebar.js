@@ -74,7 +74,7 @@
 
     aside.innerHTML =
       '<div class="sidebar-logo">' +
-        '<img class="sidebar-logo-img" src="images/logo-creme.png" alt="NatGeo" />' +
+        '<img class="sidebar-logo-img" src="/images/logo-creme.png" alt="NatGeo" />' +
       '</div>' +
       sec('Principal') +
       lnk('dashboard-distribuidora.html', 'fa-chart-line',          'Dashboard') +
