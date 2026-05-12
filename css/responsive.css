@@ -1,0 +1,160 @@
+/* ============================================================
+   NatGeo Dashboard — Responsividade Mobile
+   Injetado automaticamente via sidebar.js em todas as páginas
+   ============================================================ */
+
+/* ------ Tablet: sidebar recolhe para ícones (800px) ------ */
+@media (max-width: 800px) {
+  :root { --sidebar-w: 56px !important; --sidebar: 56px !important; }
+  .sidebar-section                          { display: none !important; }
+  .logo-name                                { display: none !important; }
+  .nav-item span                            { display: none !important; }
+  .u-name, .u-role                          { display: none !important; }
+  .sidebar-logo  { justify-content: center !important; padding: 0 !important; }
+  .nav-item      { justify-content: center !important; padding: 9px 0 !important; margin: 1px 6px !important; }
+  .sidebar-footer{ justify-content: center !important; padding: 10px 0 !important; }
+}
+
+/* ------ Mobile: sidebar some, hamburger aparece (640px) ------ */
+@media (max-width: 640px) {
+  /* Sidebar */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 400 !important;
+    width: 230px !important;
+  }
+  .sidebar.mob-open { transform: translateX(0); }
+
+  /* Restaura sidebar expandida quando aberta no mobile */
+  .sidebar.mob-open .sidebar-section,
+  .sidebar.mob-open .logo-name,
+  .sidebar.mob-open .nav-item span,
+  .sidebar.mob-open .u-name,
+  .sidebar.mob-open .u-role       { display: block !important; }
+  .sidebar.mob-open .sidebar-logo { justify-content: flex-start !important; padding: 0 20px !important; }
+  .sidebar.mob-open .nav-item     { justify-content: flex-start !important; padding: 8px 12px !important; margin: 1px 8px !important; }
+  .sidebar.mob-open .sidebar-footer{ justify-content: flex-start !important; padding: 14px 16px !important; }
+  .sidebar.mob-open .u-name       { display: block !important; }
+  .sidebar.mob-open .u-role       { display: block !important; }
+
+  /* Conteúdo ocupa tela toda */
+  .main { margin-left: 0 !important; }
+
+  /* Overlay escuro */
+  #sidebarOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 399; display: none;
+    backdrop-filter: none;
+  }
+  #sidebarOverlay.show { display: block; }
+
+  /* Botão hambúrguer */
+  #sidebarToggle { display: flex !important; }
+
+  /* Topbar */
+  .topbar        { padding: 0 10px !important; gap: 6px !important; }
+  .search-box    { display: none !important; }
+  .page-breadcrumb { display: none !important; }
+  .yoy-badge     { display: none !important; }
+  .upd-info      { display: none !important; }
+  .period-sel, .period-bar {
+    overflow-x: auto; flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .period-sel::-webkit-scrollbar,
+  .period-bar::-webkit-scrollbar { display: none; }
+
+  /* Padding do conteúdo */
+  .content, .pg-content { padding: 12px !important; }
+}
+
+/* Botão hambúrguer — escondido no desktop */
+#sidebarToggle {
+  display: none;
+  background: none; border: none;
+  color: var(--text, #1A2418);
+  font-size: 1.1rem; cursor: pointer;
+  padding: 6px 8px; border-radius: 8px;
+  transition: background .15s;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; margin-right: 4px;
+}
+#sidebarToggle:hover { background: var(--accent-bg, #EBF0E6); }
+
+/* ------ Grids responsivos ------ */
+
+/* 1200px → KPIs 6 col para 3 */
+@media (max-width: 1200px) {
+  .kpi-strip { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* 1100px → grids principais reduzem */
+@media (max-width: 1100px) {
+  .g6          { grid-template-columns: repeat(3, 1fr) !important; }
+  .g4          { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-header  { grid-template-columns: repeat(3, 1fr) !important; }
+  .kpi-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-row     { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* 900px → colunas assimétricas colapsam */
+@media (max-width: 900px) {
+  .g3, .g32, .g21, .g12, .g1x2, .g2x1,
+  .row-2-1, .row-3, .agrup-layout { grid-template-columns: 1fr !important; }
+  .kpi-header  { grid-template-columns: repeat(2, 1fr) !important; position: static !important; }
+  .kpi-strip   { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* 768px → pares colapsam */
+@media (max-width: 768px) {
+  .g2, .row-2  { grid-template-columns: 1fr !important; }
+  .g4          { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* 480px → tudo 1 coluna ou máx 2 */
+@media (max-width: 480px) {
+  .g4, .g3, .g6 { grid-template-columns: repeat(2, 1fr) !important; }
+  .kpi-grid, .kpi-row, .kpi-header { grid-template-columns: repeat(2, 1fr) !important; }
+  .cb-grid     { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ------ Formulários ------ */
+@media (max-width: 640px) {
+  .form-row.cols-2,
+  .form-row.cols-3,
+  .form-row.cols-4,
+  .form-grid,
+  .config-grid,
+  .fgrid { grid-template-columns: 1fr !important; }
+
+  .item-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+}
+
+/* ------ Tabelas: scroll horizontal ------ */
+@media (max-width: 900px) {
+  .card, .section-card { overflow: hidden; }
+
+  .card table,
+  .section-card table,
+  table.data-table,
+  .tbl-wrap table,
+  .table-wrap table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 480px;
+    width: 100%;
+  }
+}
+
+/* ------ Cards ------ */
+@media (max-width: 640px) {
+  .card, .section-card    { border-radius: 10px !important; }
+  .card-hdr, .card-header { padding: 10px 14px !important; }
+  .card-body, .cb         { padding: 12px 14px !important; }
+}
