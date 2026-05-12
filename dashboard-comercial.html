@@ -5,23 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NatGeo — Dashboard Comercial</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
-      --border: #e5e5ea; --border2: #d1d1d6;
-      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
-      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
-      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff;
-      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93; --muted2: #aeaeb2;
+      --bg: #F5EDE0; --surface: #FFFFFF; --surface2: #F0E5D5;
+      --border: #E4D2BC; --border2: #D4BEAA;
+      --accent: #2C4422; --accent2: #3D5A2E; --accent3: #7BA05B;
+      --accent-bg: #EBF0E6; --accent-mid: #D2E2C8;
+      --red: #B83232; --amber: #B8762A; --blue: #2E6DA4;
+      --text: #1A2418; --text2: #364838; --muted: #7A8472; --muted2: #A8B09E;
       --sidebar-w: 230px; --header-h: 56px;
       --radius: 12px; --radius-sm: 8px;
-      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+      --shadow: 0 1px 4px rgba(44,68,34,.07), 0 1px 2px rgba(44,68,34,.04);
+      --shadow-md: 0 4px 20px rgba(44,68,34,.10), 0 1px 4px rgba(44,68,34,.05);
     }
     html { font-size: 14px; }
-    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
@@ -49,7 +52,7 @@
 
     /* LAYOUT */
     .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-    .topbar { height: var(--header-h); background: rgba(255,255,255,.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; flex-wrap: nowrap; overflow-x: auto; }
+    .topbar { height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; flex-wrap: nowrap; overflow-x: auto; }
     .page-title { font-size: .94rem; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
     .spacer { flex: 1; min-width: 12px; }
     .content { padding: 20px 28px 60px; }
@@ -68,7 +71,7 @@
     .upd-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; }
 
     /* SUBBAR — vendor/team filter */
-    .subbar { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 28px; height: 44px; display: flex; align-items: center; gap: 10px; position: sticky; top: var(--header-h); z-index: 49; flex-wrap: nowrap; overflow-x: auto; }
+    .subbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 44px; display: flex; align-items: center; gap: 10px; position: sticky; top: var(--header-h); z-index: 49; flex-wrap: nowrap; overflow-x: auto; }
     .subbar-lbl { font-size: .72rem; font-weight: 600; color: var(--muted); white-space: nowrap; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
     .subbar-div { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
     .fsel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: .76rem; font-family: inherit; color: var(--text); cursor: pointer; outline: none; transition: border-color .15s, opacity .15s, background .15s; min-width: 130px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aeaeb2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; padding-right: 26px; }
@@ -105,8 +108,8 @@
     .kpi-val.sm { font-size: 1.25rem; letter-spacing: -.4px; }
     .kpi-yoy { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .yc { display: inline-flex; align-items: center; gap: 3px; font-size: .7rem; font-weight: 700; border-radius: 20px; padding: 2px 7px; white-space: nowrap; }
-    .yc.up   { background: rgba(64,145,108,.12); color: var(--accent2); }
-    .yc.dn   { background: rgba(255,59,48,.08);  color: var(--red); }
+    .yc.up   { background: rgba(123,160,91,.14);  color: var(--accent2); }
+    .yc.dn   { background: rgba(184,50,50,.09);   color: var(--red); }
     .yc.neu  { background: var(--surface2);       color: var(--muted); }
     .yoy-lbl { font-size: .69rem; color: var(--muted2); }
 
@@ -147,7 +150,7 @@
     .drill-wrap { position: relative; margin-top: 10px; }
     .drill-ic { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted2); font-size: .7rem; pointer-events: none; }
     .drill-inp { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px 6px 28px; font-size: .78rem; color: var(--text); outline: none; font-family: inherit; transition: all .15s; }
-    .drill-inp:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,71,49,.08); }
+    .drill-inp:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(44,68,34,.09); }
     .drill-inp::placeholder { color: var(--muted2); }
     .drill-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 40; display: none; }
     .drill-results.show { display: block; }
@@ -192,15 +195,15 @@
     .camp-item:last-child { border-bottom: none; }
     .camp-ic { width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: .72rem; flex-shrink: 0; }
     .camp-ic.int { background: var(--accent-bg); color: var(--accent); }
-    .camp-ic.ext { background: rgba(0,122,255,.08); color: var(--blue); }
+    .camp-ic.ext { background: rgba(46,109,164,.09); color: var(--blue); }
     .camp-info strong { font-size: .79rem; font-weight: 600; color: var(--text); display: block; }
     .camp-info span { font-size: .69rem; color: var(--muted); }
     .camp-right { margin-left: auto; text-align: right; flex-shrink: 0; }
     .camp-pct { font-size: .81rem; font-weight: 700; }
     .camp-st { font-size: .67rem; font-weight: 600; border-radius: 20px; padding: 2px 7px; display: inline-block; margin-top: 2px; }
     .camp-st.ok  { background: var(--accent-bg);           color: var(--accent2); }
-    .camp-st.bom { background: rgba(0,122,255,.08);         color: var(--blue); }
-    .camp-st.low { background: rgba(255,59,48,.08);         color: var(--red); }
+    .camp-st.bom { background: rgba(46,109,164,.09);  color: var(--blue); }
+    .camp-st.low { background: rgba(184,50,50,.09);   color: var(--red); }
 
     /* CARD HEADER */
     .ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -234,7 +237,7 @@
     .exp-btn:active { transform: scale(.97); }
 
     /* EXPORT MODAL */
-    .eov { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+    .eov { position: fixed; inset: 0; background: rgba(26,36,24,.40); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
     .eov.open { display: flex; }
     .emod { background: var(--surface); border-radius: 16px; width: 680px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,.18); overflow: hidden; }
     .emhdr { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -871,9 +874,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c:   15.5,  p:    6.4  },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c: 46500, p: 40250, pct: 50.0 },
-      { name:'Food Service', col:'#007aff', c: 23250, p: 19320, pct: 25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c: 23250, p: 20930, pct: 25.0 },
+      { name:'Varejo',       col:'#2C4422', c: 46500, p: 40250, pct: 50.0 },
+      { name:'Food Service', col:'#2E6DA4', c: 23250, p: 19320, pct: 25.0 },
+      { name:'Atacado',      col:'#B8762A', c: 23250, p: 20930, pct: 25.0 },
     ],
     cli:    { c:  78,   p:  64   },
     novo:   { c:   2,   p:   1   },
@@ -904,9 +907,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c: 15.7,     p: 6.8     },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c: 326000, p: 281750, pct: 50.0 },
-      { name:'Food Service', col:'#007aff', c: 163000, p: 135240, pct: 25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c: 163000, p: 146510, pct: 25.0 },
+      { name:'Varejo',       col:'#2C4422', c: 326000, p: 281750, pct: 50.0 },
+      { name:'Food Service', col:'#2E6DA4', c: 163000, p: 135240, pct: 25.0 },
+      { name:'Atacado',      col:'#B8762A', c: 163000, p: 146510, pct: 25.0 },
     ],
     cli:    { c: 312,  p: 265  },
     novo:   { c: 11,   p: 8    },
@@ -937,9 +940,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c: 16.0,     p: 7.1     },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c: 739000, p: 636000, pct: 50.0 },
-      { name:'Food Service', col:'#007aff', c: 369000, p: 305000, pct: 25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c: 369000, p: 332000, pct: 25.0 },
+      { name:'Varejo',       col:'#2C4422', c: 739000, p: 636000, pct: 50.0 },
+      { name:'Food Service', col:'#2E6DA4', c: 369000, p: 305000, pct: 25.0 },
+      { name:'Atacado',      col:'#B8762A', c: 369000, p: 332000, pct: 25.0 },
     ],
     cli:    { c: 521,  p: 443  },
     novo:   { c: 22,   p: 16   },
@@ -990,9 +993,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c: 17.0,     p: 8.4     },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c:4020000, p:3435000, pct:50.0 },
-      { name:'Food Service', col:'#007aff', c:2010000, p:1650000, pct:25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c:2010000, p:1785000, pct:25.0 },
+      { name:'Varejo',       col:'#2C4422', c:4020000, p:3435000, pct:50.0 },
+      { name:'Food Service', col:'#2E6DA4', c:2010000, p:1650000, pct:25.0 },
+      { name:'Atacado',      col:'#B8762A', c:2010000, p:1785000, pct:25.0 },
     ],
     cli:    { c: 1240, p: 1052 },
     novo:   { c: 114,  p: 84   },
@@ -1023,9 +1026,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c: 14.3,     p: 6.9     },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c:7920000, p:6930000, pct:50.0 },
-      { name:'Food Service', col:'#007aff', c:3960000, p:3326000, pct:25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c:3960000, p:3604000, pct:25.0 },
+      { name:'Varejo',       col:'#2C4422', c:7920000, p:6930000, pct:50.0 },
+      { name:'Food Service', col:'#2E6DA4', c:3960000, p:3326000, pct:25.0 },
+      { name:'Atacado',      col:'#B8762A', c:3960000, p:3604000, pct:25.0 },
     ],
     cli:    { c: 1890, p: 1612 },
     novo:   { c: 198,  p: 152  },
@@ -1056,9 +1059,9 @@ const DATA = {
     tick:  { c: null, p: null },
     cres:  { c: 15.7,     p: 7.8     },
     canais:[
-      { name:'Varejo',       col:'#1a4731', c:5120000, p:4425000, pct:50.0 },
-      { name:'Food Service', col:'#007aff', c:2560000, p:2124000, pct:25.0 },
-      { name:'Atacado',      col:'#ff9f0a', c:2560000, p:2301000, pct:25.0 },
+      { name:'Varejo',       col:'#2C4422', c:5120000, p:4425000, pct:50.0 },
+      { name:'Food Service', col:'#2E6DA4', c:2560000, p:2124000, pct:25.0 },
+      { name:'Atacado',      col:'#B8762A', c:2560000, p:2301000, pct:25.0 },
     ],
     cli:    { c: 1460, p: 1241 },
     novo:   { c: 148,  p: 111  },
@@ -1105,7 +1108,7 @@ function initFatChart(d) {
     data: {
       labels: d.labels,
       datasets: [
-        { label:'2025', data:d.cur,  borderColor:'#1a4731', backgroundColor:'rgba(26,71,49,.07)', borderWidth:2.5, tension:0.4, pointRadius:3, pointBackgroundColor:'#1a4731', fill:true },
+        { label:'2025', data:d.cur,  borderColor:'#2C4422', backgroundColor:'rgba(44,68,34,.07)', borderWidth:2.5, tension:0.4, pointRadius:3, pointBackgroundColor:'#2C4422', fill:true },
         { label:'2024', data:d.prev, borderColor:'#aeaeb2', backgroundColor:'transparent',        borderWidth:1.5, borderDash:[4,4],tension:0.4, pointRadius:2, pointBackgroundColor:'#aeaeb2', fill:false },
       ]
     },
@@ -1127,7 +1130,7 @@ function initSparkline(data) {
   const ctx = document.getElementById('sparkCres').getContext('2d');
   if (sparkChart) sparkChart.destroy();
   const last = data[data.length-1], first = data[0];
-  const col = last >= first ? '#40916c' : '#ff3b30';
+  const col = last >= first ? '#7BA05B' : '#B83232';
   sparkChart = new Chart(ctx, {
     type:'line',
     data:{ labels:data.map(()=>''), datasets:[{ data, borderColor:col, borderWidth:2, tension:0.4, pointRadius:0, fill:false }] },
@@ -1140,7 +1143,7 @@ function initDrillChart(hist) {
   if (drillChartInst) drillChartInst.destroy();
   drillChartInst = new Chart(ctx, {
     type:'bar',
-    data:{ labels:['P-5','P-4','P-3','P-2','P-1','Atual'], datasets:[{ data:hist, backgroundColor:hist.map((v,i)=>i===hist.length-1?'rgba(26,71,49,.7)':'rgba(26,71,49,.2)'), borderRadius:4 }] },
+    data:{ labels:['P-5','P-4','P-3','P-2','P-1','Atual'], datasets:[{ data:hist, backgroundColor:hist.map((v,i)=>i===hist.length-1?'rgba(44,68,34,.75)':'rgba(44,68,34,.22)'), borderRadius:4 }] },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>`${ctx.raw}x/período` } } },

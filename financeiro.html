@@ -5,23 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NatGeo — Financeiro</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
-      --border: #e5e5ea; --border2: #d1d1d6;
-      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
-      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
-      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff; --purple: #af52de;
-      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93; --muted2: #aeaeb2;
+      --bg: #F5EDE0; --surface: #FFFFFF; --surface2: #F0E5D5;
+      --border: #E4D2BC; --border2: #D4BEAA;
+      --accent: #2C4422; --accent2: #3D5A2E; --accent3: #7BA05B;
+      --accent-bg: #EBF0E6; --accent-mid: #D2E2C8;
+      --red: #B83232; --amber: #B8762A; --blue: #2E6DA4; --purple: #7B52A0;
+      --text: #1A2418; --text2: #364838; --muted: #7A8472; --muted2: #A8B09E;
       --sidebar-w: 230px; --header-h: 56px;
       --radius: 12px; --radius-sm: 8px;
-      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+      --shadow: 0 1px 4px rgba(44,68,34,.07), 0 1px 2px rgba(44,68,34,.04);
+      --shadow-md: 0 4px 20px rgba(44,68,34,.10), 0 1px 4px rgba(44,68,34,.05);
     }
     html { font-size: 14px; }
-    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
@@ -51,7 +54,7 @@
     .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
     /* TOPBAR */
-    .topbar { height: var(--header-h); background: rgba(255,255,255,.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 10px; position: sticky; top: 0; z-index: 100; }
+    .topbar { height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 10px; position: sticky; top: 0; z-index: 100; }
     .page-title { font-size: .95rem; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; }
     .spacer { flex: 1; }
     .top-btn { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; cursor: pointer; font-size: .76rem; font-weight: 500; color: var(--text2); transition: all .15s; white-space: nowrap; font-family: inherit; }
@@ -62,7 +65,7 @@
     .upd-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; }
 
     /* FILTROS GLOBAIS */
-    .filtros-bar { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; height: 46px; display: flex; align-items: center; gap: 8px; position: sticky; top: var(--header-h); z-index: 99; }
+    .filtros-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 46px; display: flex; align-items: center; gap: 8px; position: sticky; top: var(--header-h); z-index: 99; }
     .filtro-lbl { font-size: .7rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
     .filtro-div { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
     .fsel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 26px 4px 9px; font-size: .75rem; font-family: inherit; color: var(--text); cursor: pointer; outline: none; transition: border-color .15s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aeaeb2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-color: var(--surface2); min-width: 110px; }
@@ -93,7 +96,7 @@
     .semaphore.blue   { background: var(--blue); }
 
     /* BLOCO NAV */
-    .bloco-nav { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 2px; position: sticky; top: calc(var(--header-h) + 46px + 85px); z-index: 97; overflow-x: auto; }
+    .bloco-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 2px; position: sticky; top: calc(var(--header-h) + 46px + 85px); z-index: 97; overflow-x: auto; }
     .bntab { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 16px; font-size: .8rem; font-weight: 500; color: var(--muted); cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px; }
     .bntab:hover { color: var(--text2); }
     .bntab.active { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
@@ -783,17 +786,17 @@ function setPeriod(btn, p) {
 /* ====================================================
    CHART DEFAULTS
 ==================================================== */
-Chart.defaults.font.family = "-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif";
+Chart.defaults.font.family = "'Nunito', sans-serif";
 Chart.defaults.font.size   = 11;
-Chart.defaults.color       = '#8e8e93';
-const accent  = '#1a4731';
-const accent2 = '#2d6a4f';
-const accent3 = '#40916c';
-const red     = '#ff3b30';
-const amber   = '#ff9f0a';
-const blue    = '#007aff';
-const muted   = '#8e8e93';
-const border  = '#e5e5ea';
+Chart.defaults.color       = '#7A8472';
+const accent  = '#2C4422';
+const accent2 = '#3D5A2E';
+const accent3 = '#7BA05B';
+const red     = '#B83232';
+const amber   = '#B8762A';
+const blue    = '#2E6DA4';
+const muted   = '#7A8472';
+const border  = '#E4D2BC';
 
 const defaultOptions = (extraScales={}) => ({
   responsive: true, maintainAspectRatio: false,
