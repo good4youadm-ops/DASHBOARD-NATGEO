@@ -67,14 +67,14 @@
         '#logoutBtn.logout-btn{background:none;border:none;padding:4px;margin-left:auto;cursor:pointer;}',
         '.nav-locked{opacity:.38;cursor:not-allowed;pointer-events:none;user-select:none;}',
         '.nav-lock-icon{margin-left:auto;font-size:.6rem;opacity:.8;flex-shrink:0;}',
-        '.sidebar-logo-img{height:26px;width:auto;display:block;object-fit:contain;flex-shrink:0;}',
       ].join('');
       document.head.appendChild(st);
     }
 
     aside.innerHTML =
       '<div class="sidebar-logo">' +
-        '<img class="sidebar-logo-img" src="/images/logo-creme.png" alt="NatGeo" />' +
+        '<div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>' +
+        '<div class="logo-name">Nat<span>Geo</span></div>' +
       '</div>' +
       sec('Principal') +
       lnk('dashboard-distribuidora.html', 'fa-chart-line',          'Dashboard') +

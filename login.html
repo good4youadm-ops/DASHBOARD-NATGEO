@@ -29,12 +29,16 @@
       width: 100%; max-width: 420px; padding: 24px;
     }
     .logo {
-      display: flex; align-items: center;
+      display: flex; align-items: center; gap: 12px;
       justify-content: center; margin-bottom: 32px;
     }
-    .logo-img {
-      height: 42px; width: auto; display: block; object-fit: contain;
+    .logo-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--accent); display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 1.2rem;
     }
+    .logo-name { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .logo-name span { color: var(--accent3); }
 
     .card {
       background: var(--surface); border-radius: var(--radius);
@@ -94,7 +98,8 @@
 <body>
 <div class="login-wrap">
   <div class="logo">
-    <img class="logo-img" src="/images/logo-verde.png" alt="NatGeo" />
+    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+    <div class="logo-name">Nat<span>Geo</span></div>
   </div>
 
   <div class="card">
