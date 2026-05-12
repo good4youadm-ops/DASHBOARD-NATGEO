@@ -67,14 +67,15 @@
         '#logoutBtn.logout-btn{background:none;border:none;padding:4px;margin-left:auto;cursor:pointer;}',
         '.nav-locked{opacity:.38;cursor:not-allowed;pointer-events:none;user-select:none;}',
         '.nav-lock-icon{margin-left:auto;font-size:.6rem;opacity:.8;flex-shrink:0;}',
+        '.logo-circle{width:44px;height:44px;border-radius:50%;background:#7BA05B;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;line-height:1.05;gap:0px;}',
+        '.logo-circle span{color:#F5EDE0;font-weight:800;font-size:.78rem;letter-spacing:-.02em;display:block;font-family:"Nunito",sans-serif;}',
       ].join('');
       document.head.appendChild(st);
     }
 
     aside.innerHTML =
       '<div class="sidebar-logo">' +
-        '<div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>' +
-        '<div class="logo-name">Nat<span>Geo</span></div>' +
+        '<div class="logo-circle"><span>nat</span><span>geo</span></div>' +
       '</div>' +
       sec('Principal') +
       lnk('dashboard-distribuidora.html', 'fa-chart-line',          'Dashboard') +

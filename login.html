@@ -32,13 +32,16 @@
       display: flex; align-items: center; gap: 12px;
       justify-content: center; margin-bottom: 32px;
     }
-    .logo-icon {
-      width: 44px; height: 44px; border-radius: 12px;
-      background: var(--accent); display: flex; align-items: center;
-      justify-content: center; color: #fff; font-size: 1.2rem;
+    .logo-circle {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #7BA05B; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      line-height: 1.05; gap: 0px; flex-shrink: 0;
     }
-    .logo-name { font-size: 1.4rem; font-weight: 700; color: var(--text); }
-    .logo-name span { color: var(--accent3); }
+    .logo-circle span {
+      color: #F5EDE0; font-weight: 800; font-size: 1rem;
+      letter-spacing: -.02em; display: block;
+    }
 
     .card {
       background: var(--surface); border-radius: var(--radius);
@@ -98,8 +101,7 @@
 <body>
 <div class="login-wrap">
   <div class="logo">
-    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
-    <div class="logo-name">Nat<span>Geo</span></div>
+    <div class="logo-circle"><span>nat</span><span>geo</span></div>
   </div>
 
   <div class="card">
