@@ -64,7 +64,18 @@
       var st = document.createElement('style');
       st.id = styleId;
       st.textContent = [
-        '#logoutBtn.logout-btn{background:none;border:none;padding:4px;margin-left:auto;cursor:pointer;}',
+        /* Logo */
+        '.sidebar-logo{height:56px;display:flex!important;align-items:center!important;gap:10px!important;padding:0 20px!important;border-bottom:1px solid rgba(255,255,255,.1)!important;flex-shrink:0;}',
+        '.logo-icon{width:32px!important;height:32px!important;border-radius:8px!important;background:rgba(255,255,255,.15)!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:.85rem!important;color:#fff!important;flex-shrink:0!important;}',
+        '.logo-name{font-size:1rem!important;font-weight:700!important;letter-spacing:-.4px!important;color:#fff!important;}',
+        '.logo-name span{color:#7BA05B!important;}',
+        /* Footer / user */
+        '.sidebar-footer{margin-top:auto!important;border-top:1px solid rgba(255,255,255,.1)!important;padding:14px 16px!important;display:flex!important;align-items:center!important;gap:10px!important;}',
+        '.avatar{width:32px!important;height:32px!important;border-radius:50%!important;background:rgba(255,255,255,.2)!important;display:flex!important;align-items:center!important;justify-content:center!important;font-weight:600!important;font-size:.78rem!important;color:#fff!important;flex-shrink:0!important;}',
+        '.u-name{font-size:.82rem!important;font-weight:600!important;color:#fff!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+        '.u-role{font-size:.72rem!important;color:rgba(255,255,255,.55)!important;}',
+        '#logoutBtn.logout-btn{background:none!important;border:none!important;padding:4px!important;margin-left:auto!important;color:rgba(255,255,255,.55)!important;cursor:pointer!important;font-size:.82rem!important;transition:color .15s;}',
+        /* Locked items */
         '.nav-locked{opacity:.38;cursor:not-allowed;pointer-events:none;user-select:none;}',
         '.nav-lock-icon{margin-left:auto;font-size:.6rem;opacity:.8;flex-shrink:0;}',
       ].join('');
