@@ -5,40 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NatGeo — Fiscal / NF-e</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/access.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #f5f5f7; --surface: #ffffff; --surface2: #f5f5f7;
-      --border: #e5e5ea; --border2: #d1d1d6;
-      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
-      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
-      --red: #ff3b30; --amber: #ff9f0a; --blue: #007aff; --green: #34c759;
-      --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93; --muted2: #aeaeb2;
+      --bg: #F5EDE0; --surface: #ffffff; --surface2: #F5EDE0;
+      --border: #E4D2BC; --border2: #D4BEAA;
+      --accent: #2C4422; --accent2: #3D5A2E; --accent3: #7BA05B;
+      --accent-bg: #EBF0E6; --accent-mid: #D2E2C8;
+      --red: #B83232; --amber: #B8762A; --blue: #2E6DA4; --green: #7BA05B;
+      --text: #1A2418; --text2: #364838; --muted: #7A8472; --muted2: #A8B09E;
       --sidebar-w: 230px; --header-h: 56px;
       --radius: 12px; --radius-sm: 8px;
-      --shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+      --shadow: 0 2px 8px rgba(44,68,34,.07), 0 1px 2px rgba(44,68,34,.04);
+      --shadow-md: 0 4px 24px rgba(44,68,34,.09), 0 1px 4px rgba(44,68,34,.04);
     }
     html { font-size: 14px; }
-    body { background: var(--bg); color: var(--text); font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; }
     ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
     .sidebar { width: var(--sidebar-w); background: var(--accent); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; overflow-y: auto; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
-    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; }
-    .logo-name { font-size: 1rem; font-weight: 700; color: #fff; } .logo-name span { color: #95d5b2; }
+    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; }
+    .logo-name { font-size: 1rem; font-weight: 700; color: #fff; } .logo-name span { color: #C2DBA8; }
     .sidebar-section { font-size: .68rem; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .08em; padding: 14px 16px 4px; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 14px; margin: 1px 8px; border-radius: var(--radius-sm); color: rgba(255,255,255,.75); font-size: .875rem; font-weight: 500; text-decoration: none; transition: background .12s; }
-    .nav-item:hover { background: rgba(255,255,255,.12); color: #fff; } .nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+    .nav-item:hover { background: var(--surface); color: #fff; } .nav-item.active { background: var(--surface); color: #fff; font-weight: 600; }
     .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
     .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
     .u-name { font-size: .8rem; font-weight: 600; color: #fff; } .u-role { font-size: .72rem; color: rgba(255,255,255,.55); }
     .logout-btn { margin-left: auto; color: rgba(255,255,255,.55); font-size: .9rem; cursor: pointer; } .logout-btn:hover { color: #fff; }
     .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-    .topbar { height: var(--header-h); background: rgba(255,255,255,.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar { height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 100; }
     .page-title { font-size: 1rem; font-weight: 700; } .page-sub { font-size: .8rem; color: var(--muted); margin-top: 1px; } .spacer { flex: 1; }
     .tab-bar { display: flex; gap: 4px; padding: 20px 24px 0; }
     .tab-btn { padding: 8px 20px; border: 1.5px solid var(--border); border-radius: 8px 8px 0 0; background: var(--surface2); color: var(--muted); font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .15s; border-bottom: none; position: relative; top: 1px; }

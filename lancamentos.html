@@ -1,39 +1,42 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NatGeo — Lançamentos Financeiros</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --accent: #1a4731; --accent2: #2d6a4f; --accent3: #40916c;
-      --accent-bg: #f0f7f3; --accent-mid: #d8efe4;
-      --bg: #f5f5f7; --surface: #fff;
-      --border: #e5e5ea; --text: #1d1d1f; --text2: #3a3a3c; --muted: #8e8e93;
-      --red: #ff3b30; --orange: #ff9500; --blue: #007aff; --purple: #af52de;
+      --accent: #2C4422; --accent2: #3D5A2E; --accent3: #7BA05B;
+      --accent-bg: #EBF0E6; --accent-mid: #D2E2C8;
+      --bg: #F5EDE0; --surface: #fff;
+      --border: #E4D2BC; --text: #1A2418; --text2: #364838; --muted: #7A8472;
+      --red: #B83232; --orange: #B8762A; --blue: #2E6DA4; --purple: #7B52A0;
       --radius: 14px; --sidebar: 220px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
-      --shadow-md: 0 4px 20px rgba(0,0,0,.10);
+      --shadow-sm: 0 1px 3px rgba(44,68,34,.09);
+      --shadow-md: 0 4px 20px rgba(44,68,34,.10);
     }
-    html, body { height: 100%; font-family: -apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
     /* ── Layout ── */
     .shell { display: flex; height: 100vh; overflow: hidden; }
     .sidebar { width: var(--sidebar); background: var(--accent); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
     .sidebar-logo { padding: 20px 16px 10px; display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1rem; flex-shrink: 0; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1rem; flex-shrink: 0; }
     .logo-name { font-size: 1.1rem; font-weight: 700; color: #fff; }
-    .logo-name span { color: #95d5b2; }
+    .logo-name span { color: #C2DBA8; }
     .sidebar-section { padding: 16px 16px 4px; font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .08em; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: rgba(255,255,255,.75); text-decoration: none; font-size: .82rem; font-weight: 500; border-radius: 8px; margin: 1px 8px; transition: background .15s, color .15s; }
-    .nav-item:hover { background: rgba(255,255,255,.12); color: #fff; }
-    .nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+    .nav-item:hover { background: var(--surface); color: #fff; }
+    .nav-item.active { background: var(--surface); color: #fff; font-weight: 600; }
     .nav-item i { width: 16px; text-align: center; font-size: .85rem; }
-    .nav-badge { margin-left: auto; background: rgba(255,255,255,.25); color: #fff; font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+    .nav-badge { margin-left: auto; background: var(--surface); color: #fff; font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
     .nav-badge.red { background: var(--red); }
     .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-role { font-size: .65rem; color: rgba(255,255,255,.55); }
@@ -76,8 +79,8 @@
     .badge-paid      { background: var(--accent-bg); color: var(--accent); }
     .badge-partial   { background: #fff8e6; color: #b8730a; }
     .badge-overdue   { background: #fff1f0; color: var(--red); }
-    .badge-cancelled { background: #f5f5f7; color: var(--muted); }
-    .badge-written_off { background: #f5f5f7; color: var(--muted); }
+    .badge-cancelled { background: #F5EDE0; color: var(--muted); }
+    .badge-written_off { background: #F5EDE0; color: var(--muted); }
     .badge-negotiating { background: #f3ebff; color: var(--purple); }
     .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
     .amount.red { color: var(--red); }
