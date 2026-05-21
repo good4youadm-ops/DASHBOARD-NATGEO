@@ -1,84 +1,80 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import {
+  storeGetAll, storeGetById, storeInsert, storeUpdate, storeDelete,
+} from '../services/dataService';
 
-// ── Motoristas ────────────────────────────────────────────────────────────────
-export async function listDrivers(client: SupabaseClient, tenantId: string, isActive?: boolean) {
-  let q = client.from('drivers').select('*', { count: 'exact' }).eq('tenant_id', tenantId).order('name');
-  if (isActive != null) q = q.eq('is_active', isActive);
-  const { data, error, count } = await q;
-  if (error) throw error;
-  return { data: data ?? [], total: count ?? 0 };
+/**
+ * @file drivers.json
+ * @description Motoristas
+ * @fields id, tenant_id, name, document, license_number, phone, is_active
+ * @example { "id": "d1", "tenant_id": "t1", "name": "João Silva", "document": "123.456.789-00", "license_number": "ABC1234", "phone": "(11) 9999-0000", "is_active": true }
+ */
+
+/**
+ * @file vehicles.json
+ * @description Veículos
+ * @fields id, tenant_id, plate, model, brand, year, capacity_kg, is_active
+ * @example { "id": "v1", "tenant_id": "t1", "plate": "ABC-1234", "model": "Sprinter", "brand": "Mercedes", "year": 2022, "capacity_kg": 1500, "is_active": true }
+ */
+
+/**
+ * @file delivery-routes.json
+ * @description Rotas de entrega
+ * @fields id, tenant_id, route_date, driver_id, vehicle_id, status, total_stops, total_km, notes
+ * @example { "id": "r1", "tenant_id": "t1", "route_date": "2024-05-20", "driver_id": "d1", "vehicle_id": "v1", "status": "planned", "total_stops": 8, "total_km": 120 }
+ */
+
+export async function listDrivers(isActive?: boolean) {
+  const all = await storeGetAll('drivers');
+  if (isActive !== undefined) return all.filter(r => r['is_active'] === isActive);
+  return all;
 }
 
-export async function createDriver(client: SupabaseClient, tenantId: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('drivers').insert({ ...body, tenant_id: tenantId }).select().single();
-  if (error) throw error;
-  return data;
+export async function createDriver(body: Record<string, unknown>) {
+  return storeInsert('drivers', { ...body, id: crypto.randomUUID() });
 }
 
-export async function updateDriver(client: SupabaseClient, tenantId: string, id: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('drivers').update(body).eq('tenant_id', tenantId).eq('id', id).select().single();
-  if (error) throw error;
-  return data;
+export async function updateDriver(id: string, body: Record<string, unknown>) {
+  return storeUpdate('drivers', id, body);
 }
 
-export async function deleteDriver(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client.from('drivers').update({ is_active: false }).eq('tenant_id', tenantId).eq('id', id);
-  if (error) throw error;
+export async function deleteDriver(id: string) {
+  return storeDelete('drivers', id);
 }
 
-// ── Veículos ──────────────────────────────────────────────────────────────────
-export async function listVehicles(client: SupabaseClient, tenantId: string, isActive?: boolean) {
-  let q = client.from('vehicles').select('*', { count: 'exact' }).eq('tenant_id', tenantId).order('plate');
-  if (isActive != null) q = q.eq('is_active', isActive);
-  const { data, error, count } = await q;
-  if (error) throw error;
-  return { data: data ?? [], total: count ?? 0 };
+export async function listVehicles(isActive?: boolean) {
+  const all = await storeGetAll('vehicles');
+  if (isActive !== undefined) return all.filter(r => r['is_active'] === isActive);
+  return all;
 }
 
-export async function createVehicle(client: SupabaseClient, tenantId: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('vehicles').insert({ ...body, tenant_id: tenantId }).select().single();
-  if (error) throw error;
-  return data;
+export async function createVehicle(body: Record<string, unknown>) {
+  return storeInsert('vehicles', { ...body, id: crypto.randomUUID() });
 }
 
-export async function updateVehicle(client: SupabaseClient, tenantId: string, id: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('vehicles').update(body).eq('tenant_id', tenantId).eq('id', id).select().single();
-  if (error) throw error;
-  return data;
+export async function updateVehicle(id: string, body: Record<string, unknown>) {
+  return storeUpdate('vehicles', id, body);
 }
 
-export async function deleteVehicle(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client.from('vehicles').update({ is_active: false }).eq('tenant_id', tenantId).eq('id', id);
-  if (error) throw error;
+export async function deleteVehicle(id: string) {
+  return storeDelete('vehicles', id);
 }
 
-// ── Rotas de Entrega ──────────────────────────────────────────────────────────
-export async function listRoutes(client: SupabaseClient, tenantId: string, dateFrom?: string, dateTo?: string) {
-  let q = client
-    .from('delivery_routes')
-    .select('*, drivers(name), vehicles(plate,model)', { count: 'exact' })
-    .eq('tenant_id', tenantId)
-    .order('route_date', { ascending: false });
-  if (dateFrom) q = q.gte('route_date', dateFrom);
-  if (dateTo)   q = q.lte('route_date', dateTo);
-  const { data, error, count } = await q;
-  if (error) throw error;
-  return { data: data ?? [], total: count ?? 0 };
+export async function listRoutes(dateFrom?: string, dateTo?: string) {
+  const all = await storeGetAll('deliveryRoutes');
+  let result = all;
+  if (dateFrom) result = result.filter(r => String(r['route_date']) >= dateFrom);
+  if (dateTo)   result = result.filter(r => String(r['route_date']) <= dateTo);
+  return result;
 }
 
-export async function createRoute(client: SupabaseClient, tenantId: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('delivery_routes').insert({ ...body, tenant_id: tenantId }).select().single();
-  if (error) throw error;
-  return data;
+export async function createRoute(body: Record<string, unknown>) {
+  return storeInsert('deliveryRoutes', { ...body, id: crypto.randomUUID() });
 }
 
-export async function updateRoute(client: SupabaseClient, tenantId: string, id: string, body: Record<string, unknown>) {
-  const { data, error } = await client.from('delivery_routes').update(body).eq('tenant_id', tenantId).eq('id', id).select().single();
-  if (error) throw error;
-  return data;
+export async function updateRoute(id: string, body: Record<string, unknown>) {
+  return storeUpdate('deliveryRoutes', id, body);
 }
 
-export async function deleteRoute(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client.from('delivery_routes').update({ status: 'cancelled' }).eq('tenant_id', tenantId).eq('id', id);
-  if (error) throw error;
+export async function deleteRoute(id: string) {
+  return storeDelete('deliveryRoutes', id);
 }

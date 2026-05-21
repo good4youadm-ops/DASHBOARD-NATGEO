@@ -1,70 +1,58 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import {
+  storeGetAll, storeGetById, storeInsert, storeUpdate, storeDelete,
+  applyPagination,
+} from '../services/dataService';
 
-export interface ListParams {
-  tenantId: string;
+/**
+ * @file customers.json
+ * @description Cadastro de clientes
+ * @fields id, tenant_id, name, document, email, phone, address, city, state, zip_code, is_active, created_at
+ * @example { "id": "c1", "tenant_id": "t1", "name": "Empresa X Ltda", "document": "12.345.678/0001-99", "email": "contato@empresax.com", "phone": "(11) 9999-9999", "city": "São Paulo", "state": "SP", "is_active": true, "created_at": "2024-01-10T00:00:00Z" }
+ */
+export interface Customer {
+  id: string;
+  tenant_id: string;
+  name: string;
+  document?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+export interface ListCustomersParams {
   search?: string;
-  isActive?: boolean;
+  isActive?: string;
   page?: number;
   limit?: number;
 }
 
-export async function listCustomers(client: SupabaseClient, p: ListParams) {
-  const page  = p.page  ?? 1;
-  const limit = p.limit ?? 50;
-  const from  = (page - 1) * limit;
-
-  let q = client
-    .from('customers')
-    .select('id,code,name,trade_name,document,document_type,email,phone,segment,classification,credit_limit,payment_terms,is_active,synced_at', { count: 'exact' })
-    .eq('tenant_id', p.tenantId)
-    .order('name', { ascending: true });
-
-  if (p.search)           q = q.or(`name.ilike.%${p.search}%,document.ilike.%${p.search}%,code.ilike.%${p.search}%`);
-  if (p.isActive != null) q = q.eq('is_active', p.isActive);
-
-  const { data, error, count } = await q.range(from, from + limit - 1);
-  if (error) throw error;
-  return { data: data ?? [], total: count ?? 0, page, limit };
+export async function listCustomers(p: ListCustomersParams = {}) {
+  const all = await storeGetAll('customers') as unknown as Customer[];
+  const filters = [
+    { field: 'name',      value: p.search,   op: 'ilike' as const },
+    { field: 'is_active', value: p.isActive === 'true' ? true : p.isActive === 'false' ? false : undefined },
+  ];
+  return applyPagination(all, { page: p.page, limit: p.limit, orderBy: 'name', filters });
 }
 
-export async function getCustomer(client: SupabaseClient, tenantId: string, id: string) {
-  const { data, error } = await client
-    .from('customers')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .eq('id', id)
-    .single();
-  if (error) throw error;
-  return data;
+export async function getCustomer(id: string) {
+  return storeGetById('customers', id);
 }
 
-export async function createCustomer(client: SupabaseClient, tenantId: string, body: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('customers')
-    .insert({ ...body, tenant_id: tenantId, source_system: 'manual', source_id: crypto.randomUUID() })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function createCustomer(body: Record<string, unknown>) {
+  const record = { ...body, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+  return storeInsert('customers', record);
 }
 
-export async function updateCustomer(client: SupabaseClient, tenantId: string, id: string, body: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('customers')
-    .update(body)
-    .eq('tenant_id', tenantId)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function updateCustomer(id: string, body: Record<string, unknown>) {
+  return storeUpdate('customers', id, body);
 }
 
-export async function deleteCustomer(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client
-    .from('customers')
-    .update({ is_active: false })
-    .eq('tenant_id', tenantId)
-    .eq('id', id);
-  if (error) throw error;
+export async function deleteCustomer(id: string) {
+  return storeDelete('customers', id);
 }

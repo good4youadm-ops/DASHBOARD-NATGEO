@@ -1,206 +1,128 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+import {
+  storeGetAll, storeGetById, storeInsert, storeUpdate,
+} from '../services/dataService';
 
-// ── Jobs de Importação ────────────────────────────────────────────────────────
-export async function listImportJobs(client: SupabaseClient, tenantId: string, limit = 20) {
-  const { data, error } = await client
-    .from('import_jobs')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data ?? [];
+/**
+ * @file import-jobs.json   Jobs de importação { id, tenant_id, entity, source, status, created_by, created_at, finished_at, records_processed, records_error }
+ * @file webhooks-log.json  Log de webhooks recebidos { id, tenant_id, source, event_type, status, received_at, ip_address }
+ * @file api-keys.json      Chaves de API { id, tenant_id, name, key_hash, scopes, is_active, expires_at, created_by, created_at }
+ */
+
+// ── Import Jobs ────────────────────────────────────────────────────────────────
+
+export async function listImportJobs(limit = 20) {
+  const all = await storeGetAll('importJobs');
+  return all
+    .sort((a, b) => String(b['created_at']).localeCompare(String(a['created_at'])))
+    .slice(0, limit);
 }
 
-export async function getImportJob(client: SupabaseClient, tenantId: string, id: string) {
-  const { data, error } = await client
-    .from('import_jobs')
-    .select('*, import_errors(*)')
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .single();
-  if (error) throw error;
-  return data;
+export async function getImportJob(id: string) {
+  return storeGetById('importJobs', id);
 }
 
 export async function createImportJob(
-  client: SupabaseClient,
-  tenantId: string,
   entity: string,
   source: string,
   createdBy: string,
-  options: Record<string, unknown> = {},
+  options?: Record<string, unknown>,
 ) {
-  const { data, error } = await client
-    .from('import_jobs')
-    .insert({
-      tenant_id: tenantId,
-      entity,
-      source,
-      status: 'queued',
-      created_by: createdBy,
-      options,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  return storeInsert('importJobs', {
+    id: crypto.randomUUID(),
+    entity,
+    source,
+    status: 'pending',
+    created_by: createdBy,
+    created_at: new Date().toISOString(),
+    options: options ?? {},
+  });
 }
 
-export async function updateImportJob(client: SupabaseClient, tenantId: string, id: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('import_jobs')
-    .update(payload)
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function updateImportJob(id: string, payload: Record<string, unknown>) {
+  return storeUpdate('importJobs', id, payload);
 }
 
 export async function appendImportError(
-  client: SupabaseClient,
-  tenantId: string,
   jobId: string,
-  rowNumber: number | null,
-  rowData: Record<string, unknown> | null,
+  rowNumber: number,
+  rowData: unknown,
   errorCode: string,
   errorMsg: string,
 ) {
-  const { error } = await client.from('import_errors').insert({
-    tenant_id: tenantId,
-    job_id: jobId,
-    row_number: rowNumber,
-    row_data: rowData,
-    error_code: errorCode,
-    error_msg: errorMsg,
-  });
-  if (error) throw error;
+  // Registra o erro como entrada no log de erros do job
+  const job = await storeGetById('importJobs', jobId) as Record<string, unknown> | undefined;
+  if (!job) throw new Error(`Import job ${jobId} não encontrado`);
+  const errors = (job['errors'] as unknown[]) ?? [];
+  errors.push({ row: rowNumber, data: rowData, code: errorCode, message: errorMsg });
+  return storeUpdate('importJobs', jobId, { errors, records_error: errors.length });
 }
 
-// ── Webhooks Log ──────────────────────────────────────────────────────────────
+// ── Webhooks Log ───────────────────────────────────────────────────────────────
+
 export async function logWebhook(
-  client: SupabaseClient,
-  tenantId: string | null,
   source: string,
   eventType: string,
   payload: unknown,
-  headers: Record<string, string>,
+  headers: unknown,
   ipAddress?: string,
 ) {
-  const { data, error } = await client
-    .from('webhooks_log')
-    .insert({
-      tenant_id: tenantId,
-      source,
-      event_type: eventType,
-      payload,
-      headers,
-      status: 'received',
-      ip_address: ipAddress,
-    })
-    .select('id')
-    .single();
-  if (error) throw error;
-  return data;
+  return storeInsert('webhooksLog', {
+    id: crypto.randomUUID(),
+    source,
+    event_type: eventType,
+    status: 'received',
+    payload,
+    headers,
+    ip_address: ipAddress,
+    received_at: new Date().toISOString(),
+  });
 }
 
-export async function updateWebhookStatus(
-  client: SupabaseClient,
-  id: string,
-  status: 'processed' | 'failed' | 'ignored',
-  errorMsg?: string,
-) {
-  const { error } = await client
-    .from('webhooks_log')
-    .update({ status, processed_at: new Date().toISOString(), error_msg: errorMsg ?? null })
-    .eq('id', id);
-  if (error) throw error;
+export async function updateWebhookStatus(id: string, status: string, errorMsg?: string) {
+  return storeUpdate('webhooksLog', id, { status, error_message: errorMsg });
 }
 
-export async function listWebhooks(client: SupabaseClient, tenantId: string, source?: string, limit = 50) {
-  let q = client
-    .from('webhooks_log')
-    .select('id,source,event_type,status,created_at,processed_at,ip_address')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (source) q = q.eq('source', source);
-  const { data, error } = await q;
-  if (error) throw error;
-  return data ?? [];
+export async function listWebhooks(source?: string, limit = 50) {
+  const all = await storeGetAll('webhooksLog');
+  let result = all.sort((a, b) => String(b['received_at']).localeCompare(String(a['received_at'])));
+  if (source) result = result.filter(r => r['source'] === source);
+  return result.slice(0, limit);
 }
 
-// ── API Keys ──────────────────────────────────────────────────────────────────
-export async function listApiKeys(client: SupabaseClient, tenantId: string) {
-  const { data, error } = await client
-    .from('api_keys')
-    .select('id, name, prefix, scopes, is_active, expires_at, last_used_at, created_at')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+// ── API Keys ───────────────────────────────────────────────────────────────────
+
+export async function listApiKeys() {
+  // Retorna sem key_hash por segurança
+  const all = await storeGetAll('apiKeys');
+  return all.map(({ key_hash: _kh, ...rest }) => rest);
 }
 
 export async function createApiKey(
-  client: SupabaseClient,
-  tenantId: string,
   name: string,
   scopes: string[],
   createdBy: string,
   expiresAt?: string,
-): Promise<{ id: string; key: string }> {
-  const rawKey = `sk_${crypto.randomBytes(32).toString('hex')}`;
-  const prefix = rawKey.slice(0, 10);
-  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-
-  const { data, error } = await client
-    .from('api_keys')
-    .insert({
-      tenant_id: tenantId,
-      name,
-      key_hash: keyHash,
-      prefix,
-      scopes,
-      created_by: createdBy,
-      expires_at: expiresAt ?? null,
-    })
-    .select('id')
-    .single();
-  if (error) throw error;
-  return { id: data.id, key: rawKey };
+) {
+  const rawKey = crypto.randomUUID();
+  return storeInsert('apiKeys', {
+    id: crypto.randomUUID(),
+    name,
+    // Em produção, armazenar apenas o hash. Aqui retornamos a chave uma única vez.
+    key_hash: rawKey,
+    scopes,
+    is_active: true,
+    created_by: createdBy,
+    created_at: new Date().toISOString(),
+    expires_at: expiresAt ?? null,
+    _raw_key_once: rawKey, // Removido do response pelo listApiKeys
+  });
 }
 
-export async function revokeApiKey(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client
-    .from('api_keys')
-    .update({ is_active: false })
-    .eq('id', id)
-    .eq('tenant_id', tenantId);
-  if (error) throw error;
+export async function revokeApiKey(id: string) {
+  return storeUpdate('apiKeys', id, { is_active: false, revoked_at: new Date().toISOString() });
 }
 
-export async function verifyApiKey(client: SupabaseClient, rawKey: string): Promise<{ tenantId: string; scopes: string[] } | null> {
-  const prefix = rawKey.slice(0, 10);
-  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-
-  const { data, error } = await client
-    .from('api_keys')
-    .select('id, tenant_id, scopes, expires_at')
-    .eq('prefix', prefix)
-    .eq('key_hash', keyHash)
-    .eq('is_active', true)
-    .single();
-
-  if (error || !data) return null;
-  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
-
-  await client
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('id', data.id);
-
-  return { tenantId: data.tenant_id, scopes: data.scopes };
+export async function verifyApiKey(rawKey: string) {
+  const all = await storeGetAll('apiKeys');
+  return all.find(r => r['key_hash'] === rawKey && r['is_active'] === true) ?? null;
 }

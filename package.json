@@ -23,9 +23,7 @@
     "sync:oracle:sales": "tsx workers/oracle-sync/index.ts sales",
     "sync:oracle:inventory": "tsx workers/oracle-sync/index.ts inventory",
     "sync:oracle:finance": "tsx workers/oracle-sync/index.ts finance",
-    "db:migrate": "supabase db push",
-    "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "data:validate": "tsx scripts/validate-data-sources.ts",
     "docker:dev": "docker compose -f docker-compose.yml up --build",
     "docker:prod": "docker compose -f docker-compose.prod.yml up --build",
     "docker:down": "docker compose down",
@@ -35,7 +33,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",

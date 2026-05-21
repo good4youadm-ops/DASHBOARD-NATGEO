@@ -1,164 +1,83 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import {
+  storeGetAll, storeGetById, storeInsert, storeUpdate, storeDelete,
+  applyPagination,
+} from '../services/dataService';
 
-// ── Notas Fiscais (estendido) ─────────────────────────────────────────────────
-interface InvoiceListParams {
-  tenantId: string;
+/**
+ * @file invoices.json      NF-e/NFS-e emitidas { id, tenant_id, invoice_number, series, order_id, customer_id, issue_date, status, total_value, tax_value, cfop, access_key }
+ * @file invoice-items.json Itens de notas fiscais { id, tenant_id, invoice_id, product_id, qty, unit_price, total_price, cfop, ncm, tax_icms, tax_pis, tax_cofins }
+ * @file fiscal-config.json Configuração fiscal do tenant { tenant_id, cnpj, ie, crt, nfe_series, nfe_sequence, certificate_expiry }
+ * @file tax-rules.json     Regras fiscais por NCM { id, tenant_id, ncm, description, cst_icms, aliq_icms, cst_pis, aliq_pis, cst_cofins, aliq_cofins }
+ */
+
+export interface ListInvoicesParams {
   status?: string;
-  direction?: string;
   customerId?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }
 
-export async function listInvoices(client: SupabaseClient, p: InvoiceListParams) {
-  const limit = p.limit ?? 50;
-  const from = ((p.page ?? 1) - 1) * limit;
-
-  let q = client
-    .from('invoices')
-    .select('*, customers(name,document), sales_orders(order_number)', { count: 'exact' })
-    .eq('tenant_id', p.tenantId)
-    .order('issue_date', { ascending: false });
-
-  if (p.status) q = q.eq('status', p.status);
-  if (p.direction) q = q.eq('direction', p.direction);
-  if (p.customerId) q = q.eq('customer_id', p.customerId);
-  if (p.dateFrom) q = q.gte('issue_date', p.dateFrom);
-  if (p.dateTo) q = q.lte('issue_date', p.dateTo);
-
-  const { data, error, count } = await q.range(from, from + limit - 1);
-  if (error) throw error;
-  return { data: data ?? [], total: count ?? 0 };
+export async function listInvoices(p: ListInvoicesParams = {}) {
+  const all = await storeGetAll('invoices');
+  const filters = [
+    { field: 'status',          value: p.status,     op: 'eq'    as const },
+    { field: 'customer_id',     value: p.customerId, op: 'eq'    as const },
+    { field: 'invoice_number',  value: p.search,     op: 'ilike' as const },
+  ];
+  return applyPagination(all, { page: p.page, limit: p.limit, orderBy: 'issue_date', ascending: false, filters });
 }
 
-export async function getInvoice(client: SupabaseClient, tenantId: string, id: string) {
-  const { data, error } = await client
-    .from('invoices')
-    .select('*, customers(*), sales_orders(order_number,customer_id), invoice_items(*, products(name,sku,ncm))')
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .single();
-  if (error) throw error;
-  return data;
+export async function getInvoice(id: string) {
+  return storeGetById('invoices', id);
 }
 
-export async function createInvoice(client: SupabaseClient, tenantId: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('invoices')
-    .insert({ ...payload, tenant_id: tenantId, source_system: 'manual', source_id: crypto.randomUUID() })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function createInvoice(payload: Record<string, unknown>) {
+  return storeInsert('invoices', { ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() });
 }
 
-export async function updateInvoice(client: SupabaseClient, tenantId: string, id: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('invoices')
-    .update(payload)
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function updateInvoice(id: string, payload: Record<string, unknown>) {
+  return storeUpdate('invoices', id, payload);
 }
 
-export async function cancelInvoice(client: SupabaseClient, tenantId: string, id: string) {
-  const { data, error } = await client
-    .from('invoices')
-    .update({ status: 'cancelled' })
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function cancelInvoice(id: string) {
+  return storeUpdate('invoices', id, { status: 'cancelled', cancelled_at: new Date().toISOString() });
 }
 
-// ── Itens de Nota Fiscal ──────────────────────────────────────────────────────
-export async function addInvoiceItem(client: SupabaseClient, tenantId: string, invoiceId: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('invoice_items')
-    .insert({ ...payload, tenant_id: tenantId, invoice_id: invoiceId })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function addInvoiceItem(invoiceId: string, payload: Record<string, unknown>) {
+  return storeInsert('invoiceItems', { ...payload, id: crypto.randomUUID(), invoice_id: invoiceId });
 }
 
-export async function removeInvoiceItem(client: SupabaseClient, tenantId: string, itemId: string) {
-  const { error } = await client
-    .from('invoice_items')
-    .delete()
-    .eq('id', itemId)
-    .eq('tenant_id', tenantId);
-  if (error) throw error;
+export async function removeInvoiceItem(itemId: string) {
+  return storeDelete('invoiceItems', itemId);
 }
 
-// ── Configurações Fiscais ─────────────────────────────────────────────────────
-export async function getFiscalConfig(client: SupabaseClient, tenantId: string) {
-  const { data, error } = await client
-    .from('fiscal_configs')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error; // 116 = not found
-  return data ?? null;
+export async function getFiscalConfig() {
+  const all = await storeGetAll('fiscalConfig');
+  return all[0] ?? null;
 }
 
-export async function upsertFiscalConfig(client: SupabaseClient, tenantId: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('fiscal_configs')
-    .upsert({ ...payload, tenant_id: tenantId }, { onConflict: 'tenant_id' })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function upsertFiscalConfig(payload: Record<string, unknown>) {
+  const all = await storeGetAll('fiscalConfig');
+  if (all.length > 0) {
+    return storeUpdate('fiscalConfig', all[0]['id'] as string, payload);
+  }
+  return storeInsert('fiscalConfig', { ...payload, id: crypto.randomUUID() });
 }
 
-// ── Regras de Imposto ─────────────────────────────────────────────────────────
-export async function listTaxRules(client: SupabaseClient, tenantId: string, ncm?: string) {
-  let q = client
-    .from('tax_rules')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true);
-  if (ncm) q = q.eq('ncm', ncm);
-  const { data, error } = await q.order('ncm');
-  if (error) throw error;
-  return data ?? [];
+export async function listTaxRules(ncm?: string) {
+  const all = await storeGetAll('taxRules');
+  return ncm ? all.filter(r => String(r['ncm']).startsWith(ncm)) : all;
 }
 
-export async function createTaxRule(client: SupabaseClient, tenantId: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('tax_rules')
-    .insert({ ...payload, tenant_id: tenantId })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function createTaxRule(payload: Record<string, unknown>) {
+  return storeInsert('taxRules', { ...payload, id: crypto.randomUUID() });
 }
 
-export async function updateTaxRule(client: SupabaseClient, tenantId: string, id: string, payload: Record<string, unknown>) {
-  const { data, error } = await client
-    .from('tax_rules')
-    .update(payload)
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+export async function updateTaxRule(id: string, payload: Record<string, unknown>) {
+  return storeUpdate('taxRules', id, payload);
 }
 
-export async function deleteTaxRule(client: SupabaseClient, tenantId: string, id: string) {
-  const { error } = await client
-    .from('tax_rules')
-    .update({ is_active: false })
-    .eq('id', id)
-    .eq('tenant_id', tenantId);
-  if (error) throw error;
+export async function deleteTaxRule(id: string) {
+  return storeDelete('taxRules', id);
 }
