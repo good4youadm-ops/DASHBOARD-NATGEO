@@ -299,7 +299,7 @@ export interface PaginationResult<T> {
 /**
  * Aplica filtros simples, ordenação e paginação sobre um array de registros.
  */
-export function applyPagination<T extends AnyRecord>(
+export function applyPagination<T>(
   records: T[],
   opts: {
     page?: number;
@@ -317,7 +317,7 @@ export function applyPagination<T extends AnyRecord>(
     if (f.value === undefined || f.value === null || f.value === '') continue;
     const op = f.op ?? 'eq';
     result = result.filter(r => {
-      const v = r[f.field];
+      const v = (r as AnyRecord)[f.field];
       if (op === 'eq')    return v === f.value;
       if (op === 'ilike') return String(v ?? '').toLowerCase().includes(String(f.value).toLowerCase());
       if (op === 'gte')   return Number(v) >= Number(f.value);
@@ -328,8 +328,8 @@ export function applyPagination<T extends AnyRecord>(
 
   if (orderBy) {
     result.sort((a, b) => {
-      const av = a[orderBy] ?? '';
-      const bv = b[orderBy] ?? '';
+      const av = (a as AnyRecord)[orderBy] ?? '';
+      const bv = (b as AnyRecord)[orderBy] ?? '';
       return ascending
         ? String(av).localeCompare(String(bv))
         : String(bv).localeCompare(String(av));
