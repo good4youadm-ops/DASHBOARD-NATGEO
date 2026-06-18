@@ -53,7 +53,12 @@ router.get('/health/deep', async (_req, res) => {
 });
 
 router.get('/api/config', (_req, res) => {
-  res.json({ version: VERSION, env: NODE_ENV });
+  res.json({
+    version: VERSION,
+    env: NODE_ENV,
+    supabaseUrl: process.env.SUPABASE_URL ?? '',
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? '',
+  });
 });
 
 export default router;
