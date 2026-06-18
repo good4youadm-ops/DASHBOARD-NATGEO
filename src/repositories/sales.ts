@@ -7,6 +7,8 @@ export interface SalesSummaryRow {
   tenant_id: string;
   total_orders: number;
   total_revenue: number;
+  gross_revenue: number;
+  unique_customers: number;
   avg_ticket: number;
   total_items: number;
 }
@@ -16,6 +18,7 @@ export interface SalesByDayRow {
   tenant_id: string;
   total_orders: number;
   total_revenue: number;
+  revenue: number;
 }
 
 export interface SalesByCustomerRow {
@@ -42,7 +45,7 @@ export async function getDashboardSalesSummary({ months = 12 } = {}): Promise<Sa
   const tid = defaultTenantId();
   const { data, error } = await getSupabase()
     .from('vw_dashboard_sales_summary')
-    .select('tenant_id, month, total_orders, net_revenue, avg_ticket')
+    .select('tenant_id, month, total_orders, unique_customers, gross_revenue, net_revenue, avg_ticket')
     .eq('tenant_id', tid)
     .order('month', { ascending: false })
     .limit(months);
@@ -51,6 +54,8 @@ export async function getDashboardSalesSummary({ months = 12 } = {}): Promise<Sa
     month: String(r.month ?? '').slice(0, 7),
     tenant_id: String(r.tenant_id ?? ''),
     total_orders: Number(r.total_orders ?? 0),
+    gross_revenue: Number(r.gross_revenue ?? 0),
+    unique_customers: Number(r.unique_customers ?? 0),
     total_revenue: Number(r.net_revenue ?? 0),
     avg_ticket: Number(r.avg_ticket ?? 0),
     total_items: 0,
@@ -71,6 +76,7 @@ export async function getSalesByDay(): Promise<SalesByDayRow[]> {
     tenant_id: String(r.tenant_id ?? ''),
     total_orders: Number(r.orders_count ?? 0),
     total_revenue: Number(r.revenue ?? 0),
+    revenue: Number(r.revenue ?? 0),
   }));
 }
 
