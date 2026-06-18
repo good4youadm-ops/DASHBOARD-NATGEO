@@ -1,13 +1,7 @@
-import { fetchJSON, DATA_SOURCES } from '../services/dataService';
+import { getSupabase, defaultTenantId } from '../lib/supabase';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
-/**
- * @file inventory-summary.json
- * @description Resumo do estoque para o dashboard
- * @fields tenant_id, total_skus, total_qty, total_value, skus_below_min, skus_out_of_stock
- * @example { "tenant_id": "t1", "total_skus": 150, "total_qty": 8200, "total_value": 245000.00, "skus_below_min": 12, "skus_out_of_stock": 3 }
- */
 export interface InventorySummaryRow {
   tenant_id: string;
   total_skus: number;
@@ -17,12 +11,6 @@ export interface InventorySummaryRow {
   skus_out_of_stock: number;
 }
 
-/**
- * @file stock-by-product.json
- * @description Posição de estoque por produto
- * @fields product_id, sku, product_name, warehouse, qty_available, qty_reserved, min_stock, abc_curve, unit_cost, total_value
- * @example { "product_id": "p1", "sku": "SKU-001", "product_name": "Produto A", "warehouse": "CD-SP", "qty_available": 120, "qty_reserved": 10, "min_stock": 20, "abc_curve": "A", "unit_cost": 29.90, "total_value": 3588.00 }
- */
 export interface StockByProductRow {
   product_id: string;
   sku: string;
@@ -36,12 +24,6 @@ export interface StockByProductRow {
   total_value: number;
 }
 
-/**
- * @file expiring-lots.json
- * @description Lotes com vencimento próximo
- * @fields lot_id, product_id, sku, product_name, lot_number, expiry_date, qty, days_until_expiry
- * @example { "lot_id": "l1", "product_id": "p1", "sku": "SKU-001", "product_name": "Produto A", "lot_number": "L2024001", "expiry_date": "2024-07-01", "qty": 50, "days_until_expiry": 45 }
- */
 export interface ExpiringLotRow {
   lot_id: string;
   product_id: string;
@@ -62,23 +44,66 @@ export interface StockFilters {
 // ── Funções ────────────────────────────────────────────────────────────────────
 
 export async function getDashboardInventorySummary(): Promise<InventorySummaryRow> {
-  const data = await fetchJSON<InventorySummaryRow | InventorySummaryRow[]>(
-    DATA_SOURCES.inventorySummary,
-    'inventorySummary',
-  );
-  return Array.isArray(data) ? data[0] : data;
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_dashboard_inventory_summary')
+    .select('sku_count, total_qty_available, total_inventory_value, ruptura_count')
+    .eq('tenant_id', tid);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  return {
+    tenant_id: tid,
+    // Soma por depósito; pode supercontar SKUs em múltiplos depósitos — aceitável no card do dashboard
+    total_skus: rows.reduce((s, r) => s + Number(r.sku_count ?? 0), 0),
+    total_qty: rows.reduce((s, r) => s + Number(r.total_qty_available ?? 0), 0),
+    total_value: rows.reduce((s, r) => s + Number(r.total_inventory_value ?? 0), 0),
+    skus_below_min: 0,
+    skus_out_of_stock: rows.reduce((s, r) => s + Number(r.ruptura_count ?? 0), 0),
+  };
 }
 
 export async function getStockByProduct(filters: StockFilters = {}): Promise<StockByProductRow[]> {
-  const data = await fetchJSON<StockByProductRow[]>(DATA_SOURCES.stockByProduct, 'stockByProduct');
-  let result = data;
-  if (filters.warehouse)        result = result.filter(r => r.warehouse === filters.warehouse);
-  if (filters.abcCurve)         result = result.filter(r => r.abc_curve === filters.abcCurve);
-  if (filters.alertOnly === 'true') result = result.filter(r => r.qty_available <= r.min_stock);
-  return result;
+  const tid = defaultTenantId();
+  let query = getSupabase()
+    .from('vw_stock_by_product')
+    .select('product_id, sku, product_name, warehouse, qty_available, qty_reserved, min_stock, abc_curve, avg_cost, total_cost, stock_alert')
+    .eq('tenant_id', tid);
+  if (filters.warehouse) query = query.eq('warehouse', filters.warehouse);
+  if (filters.abcCurve)  query = query.eq('abc_curve', filters.abcCurve);
+  if (filters.alertOnly === 'true') query = query.in('stock_alert', ['sem_estoque', 'ponto_pedido', 'estoque_minimo']);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    product_id: String(r.product_id ?? ''),
+    sku: String(r.sku ?? ''),
+    product_name: String(r.product_name ?? r.sku ?? 'N/D'),
+    warehouse: String(r.warehouse ?? ''),
+    qty_available: Number(r.qty_available ?? 0),
+    qty_reserved: Number(r.qty_reserved ?? 0),
+    min_stock: Number(r.min_stock ?? 0),
+    abc_curve: String(r.abc_curve ?? ''),
+    unit_cost: Number(r.avg_cost ?? 0),
+    total_value: Number(r.total_cost ?? 0),
+  }));
 }
 
 export async function getExpiringLots(daysAhead = 90): Promise<ExpiringLotRow[]> {
-  const data = await fetchJSON<ExpiringLotRow[]>(DATA_SOURCES.expiringLots, 'expiringLots');
-  return data.filter(r => r.days_until_expiry <= daysAhead);
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_expiring_lots')
+    .select('product_id, sku, product_name, lot_number, expiry_date, days_to_expiry, qty_current')
+    .eq('tenant_id', tid)
+    .lte('days_to_expiry', daysAhead)
+    .order('days_to_expiry', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    lot_id: '',
+    product_id: String(r.product_id ?? ''),
+    sku: String(r.sku ?? ''),
+    product_name: String(r.product_name ?? ''),
+    lot_number: String(r.lot_number ?? ''),
+    expiry_date: String(r.expiry_date ?? ''),
+    qty: Number(r.qty_current ?? 0),
+    days_until_expiry: Number(r.days_to_expiry ?? 0),
+  }));
 }

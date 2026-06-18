@@ -11,6 +11,7 @@ import entitiesRouter from './routes/entities';
 import financeRouter from './routes/finance';
 import catalogRouter from './routes/catalog';
 import integrationsRouter from './routes/integrations';
+import ingestRouter from './routes/ingest';
 
 const app = express();
 
@@ -48,5 +49,6 @@ app.use(entitiesRouter);
 app.use(financeRouter);
 app.use(catalogRouter);
 app.use(integrationsRouter);
+app.use(ingestRouter);
 
 export default app;

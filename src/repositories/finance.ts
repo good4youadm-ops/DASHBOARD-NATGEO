@@ -1,8 +1,8 @@
 import {
-  fetchJSON, DATA_SOURCES,
   storeGetAll, storeGetById, storeInsert, storeUpdate, storeDelete,
   applyPagination,
 } from '../services/dataService';
+import { getSupabase, defaultTenantId } from '../lib/supabase';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -102,11 +102,22 @@ export interface ListAPParams {
 // ── Funções ────────────────────────────────────────────────────────────────────
 
 export async function getDashboardFinanceSummary(): Promise<FinanceSummaryRow> {
-  const data = await fetchJSON<FinanceSummaryRow | FinanceSummaryRow[]>(
-    DATA_SOURCES.financeSummary,
-    'financeSummary',
-  );
-  return Array.isArray(data) ? data[0] : data;
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_dashboard_finance_summary')
+    .select('tenant_id, ar_open_balance, ap_open_balance, ar_overdue_balance, ap_overdue_balance, net_position')
+    .eq('tenant_id', tid)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { tenant_id: tid, receivable_open: 0, payable_open: 0, receivable_overdue: 0, payable_overdue: 0, cash_balance: 0 };
+  return {
+    tenant_id: tid,
+    receivable_open: Number(data.ar_open_balance ?? 0),
+    payable_open: Number(data.ap_open_balance ?? 0),
+    receivable_overdue: Number(data.ar_overdue_balance ?? 0),
+    payable_overdue: Number(data.ap_overdue_balance ?? 0),
+    cash_balance: Number(data.net_position ?? 0),
+  };
 }
 
 export async function listAccountsReceivable(p: ListARParams = {}) {
@@ -120,10 +131,32 @@ export async function listAccountsReceivable(p: ListARParams = {}) {
 }
 
 export async function getAccountsReceivableOpen(filters: { bucket?: string } = {}) {
-  const all = await storeGetAll('accountsReceivable') as unknown as AccountReceivable[];
-  let result = all.filter(r => r.status === 'open' || r.status === 'overdue');
-  if (filters.bucket === 'overdue') result = result.filter(r => (r.days_overdue ?? 0) > 0);
-  return result;
+  const tid = defaultTenantId();
+  let query = getSupabase()
+    .from('vw_accounts_receivable_open')
+    .select('id, document_number, parcel, customer_id, customer_name, issue_date, due_date, days_overdue, status, face_value, paid_amount, interest_amount, discount_amount, balance, payment_method, aging_bucket')
+    .eq('tenant_id', tid);
+  if (filters.bucket === 'overdue') query = query.gt('days_overdue', 0);
+  const { data, error } = await query.order('days_overdue', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    id: String(r.id ?? ''),
+    tenant_id: tid,
+    document_number: String(r.document_number ?? ''),
+    parcel: r.parcel ? String(r.parcel) : undefined,
+    issue_date: String(r.issue_date ?? ''),
+    due_date: String(r.due_date ?? ''),
+    payment_date: null,
+    status: String(r.status ?? 'open'),
+    face_value: Number(r.face_value ?? 0),
+    paid_amount: Number(r.paid_amount ?? 0),
+    interest_amount: Number(r.interest_amount ?? 0),
+    discount_amount: Number(r.discount_amount ?? 0),
+    balance: Number(r.balance ?? 0),
+    days_overdue: Number(r.days_overdue ?? 0),
+    payment_method: r.payment_method ? String(r.payment_method) : undefined,
+    customers: r.customer_name ? { name: String(r.customer_name) } : undefined,
+  } as AccountReceivable));
 }
 
 export async function getAccountReceivable(id: string) {
@@ -156,10 +189,35 @@ export async function listAccountsPayable(p: ListAPParams = {}) {
 }
 
 export async function getAccountsPayableOpen(filters: { bucket?: string } = {}) {
-  const all = await storeGetAll('accountsPayable') as unknown as AccountPayable[];
-  let result = all.filter(r => r.status === 'open' || r.status === 'overdue');
-  if (filters.bucket === 'overdue') result = result.filter(r => (r.days_overdue ?? 0) > 0);
-  return result;
+  const tid = defaultTenantId();
+  let query = getSupabase()
+    .from('vw_accounts_payable_open')
+    .select('id, document_number, parcel, supplier_name, supplier_document, category, cost_center, issue_date, due_date, days_overdue, status, face_value, paid_amount, interest_amount, discount_amount, balance, payment_method')
+    .eq('tenant_id', tid);
+  if (filters.bucket === 'overdue') query = query.gt('days_overdue', 0);
+  const { data, error } = await query.order('days_overdue', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    id: String(r.id ?? ''),
+    tenant_id: tid,
+    document_number: r.document_number ? String(r.document_number) : undefined,
+    parcel: r.parcel ? String(r.parcel) : undefined,
+    supplier_name: r.supplier_name ? String(r.supplier_name) : undefined,
+    supplier_document: r.supplier_document ? String(r.supplier_document) : undefined,
+    category: r.category ? String(r.category) : undefined,
+    cost_center: r.cost_center ? String(r.cost_center) : undefined,
+    issue_date: r.issue_date ? String(r.issue_date) : undefined,
+    due_date: String(r.due_date ?? ''),
+    payment_date: null,
+    status: String(r.status ?? 'open'),
+    face_value: Number(r.face_value ?? 0),
+    paid_amount: r.paid_amount != null ? Number(r.paid_amount) : undefined,
+    interest_amount: r.interest_amount != null ? Number(r.interest_amount) : undefined,
+    discount_amount: r.discount_amount != null ? Number(r.discount_amount) : undefined,
+    balance: Number(r.balance ?? 0),
+    days_overdue: Number(r.days_overdue ?? 0),
+    payment_method: r.payment_method ? String(r.payment_method) : undefined,
+  } as AccountPayable));
 }
 
 export async function getAccountPayable(id: string) {

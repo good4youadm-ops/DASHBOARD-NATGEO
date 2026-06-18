@@ -1,13 +1,7 @@
-import { fetchJSON, DATA_SOURCES } from '../services/dataService';
+import { getSupabase, defaultTenantId } from '../lib/supabase';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
-/**
- * @file sales-summary.json
- * @description Resumo mensal de vendas para o dashboard
- * @fields month, tenant_id, total_orders, total_revenue, avg_ticket, total_items
- * @example { "month": "2024-05", "tenant_id": "t1", "total_orders": 320, "total_revenue": 48000.00, "avg_ticket": 150.00, "total_items": 890 }
- */
 export interface SalesSummaryRow {
   month: string;
   tenant_id: string;
@@ -17,12 +11,6 @@ export interface SalesSummaryRow {
   total_items: number;
 }
 
-/**
- * @file sales-by-day.json
- * @description Vendas agrupadas por dia
- * @fields order_date, tenant_id, total_orders, total_revenue
- * @example { "order_date": "2024-05-01", "tenant_id": "t1", "total_orders": 12, "total_revenue": 1800.00 }
- */
 export interface SalesByDayRow {
   order_date: string;
   tenant_id: string;
@@ -30,12 +18,6 @@ export interface SalesByDayRow {
   total_revenue: number;
 }
 
-/**
- * @file sales-by-customer.json
- * @description Ranking de clientes por receita
- * @fields customer_id, customer_name, tenant_id, total_orders, total_revenue, last_order_date
- * @example { "customer_id": "c1", "customer_name": "Empresa X", "tenant_id": "t1", "total_orders": 15, "total_revenue": 9800.00, "last_order_date": "2024-05-10" }
- */
 export interface SalesByCustomerRow {
   customer_id: string;
   customer_name: string;
@@ -45,12 +27,6 @@ export interface SalesByCustomerRow {
   last_order_date: string;
 }
 
-/**
- * @file sales-by-product.json
- * @description Ranking de produtos por receita
- * @fields product_id, product_name, sku, tenant_id, total_qty, total_revenue
- * @example { "product_id": "p1", "product_name": "Produto A", "sku": "SKU-001", "tenant_id": "t1", "total_qty": 200, "total_revenue": 12000.00 }
- */
 export interface SalesByProductRow {
   product_id: string;
   product_name: string;
@@ -63,24 +39,79 @@ export interface SalesByProductRow {
 // ── Funções ────────────────────────────────────────────────────────────────────
 
 export async function getDashboardSalesSummary({ months = 12 } = {}): Promise<SalesSummaryRow[]> {
-  const data = await fetchJSON<SalesSummaryRow[]>(DATA_SOURCES.salesSummary, 'salesSummary');
-  return data.slice(0, months);
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_dashboard_sales_summary')
+    .select('tenant_id, month, total_orders, net_revenue, avg_ticket')
+    .eq('tenant_id', tid)
+    .order('month', { ascending: false })
+    .limit(months);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    month: String(r.month ?? '').slice(0, 7),
+    tenant_id: String(r.tenant_id ?? ''),
+    total_orders: Number(r.total_orders ?? 0),
+    total_revenue: Number(r.net_revenue ?? 0),
+    avg_ticket: Number(r.avg_ticket ?? 0),
+    total_items: 0,
+  }));
 }
 
 export async function getSalesByDay(): Promise<SalesByDayRow[]> {
-  return fetchJSON<SalesByDayRow[]>(DATA_SOURCES.salesByDay, 'salesByDay');
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_sales_by_day')
+    .select('tenant_id, order_date, orders_count, revenue')
+    .eq('tenant_id', tid)
+    .order('order_date', { ascending: false })
+    .limit(90);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(r => ({
+    order_date: String(r.order_date ?? ''),
+    tenant_id: String(r.tenant_id ?? ''),
+    total_orders: Number(r.orders_count ?? 0),
+    total_revenue: Number(r.revenue ?? 0),
+  }));
 }
 
 export async function getTopCustomers(limit = 20): Promise<SalesByCustomerRow[]> {
-  const data = await fetchJSON<SalesByCustomerRow[]>(DATA_SOURCES.salesByCustomer, 'salesByCustomer');
-  return data
-    .sort((a, b) => b.total_revenue - a.total_revenue)
-    .slice(0, limit);
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_sales_by_customer')
+    .select('tenant_id, customer_id, customer_name, total_orders, total_revenue, last_order_date')
+    .eq('tenant_id', tid)
+    .order('total_revenue', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? [])
+    .filter(r => r.customer_id != null)
+    .map(r => ({
+      customer_id: String(r.customer_id ?? ''),
+      customer_name: String(r.customer_name ?? r.customer_id ?? 'N/D'),
+      tenant_id: String(r.tenant_id ?? ''),
+      total_orders: Number(r.total_orders ?? 0),
+      total_revenue: Number(r.total_revenue ?? 0),
+      last_order_date: String(r.last_order_date ?? ''),
+    }));
 }
 
 export async function getTopProducts(limit = 20): Promise<SalesByProductRow[]> {
-  const data = await fetchJSON<SalesByProductRow[]>(DATA_SOURCES.salesByProduct, 'salesByProduct');
-  return data
-    .sort((a, b) => b.total_revenue - a.total_revenue)
-    .slice(0, limit);
+  const tid = defaultTenantId();
+  const { data, error } = await getSupabase()
+    .from('vw_sales_by_product')
+    .select('tenant_id, product_id, sku, product_name, total_qty_sold, total_revenue')
+    .eq('tenant_id', tid)
+    .order('total_revenue', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? [])
+    .filter(r => r.product_id != null)
+    .map(r => ({
+      product_id: String(r.product_id ?? ''),
+      product_name: String(r.product_name ?? r.sku ?? 'N/D'),
+      sku: String(r.sku ?? ''),
+      tenant_id: String(r.tenant_id ?? ''),
+      total_qty: Number(r.total_qty_sold ?? 0),
+      total_revenue: Number(r.total_revenue ?? 0),
+    }));
 }
