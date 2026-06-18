@@ -1,11 +1,9 @@
 # ── Stage 1: deps ────────────────────────────────────────────────────────────
 # oracledb v6+ funciona em modo thin (puro JS, sem Oracle Instant Client).
-# Não é necessário baixar bibliotecas nativas do Oracle.
 FROM node:20-slim AS deps
 
 WORKDIR /app
-# Força development para que npm ci instale devDependencies (tsc, tipos, etc.)
-# independente do build-arg NODE_ENV que o Coolify injeta
+# NODE_ENV=development para que npm ci instale devDependencies (tsc, tipos)
 ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm ci
@@ -17,8 +15,7 @@ COPY tsconfig*.json ./
 COPY src/ ./src/
 COPY workers/ ./workers/
 
-RUN npm run build \
-    && npm prune --omit=dev
+RUN npm run build
 
 # ── Stage 3: production ───────────────────────────────────────────────────────
 FROM node:20-slim AS production
@@ -32,8 +29,11 @@ ENV NODE_ENV=production
 WORKDIR /app
 RUN mkdir -p logs
 
+# Instala apenas dependências de produção (evita npm prune)
 COPY package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+RUN npm ci --omit=dev
+
+# Copia o dist compilado
 COPY --from=builder /app/dist ./dist
 COPY *.html ./
 COPY js/ ./js/
