@@ -58,6 +58,20 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+// ── Status geral dos endpoints de ingest ─────────────────────────────────────
+router.get('/api/ingest/status', (_req, res) => {
+  res.json({
+    ok: true,
+    endpoints: [
+      'POST /api/ingest/products/batch',
+      'POST /api/ingest/customers/batch',
+      'POST /api/ingest/sales-orders/batch',
+      'POST /api/ingest/inventory/batch',
+      'POST /api/ingest/finance/batch',
+    ],
+  });
+});
+
 // ── Produtos ──────────────────────────────────────────────────────────────────
 router.post('/api/ingest/products/batch', async (req, res) => {
   const b = z.object({
