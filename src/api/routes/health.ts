@@ -56,8 +56,8 @@ router.get('/api/config', (_req, res) => {
   res.json({
     version: VERSION,
     env: NODE_ENV,
-    supabaseUrl: process.env.SUPABASE_URL ?? '',
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? '',
+    supabaseUrl:     process.env.NEXT_PUBLIC_SUPABASE_URL     ?? process.env.SUPABASE_URL      ?? '',
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
   });
 });
 
